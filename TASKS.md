@@ -88,8 +88,44 @@ npm run preview  # preview production build
 
 ---
 
-## Agent 2: The Database Specialist (DB Architect)
-**Status**: ⏳ PENDING
+## Agent 2: The Database Specialist (DB Architect) ✅ COMPLETED
+
+**Date**: 2026-07-15
+
+### Tasks Completed
+- [x] Designed comprehensive Dexie.js schema (version 3) with optimized indexes
+- [x] Bumped DB schema from v1 → v2 → v3 with proper migrations
+- [x] Tables: `transactions`, `orders`, `customers`, `settings`, `meta`, `notifications`
+- [x] **Transactions indexes**: `type`, `[type+dateTimestamp]`, `dateTimestamp`, `category`, `orderId`, `amount`, `createdAt`
+- [x] **Orders indexes**: `status`, `[status+scheduledTimestamp]`, `scheduledTimestamp`, `customerName`, `customerId`, `orderType`, `amount`, `createdAt`
+- [x] **Customers indexes**: `name`, `phone`, `archived`, `createdAt`
+- [x] **Compound indexes** for fast filtering (e.g., `[type+dateTimestamp]` for filtered date-range queries)
+- [x] Implemented data relationships: transactions ↔ orders via `orderId`, orders ↔ customers via `customerId`
+- [x] Cascading rules:
+  - Delete order → unlink transactions (keep audit trail, set orderId=null)
+  - Delete customer → archive (soft delete, keep history)
+  - Delete order → delete associated notifications
+- [x] Pagination logic: `getTransactions()` and `getOrders()` with `page`, `pageSize`, `hasMore`
+- [x] Helper methods: `addTransaction`, `updateTransaction`, `deleteTransaction`, `getTransactions`, `getCashBalance`, `getTotalsForRange`, etc.
+- [x] Order helpers: `addOrder`, `updateOrder`, `deleteOrder`, `getOrders`, `getOrdersForDay`, `getOrdersForMonth`, `getUpcomingOrders`
+- [x] Customer helpers: `addCustomer`, `updateCustomer`, `archiveCustomer`, `getCustomers`
+- [x] Backup/Restore: `exportAllData()`, `restoreFromBackup(backup)`, `clearAllData()`
+- [x] Notifications table for scheduled local notifications
+- [x] Created custom React hooks: `useTransactions`, `useOrders`, `useDashboardStats`, `useInfiniteScroll`, `useSettings`
+
+### Schema Design Decisions
+- **dateTimestamp & scheduledTimestamp**: Stored as ms epoch for fast range queries (Dexie `between()`)
+- **Boolean fields**: Dexie 4 stores booleans as 0/1 in indexes
+- **Soft delete for customers**: archived flag preserves historical references
+- **Audit trail**: Every record has `createdAt` + `updatedAt`
+- **Backup format**: Single JSON with version, exportedAt, appVersion for forward compatibility
+
+### Handoff Notes for Agent 3 (UI/UX Engineer)
+- All data access should go through `db` instance imported from `src/db/index.js`
+- Use custom hooks in `src/hooks/useDatabase.js` for paginated lists and dashboard stats
+- The `useTransactions` and `useOrders` hooks support filters: `{ type, startDate, endDate, search, page }` and `{ status, search, startDate, endDate, page }`
+- `useDashboardStats()` returns: `cashBalance`, `todayIncome`, `todayExpense`, `todayWithdrawal`, `monthIncome`, `monthExpense`, `upcomingOrders`
+- Empty `useInfiniteScroll` hook is ready for infinite scroll on long lists
 
 ---
 

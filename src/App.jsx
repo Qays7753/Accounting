@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import { db, getMeta } from './db'
+import { db } from './db'
 import AppLayout from './components/layout/AppLayout.jsx'
 import HomePage from './pages/HomePage.jsx'
 import FinancePage from './pages/FinancePage.jsx'
@@ -14,7 +14,7 @@ function App() {
   useEffect(() => {
     async function checkFirstLaunch() {
       try {
-        const onboarded = await getMeta('onboarded', false)
+        const onboarded = await db.getMeta('onboarded', false)
         setIsFirstLaunch(!onboarded)
       } catch (e) {
         console.error('Failed to check first launch:', e)
