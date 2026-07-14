@@ -5,7 +5,7 @@ import Icon from '../components/ui/Icon.jsx'
 import BottomSheet from '../components/ui/BottomSheet.jsx'
 import { hapticLight, hapticMedium, hapticSuccess } from '../utils/haptics.js'
 import { getWhatsAppTemplate, setWhatsAppTemplate, WHATSAPP_PLACEHOLDERS } from '../utils/whatsapp.js'
-import { exportBackup, importBackup, checkBackupReminder } from '../utils/backup.js'
+import { exportBackup, importBackup, checkBackupReminder, markBackupDone } from '../utils/backup.js'
 import { requestNotificationPermission, sendTestNotification } from '../utils/notifications.js'
 
 export default function SettingsPage() {
@@ -39,13 +39,18 @@ export default function SettingsPage() {
   const handleBackup = async () => {
     hapticMedium()
     try {
-      await exportBackup()
-      await db.setMeta('lastBackupDate', Date.now())
-      setBackupReminder(null)
-      hapticSuccess()
+      const success = await exportBackup()
+      if (success) {
+        await markBackupDone()
+        setBackupReminder(null)
+        hapticSuccess()
+      }
     } catch (e) {
       console.error('Backup failed:', e)
-      alert('فشل التصدير: ' + e.message)
+      // User might have cancelled share - don't show error in that case
+      if (!e.message?.includes('Abort') && e.name !== 'AbortError') {
+        alert('فشل التصدير: ' + e.message)
+      }
     }
   }
 

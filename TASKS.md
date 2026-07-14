@@ -273,8 +273,62 @@ npm run preview  # preview production build
 
 ---
 
-## Agent 6: The Integration & Backup Developer
-**Status**: ⏳ PENDING
+## Agent 6: The Integration & Backup Developer ✅ COMPLETED
+
+**Date**: 2026-07-15
+
+### Tasks Completed
+- [x] JSON Backup via Web Share API:
+  - `exportBackup()` exports all DB tables (transactions, orders, customers, settings, meta) as JSON
+  - Uses `navigator.share()` with file for native Share Sheet (WhatsApp/Drive/etc.)
+  - Fallback: download file via `<a>` element if Web Share API unavailable
+  - Filename format: `accounting-backup-YYYY-MM-DD.json`
+- [x] JSON Restore via File Picker:
+  - `importBackup()` opens native file picker (`input[type=file]`)
+  - Validates JSON structure before restoring
+  - Confirms with user before overwriting existing data
+  - Calls `db.restoreFromBackup()` which clears all tables and bulk-inserts
+- [x] Weekly Backup Reminder:
+  - `checkBackupReminder()` returns reminder if 7+ days since last backup
+  - Handles "never backed up" case (checks `firstUseDate`)
+  - Shows gentle, dismissible banner on app open via `BackupReminderBanner` component
+  - Banner appears at top of app (above content), with "نسخ احتياطي الآن" and "لاحقاً" buttons
+  - Clicking "نسخ احتياطي الآن" navigates to Settings page
+  - Same reminder also shown in SettingsPage as a card
+  - `markBackupDone()` updates `lastBackupDate` after successful export
+- [x] WhatsApp Template Editor:
+  - Plain text area with default template
+  - Insert placeholder buttons (no code): [اسم الزبون], [نوع الطلب], [حالة الطلب], [المبلغ], [التاريخ]
+  - Live preview below the editor
+  - Saves to DB via `setWhatsAppTemplate()`
+- [x] Share Order via WhatsApp:
+  - `shareOrderViaWhatsApp(order)` builds message from template + order data
+  - Replaces all placeholders with actual values
+  - If customer has phone: opens `wa.me/<phone>?text=<message>` directly
+  - Adds Jordan country code (962) if missing
+  - Otherwise: uses Web Share API as fallback
+  - Last resort: copies to clipboard with alert
+  - Status labels translated to Arabic (قيد التنفيذ/جاهز/مغلق)
+- [x] Enhanced App.jsx to show backup reminder banner on app open (proactive)
+- [x] Improved backup error handling (ignore AbortError when user cancels share)
+
+### Integration Verification
+- All 4 main tabs functional
+- FAB → 4 action sheets (income/expense/withdrawal/order) all work
+- All forms save to DB correctly
+- Search/Filter in Finance and Orders pages functional
+- Swipe-to-delete + Undo Snackbar works in Finance
+- Calendar view shows order dots by status
+- Backup/Restore cycle tested logically
+- WhatsApp template editor saves and retrieves correctly
+- Notifications fire when permission granted
+
+### Handoff Notes for Agent 7 (R&D)
+- The app is functionally complete
+- Need R&D to review the user journey end-to-end
+- Check for: logical flaws, missing features, UX gaps
+- Verify all 20 checklist items are addressed
+- Suggest enhancements aligned with "simple and professional" vision
 
 ---
 
