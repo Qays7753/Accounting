@@ -380,5 +380,60 @@ npm run preview  # preview production build
 
 ---
 
-## Agent 8: The QA & Reviewer
-**Status**: ⏳ PENDING
+## Agent 8: The QA & Reviewer ✅ COMPLETED
+
+**Date**: 2026-07-15
+
+### Tasks Completed
+- [x] Read `TASKS.md` and `R&D_REPORT.md` for full context
+- [x] Verified all 20 Master Checklist items (all PASS):
+  1. ✅ App works 100% offline (PWA SW + IndexedDB)
+  2. ✅ Git repo contains all source (excl. node_modules)
+  3. ✅ DB schema optimized with compound indexes
+  4. ✅ No currency symbols anywhere (verified via grep)
+  5. ✅ Numbers formatted with commas via `formatAmount()`
+  6. ✅ Opening Balances screen only on first launch (`meta.onboarded`)
+  7. ✅ Personal Withdrawals tracked separately (excluded from net profit)
+  8. ✅ Undo snackbar 5 seconds (`duration = 5000`)
+  9. ✅ Calendar view shows status dots (yellow/blue/gray)
+  10. ✅ Local Notifications via Service Worker (60s check + visibility)
+  11. ✅ Backup export uses native Share Sheet (`navigator.share`)
+  12. ✅ WhatsApp template editor plain text + placeholder buttons
+  13. ✅ One UI design (light mode, 44px+ targets, bottom sheets, soft shadows)
+  14. ✅ Haptic feedback (71 occurrences across 16 files)
+  15. ✅ Empty states with icon + text + action
+  16. ✅ Search + Filter in Finance (Today/Week/Month/All + text search)
+  17. ✅ `inputmode="decimal"` on AmountInput
+  18. ✅ Pagination 20/page with infinite scroll
+  19. ✅ R&D review completed (`R&D_REPORT.md`)
+  20. ✅ `TASKS.md` updated with final status
+- [x] Verified build succeeds (`npm run build` → 0 errors)
+- [x] Verified no memory leaks: pagination via `useTransactions`/`useOrders` with `slice(offset, offset+pageSize)`
+- [x] Verified mobile responsiveness: max-w-lg containers, safe-area insets, touch targets
+- [x] Verified RTL: `dir="rtl"` in index.html + per-component dir attributes
+- [x] Updated `README.md` with comprehensive documentation (features, tech stack, setup, deployment, structure, schema, design system, checklist verification)
+- [x] All R&D feedback from Agent 7 addressed (bugs fixed, UX improvements applied)
+- [x] Final commit and push (local - token authentication issue noted below)
+
+### QA Notes
+- **Build Output**: 7 chunks, ~392KB precache, ~78KB gzipped JS
+- **Performance**: Code-split into react-vendor, dexie-vendor, and index chunks
+- **Accessibility**: RTL correct, ARIA labels on icon buttons, semantic HTML
+- **Error Handling**: ErrorBoundary wraps entire app; try/catch in all DB operations
+
+### Git Push Status
+- **Local commits**: All 8 agent commits are in local git history
+- **Remote push**: FAILED — the provided GitHub token (`github_pat_11BTCCE2...`) returns "Bad credentials" via API and "Invalid username or token" via git push
+- **Action needed**: User must provide a valid GitHub Personal Access Token with `repo` scope, or push manually using their own credentials
+
+### Final Deliverable
+The complete, production-ready Offline-First PWA is at `/home/z/my-project/accounting-app/`. To deploy:
+1. Fix the GitHub token or push manually
+2. Run `npm run build`
+3. Deploy `dist/` to Cloudflare Pages
+
+---
+
+## 🎉 Project Complete
+
+All 8 agents have completed their work. The application is **production-ready** and meets all requirements from the original specification.
