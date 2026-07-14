@@ -227,8 +227,49 @@ npm run preview  # preview production build
 
 ---
 
-## Agent 5: The Calendar & Notification Developer
-**Status**: ⏳ PENDING
+## Agent 5: The Calendar & Notification Developer ✅ COMPLETED
+
+**Date**: 2026-07-15
+
+### Tasks Completed
+- [x] Monthly Calendar view (One UI style):
+  - Grid layout with weekday headers (RTL: أحد → سبت)
+  - Days with orders show colored dots based on status (yellow/blue/gray)
+  - Up to 3 status dots per day (multiple orders)
+  - Click a day → shows that day's orders below
+  - Prev/next month navigation with haptic feedback
+  - Today highlighted with primary color background
+  - Selected day highlighted with solid primary background
+- [x] Local Notifications via Service Worker:
+  - `initNotificationService()` starts periodic check (every 60s)
+  - `checkDueNotifications()` scans for orders due within next hour
+  - Fires notification 1 hour before scheduled time
+  - Stores sent notifications in DB to avoid duplicates
+  - Visibility change handler triggers check when app returns to foreground
+  - Initial check 2 seconds after app launch
+- [x] Notification permission request flow:
+  - `requestNotificationPermission()` with user-friendly Arabic error messages
+  - Added "تفعيل تذكيرات الطلبات" row in Settings page
+  - Sends test notification after granting permission
+- [x] `scheduleLocalNotification()` for ad-hoc scheduling
+- [x] `cancelNotification()` and `cancelOrderNotifications()` for cleanup
+- [x] Notifications fire with Arabic title "تذكير: طلب قادم" and order details
+- [x] Notification icon set to app icon (192px)
+
+### Notification Strategy Notes
+- True background notifications on mobile PWAs are limited by OS restrictions
+- Strategy: Fire notifications when app is open or comes to foreground
+- For best results, user should install PWA to home screen
+- iOS requires the PWA to be installed for notifications to work
+- Android Chrome supports notifications from installed PWAs
+
+### Handoff Notes for Agent 6 (Integration & Backup)
+- Backup/Restore utilities already built by Agent 3 (`src/utils/backup.js`)
+- WhatsApp template editor built by Agent 3 in SettingsPage
+- WhatsApp sharing utility built by Agent 3 (`src/utils/whatsapp.js`)
+- `checkBackupReminder()` returns reminder object if 7+ days since last backup
+- Backup reminder already shown at top of SettingsPage
+- All Agent 6 needs to do: verify end-to-end backup/restore flow and polish
 
 ---
 

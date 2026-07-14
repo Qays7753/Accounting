@@ -6,6 +6,7 @@ import BottomSheet from '../components/ui/BottomSheet.jsx'
 import { hapticLight, hapticMedium, hapticSuccess } from '../utils/haptics.js'
 import { getWhatsAppTemplate, setWhatsAppTemplate, WHATSAPP_PLACEHOLDERS } from '../utils/whatsapp.js'
 import { exportBackup, importBackup, checkBackupReminder } from '../utils/backup.js'
+import { requestNotificationPermission, sendTestNotification } from '../utils/notifications.js'
 
 export default function SettingsPage() {
   const { settings, update, refresh } = useSettings()
@@ -155,6 +156,21 @@ export default function SettingsPage() {
         <section>
           <h2 className="text-sm font-semibold text-text-secondary mb-2 px-1">التطبيق</h2>
           <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
+            <SettingsRow
+              icon="bell"
+              iconBg="bg-withdrawal-50 text-withdrawal-600"
+              label="تفعيل تذكيرات الطلبات"
+              description="إشعارات قبل موعد الطلبات"
+              onClick={async () => {
+                hapticMedium()
+                const granted = await requestNotificationPermission()
+                if (granted) {
+                  await update('notifications_enabled', true)
+                  hapticSuccess()
+                  await sendTestNotification()
+                }
+              }}
+            />
             <SettingsRow
               icon="install"
               iconBg="bg-primary-50 text-primary-600"
