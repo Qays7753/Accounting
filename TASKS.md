@@ -174,8 +174,56 @@ npm run preview  # preview production build
 
 ---
 
-## Agent 4: The Accounting Logic Developer
-**Status**: ⏳ PENDING
+## Agent 4: The Accounting Logic Developer ✅ COMPLETED
+
+**Date**: 2026-07-15
+
+### Tasks Completed
+- [x] Built full OnboardingPage (Opening Balances flow):
+  - 4 steps: Welcome → Cash Available → Debts (optional) → Done
+  - Screen says: "للبدء، لا تحتاج لسجلات سابقة. فقط أدخل ما تملكه الآن."
+  - Inputs: Cash available, Debts owed to me, Debts I owe
+  - Creates `opening_balance` transactions with appropriate categories
+  - Sets `meta.onboarded = true` and `meta.firstUseDate = Date.now()` on completion
+  - Sets default WhatsApp template
+- [x] Implemented Simple Cash Accounting logic:
+  - `calculateSummary()` computes income, expense, withdrawal, netProfit, netCash
+  - `getCurrentCashBalance()` returns live cash balance (income + opening - expense - withdrawal)
+  - `getNetWorth()` includes debts owed to me and debts I owe
+- [x] **Personal Withdrawal tracked separately**:
+  - Withdrawal transactions do NOT count as business expenses
+  - Net Profit = Total Income - Total Expenses (excludes withdrawals)
+  - Net Cash = Income - Expenses - Withdrawals + Opening Balance
+- [x] Service-Based Support: "صرف" (outgoing) and "قبض" (incoming) used throughout, no "purchases" terminology
+- [x] Search/Filter in FinancePage (already implemented by Agent 3, verified working):
+  - Search by description/category
+  - Filter by Today/This Week/This Month/All
+  - Status filter in OrdersPage (All/In Progress/Ready/Closed)
+- [x] Swipe-to-delete with Undo Snackbar (5 seconds) - already implemented by Agent 3, verified
+- [x] Live number formatting while typing - already in `AmountInput`, verified
+- [x] Created `accounting.js` utility with:
+  - `getAccountingSummary()`, `calculateSummary()`, `getCurrentCashBalance()`, `getNetWorth()`
+  - `getTodayTotals()`, `getWeekTotals()`, `getMonthTotals()`
+  - `getCategoryBreakdown()` for expense breakdowns
+  - `validateTransaction()`, `validateOrder()` for input validation
+- [x] `inputmode="decimal"` on all number inputs (AmountInput component)
+
+### Business Rules Applied
+- Opening balances only appear on first launch (controlled by `meta.onboarded` flag)
+- Personal withdrawals reduce cash but do NOT affect business profit calculation
+- Debts owed to me = asset (tracked separately, increases net worth)
+- Debts I owe = liability (tracked separately, decreases net worth)
+- All amounts stored as numbers (no currency symbols)
+- All amounts displayed with comma formatting (1,500) via `formatAmount()`
+
+### Handoff Notes for Agent 5 (Calendar & Notifications)
+- Calendar view basic structure already built by Agent 3 (`CalendarView.jsx`)
+- Order status colors already defined: in_progress=yellow, ready=blue, closed=gray
+- `db.getOrdersForMonth(year, month)` returns all orders for a month
+- `db.getUpcomingOrders(days)` returns upcoming orders for notifications
+- Notifications table already exists in DB schema (Agent 2)
+- Need to implement local notification scheduling via Service Worker
+- The `notifications.js` utility has placeholder functions: `requestNotificationPermission()`, `scheduleLocalNotification()`
 
 ---
 
