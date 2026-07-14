@@ -8,6 +8,7 @@ import OrdersPage from './pages/OrdersPage.jsx'
 import SettingsPage from './pages/SettingsPage.jsx'
 import OnboardingPage from './pages/OnboardingPage.jsx'
 import BackupReminderBanner from './components/common/BackupReminderBanner.jsx'
+import ErrorBoundary from './components/common/ErrorBoundary.jsx'
 import { checkBackupReminder } from './utils/backup.js'
 
 function App() {

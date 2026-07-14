@@ -190,6 +190,23 @@ export default function SettingsPage() {
               description="الإصدار 1.0.0"
               onClick={() => alert('الحسابات - إصدار 1.0.0\nتطبيق محاسبة وإدارة الطلبات للشركات الصغيرة')}
             />
+            <SettingsRow
+              icon="trash"
+              iconBg="bg-expense-50 text-expense-600"
+              label="حذف جميع البيانات"
+              description="إعادة التطبيق للحالة الأولى"
+              onClick={async () => {
+                hapticMedium()
+                const confirmed = confirm('سيتم حذف جميع البيانات نهائياً (المعاملات، الطلبات، الإعدادات). هذا الإجراء لا يمكن التراجع عنه. هل أنت متأكد؟')
+                if (!confirmed) return
+                const confirmed2 = confirm('تأكيد أخير: سيتم مسح كل شيء. متابعة؟')
+                if (!confirmed2) return
+                await db.clearAllData()
+                hapticSuccess()
+                // Reload app to trigger onboarding
+                window.location.href = '/'
+              }}
+            />
           </div>
         </section>
       </div>

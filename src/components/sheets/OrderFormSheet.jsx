@@ -32,7 +32,7 @@ export default function OrderFormSheet({ open, onClose, editData = null, onSaved
         setNotes(editData.notes || '')
         const d = new Date(editData.scheduledDate)
         setScheduledDate(d.toISOString().slice(0, 10))
-        setTime(`${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`)
+        setScheduledTime(`${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`)
       } else {
         setCustomerName('')
         setOrderType('')
@@ -47,8 +47,6 @@ export default function OrderFormSheet({ open, onClose, editData = null, onSaved
       }
     }
   }, [open, editData])
-
-  const [time, setTime] = useState('')
 
   const handleSave = async () => {
     if (!customerName.trim() && !orderType.trim()) {

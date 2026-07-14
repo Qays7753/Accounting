@@ -44,7 +44,7 @@ export default function Fab({ onAction }) {
     {
       id: 'withdrawal',
       label: 'سحب شخصي',
-      description: 'سحب نقدي لل uso الشخصي',
+      description: 'سحب نقدي للاستخدام الشخصي',
       icon: 'userMinus',
       color: 'bg-withdrawal-50 text-withdrawal-600',
     },

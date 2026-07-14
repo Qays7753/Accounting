@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
+import ErrorBoundary from './components/common/ErrorBoundary.jsx'
 import './styles/index.css'
 import { registerSW } from 'virtual:pwa-register'
 import { initNotificationService } from './utils/notifications.js'
@@ -9,7 +10,6 @@ import { initNotificationService } from './utils/notifications.js'
 // Register service worker for offline capability
 const updateSW = registerSW({
   onNeedRefresh() {
-    // Could show a toast prompting user to refresh for new content
     console.log('New content available, please refresh.')
   },
   onOfflineReady() {
@@ -22,8 +22,10 @@ initNotificationService()
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </ErrorBoundary>
   </React.StrictMode>
 )
