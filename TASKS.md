@@ -129,8 +129,48 @@ npm run preview  # preview production build
 
 ---
 
-## Agent 3: The UI/UX Engineer
-**Status**: ⏳ PENDING
+## Agent 3: The UI/UX Engineer ✅ COMPLETED
+
+**Date**: 2026-07-15
+
+### Tasks Completed
+- [x] Built Bottom Navigation (4 tabs: Home, Finance, Orders, Settings) with active state, haptics
+- [x] Built FAB (Floating Action Button) - large blue circular (+) with Bottom Sheet containing 4 large options (قبض/صرف/سحب شخصي/طلب جديد)
+- [x] Built Bottom Sheet component (One UI style - rounded top, drag handle, overlay, smooth slide-up animation)
+- [x] Built Snackbar (Undo - 5 seconds duration, used for delete confirmations)
+- [x] Built Empty State component (icon + title + description + optional action)
+- [x] Built AmountInput with `inputmode="decimal"` and live comma formatting while typing
+- [x] Built Icon component with outlined thin-line SVG icons (One UI style, no cartoons)
+- [x] Built CalendarView (monthly, One UI style, status-colored dots, day selection, prev/next month navigation)
+- [x] Implemented Arabic RTL layout throughout (`dir="rtl"`, `lang="ar"`, right-aligned text)
+- [x] Applied One UI design system: light mode (#F9F9F9 bg, white cards, soft shadows)
+- [x] Color palette: Primary Blue (Samsung), Income Green, Expense Coral Red, Withdrawal Amber
+- [x] Typography: Cairo + IBM Plex Sans Arabic fonts loaded from Google Fonts
+- [x] Built all 4 main page screens:
+  - **HomePage**: Greeting, large cash balance card (green), today's income/expense cards, month summary, upcoming orders
+  - **FinancePage**: Search bar + filter chips (Today/Week/Month/All), transaction cards with swipe-to-delete + undo, infinite scroll
+  - **OrdersPage**: List view + Calendar view tabs, search, status filter, order cards with status badges
+  - **SettingsPage**: Backup/Restore buttons, WhatsApp template editor, PIN toggle, install instructions, app info
+- [x] Built TransactionFormSheet (income/expense/withdrawal forms with amount, description, category, date/time)
+- [x] Built OrderFormSheet (customer, type, amount, scheduled date/time, status, notes, type suggestions)
+- [x] Built OrderDetailSheet (full order info, status quick-change, WhatsApp share, edit, delete with confirm)
+- [x] Skeleton loaders for paginated lists
+- [x] Safe area insets for iOS notch/home indicator
+- [x] Smooth scrolling, transitions, and active:scale feedback on all buttons
+
+### Design System Files
+- `tailwind.config.js` - Custom One UI theme (colors, shadows, animations, fonts)
+- `src/styles/index.css` - Tailwind layers + custom components (card, btn-primary, input-field, bottom-sheet, badge-*)
+- `src/components/ui/Icon.jsx` - 30+ outlined SVG icons
+
+### Handoff Notes for Agent 4 (Accounting Logic)
+- All sheets are wired up but `onSaved` callbacks need to refresh data
+- `useTransactions` and `useOrders` hooks have `refresh()` method
+- Swipe-to-delete already implemented in `FinancePage` via `SwipeableTransactionCard`
+- `useDashboardStats` hook already returns cash balance, today's income/expense, month totals, upcoming orders
+- All forms save directly to DB via `db.addTransaction()`, `db.addOrder()`, etc.
+- Live number formatting already in `AmountInput` component
+- The OnboardingPage is still a placeholder - Agent 4 needs to build the opening balances flow
 
 ---
 
