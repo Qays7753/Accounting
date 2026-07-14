@@ -1,0 +1,158 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-text-primary font-sans antialiased;
+    margin: 0;
+    padding: 0;
+    overscroll-behavior-y: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "kern";
+    text-rendering: optimizeLegibility;
+  }
+
+  /* RTL specific */
+  [dir="rtl"] {
+    text-align: right;
+  }
+
+  /* Hide scrollbar but keep functionality */
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Input styling */
+  input, textarea, select, button {
+    font-family: inherit;
+  }
+
+  /* Remove number input arrows */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+
+  /* iOS safe area */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-area-x {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+@layer components {
+  /* One UI style card */
+  .card {
+    @apply bg-surface rounded-2xl shadow-card p-4;
+  }
+
+  /* Bottom sheet */
+  .bottom-sheet {
+    @apply fixed inset-x-0 bottom-0 bg-surface rounded-t-3xl shadow-sheet z-50;
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .bottom-sheet-overlay {
+    @apply fixed inset-0 bg-black/40 z-40;
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  /* Primary button - Samsung Blue */
+  .btn-primary {
+    @apply bg-primary text-white font-semibold rounded-2xl py-3.5 px-6 active:scale-[0.98] transition-transform;
+    box-shadow: 0 4px 12px rgba(31, 111, 232, 0.25);
+  }
+
+  .btn-secondary {
+    @apply bg-primary-50 text-primary font-semibold rounded-2xl py-3.5 px-6 active:scale-[0.98] transition-transform;
+  }
+
+  /* Input */
+  .input-field {
+    @apply w-full bg-background rounded-2xl px-4 py-3.5 text-text-primary text-base outline-none border border-transparent focus:border-primary focus:bg-surface transition-colors;
+  }
+
+  /* Status badges */
+  .badge-progress {
+    @apply bg-status-progress/15 text-status-progress;
+  }
+  .badge-ready {
+    @apply bg-primary-50 text-primary-600;
+  }
+  .badge-closed {
+    @apply bg-gray-100 text-gray-600;
+  }
+
+  /* Tab indicator */
+  .tab-active {
+    @apply text-primary;
+  }
+  .tab-inactive {
+    @apply text-text-tertiary;
+  }
+
+  /* FAB */
+  .fab {
+    @apply fixed bottom-24 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full bg-primary text-white flex items-center justify-center shadow-fab active:scale-95 transition-transform z-30;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Number font - tabular for alignment */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* No select */
+  .no-select {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Touch optimization */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Skeleton loader */
+.skeleton {
+  @apply bg-gray-200 rounded-lg;
+  animation: skeleton 1.5s ease-in-out infinite;
+}
