@@ -7,6 +7,7 @@ import EmptyState from '../components/ui/EmptyState.jsx'
 import Snackbar from '../components/ui/Snackbar.jsx'
 import Icon from '../components/ui/Icon.jsx'
 import { hapticLight, hapticSuccess, hapticMedium } from '../utils/haptics.js'
+// hapticMedium used in SwipeableTransactionCard handleDeleteClick
 
 const FILTERS = [
   { id: 'today', label: 'اليوم' },
@@ -238,12 +239,15 @@ export default function FinancePage() {
 }
 
 /**
- * Swipeable Transaction Card - swipe left reveals delete button
+ * Swipeable Transaction Card - swipe left reveals delete button.
+ * Uses a ref to track the live swipe position so handleTouchEnd reads
+ * the current value (not stale state from the last render).
  */
 function SwipeableTransactionCard({ transaction, onDelete }) {
   const [swipeX, setSwipeX] = useState(0)
   const [isSwiping, setIsSwiping] = useState(false)
   const startX = useRef(0)
+  const currentSwipeX = useRef(0) // live value for touchEnd
   const cardRef = useRef(null)
 
   const config = {
@@ -262,19 +266,28 @@ function SwipeableTransactionCard({ transaction, onDelete }) {
   const handleTouchMove = (e) => {
     if (!isSwiping) return
     const deltaX = e.touches[0].clientX - startX.current
-    // In RTL, swipe direction is inverted. Swiping left (deltaX negative in LTR) reveals delete on the right
+    // Swipe left (negative deltaX) reveals delete button on the right
     const newSwipe = Math.max(-80, Math.min(0, deltaX))
+    currentSwipeX.current = newSwipe
     setSwipeX(newSwipe)
   }
 
   const handleTouchEnd = () => {
     setIsSwiping(false)
-    // Snap to -80 if past threshold, else 0
-    if (swipeX < -40) {
+    // Read from ref (live value) instead of state (which may be stale)
+    const finalX = currentSwipeX.current
+    if (finalX < -40) {
       setSwipeX(-80)
+      currentSwipeX.current = -80
     } else {
       setSwipeX(0)
+      currentSwipeX.current = 0
     }
+  }
+
+  const handleDeleteClick = () => {
+    hapticMedium()
+    onDelete(transaction)
   }
 
   return (
@@ -282,8 +295,10 @@ function SwipeableTransactionCard({ transaction, onDelete }) {
       {/* Delete action behind */}
       <div className="absolute inset-0 flex items-center justify-end pr-5 bg-expense-500">
         <button
-          onClick={() => onDelete(transaction)}
-          className="flex items-center gap-2 text-white font-semibold active:scale-95 transition-transform"
+          type="button"
+          onClick={handleDeleteClick}
+          className="flex items-center gap-2 text-white font-semibold active:scale-95 transition-transform py-2 px-2"
+          aria-label={`حذف معاملة ${transaction.description || c.label}`}
         >
           <Icon name="trash" className="w-5 h-5" />
           <span className="text-sm">حذف</span>
@@ -302,7 +317,7 @@ function SwipeableTransactionCard({ transaction, onDelete }) {
         onTouchEnd={handleTouchEnd}
       >
         {/* Icon */}
-        <div className={`w-11 h-11 rounded-xl ${c.bg} flex items-center justify-center flex-shrink-0`}>
+        <div className={`w-11 h-11 rounded-xl ${c.bg} flex items-center justify-center flex-shrink-0`} aria-hidden="true">
           <Icon name={c.icon} className={`w-5 h-5 ${c.text}`} strokeWidth={2} />
         </div>
 

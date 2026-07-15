@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import BottomSheet from '../ui/BottomSheet.jsx'
 import Icon from '../ui/Icon.jsx'
 import { db } from '../../db'
 import { formatAmount } from '../../utils/format.js'
 import { formatArabicDateTime } from '../../utils/date.js'
-import { hapticMedium, hapticSuccess, hapticError } from '../../utils/haptics.js'
+import { hapticMedium, hapticSuccess } from '../../utils/haptics.js'
 import { shareOrderViaWhatsApp } from '../../utils/whatsapp.js'
 
 const STATUS_CONFIG = {
@@ -22,6 +22,7 @@ const STATUS_OPTIONS = [
 export default function OrderDetailSheet({ order, open, onClose, onEdit, onUpdated }) {
   const [linkedTransactions, setLinkedTransactions] = useState([])
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const confirmResetTimer = useRef(null)
 
   useEffect(() => {
     if (order?.id) {
@@ -30,6 +31,13 @@ export default function OrderDetailSheet({ order, open, onClose, onEdit, onUpdat
       setLinkedTransactions([])
     }
   }, [order?.id])
+
+  // Cleanup timer on unmount to prevent state update on unmounted component
+  useEffect(() => {
+    return () => {
+      if (confirmResetTimer.current) clearTimeout(confirmResetTimer.current)
+    }
+  }, [])
 
   if (!order) return null
 
@@ -46,9 +54,14 @@ export default function OrderDetailSheet({ order, open, onClose, onEdit, onUpdat
     if (!confirmDelete) {
       setConfirmDelete(true)
       hapticMedium()
-      setTimeout(() => setConfirmDelete(false), 3000)
+      // Auto-reset confirm state after 3 seconds (with cleanup safety)
+      const timer = setTimeout(() => setConfirmDelete(false), 3000)
+      // Store timer for cleanup if component unmounts
+      confirmResetTimer.current = timer
       return
     }
+    // Clear the reset timer since we're proceeding with delete
+    if (confirmResetTimer.current) clearTimeout(confirmResetTimer.current)
     hapticSuccess()
     await db.deleteOrder(order.id)
     onUpdated?.()

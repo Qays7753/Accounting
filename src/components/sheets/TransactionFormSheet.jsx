@@ -13,7 +13,10 @@ export default function TransactionFormSheet({ open, onClose, type = 'income', e
   const [amount, setAmount] = useState(0)
   const [description, setDescription] = useState('')
   const [category, setCategory] = useState('')
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const [date, setDate] = useState(() => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  })
   const [time, setTime] = useState(() => {
     const d = new Date()
     return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
@@ -56,14 +59,14 @@ export default function TransactionFormSheet({ open, onClose, type = 'income', e
         setDescription(editData.description || '')
         setCategory(editData.category || '')
         const d = new Date(editData.date)
-        setDate(d.toISOString().slice(0, 10))
+        setDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`)
         setTime(`${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`)
       } else {
         setAmount(0)
         setDescription('')
         setCategory('')
         const now = new Date()
-        setDate(now.toISOString().slice(0, 10))
+        setDate(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`)
         setTime(`${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`)
       }
     }

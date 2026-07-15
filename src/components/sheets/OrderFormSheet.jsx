@@ -11,7 +11,10 @@ import { hapticSuccess, hapticError } from '../../utils/haptics.js'
 export default function OrderFormSheet({ open, onClose, editData = null, onSaved }) {
   const [customerName, setCustomerName] = useState('')
   const [orderType, setOrderType] = useState('')
-  const [scheduledDate, setScheduledDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const [scheduledDate, setScheduledDate] = useState(() => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  })
   const [scheduledTime, setScheduledTime] = useState(() => {
     const d = new Date()
     d.setHours(d.getHours() + 1, 0, 0, 0)
@@ -31,7 +34,7 @@ export default function OrderFormSheet({ open, onClose, editData = null, onSaved
         setStatus(editData.status || 'in_progress')
         setNotes(editData.notes || '')
         const d = new Date(editData.scheduledDate)
-        setScheduledDate(d.toISOString().slice(0, 10))
+        setScheduledDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`)
         setScheduledTime(`${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`)
       } else {
         setCustomerName('')
@@ -40,7 +43,7 @@ export default function OrderFormSheet({ open, onClose, editData = null, onSaved
         setStatus('in_progress')
         setNotes('')
         const now = new Date()
-        setScheduledDate(now.toISOString().slice(0, 10))
+        setScheduledDate(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`)
         const later = new Date()
         later.setHours(later.getHours() + 1, 0, 0, 0)
         setScheduledTime(`${later.getHours().toString().padStart(2, '0')}:${later.getMinutes().toString().padStart(2, '0')}`)
