@@ -90,3 +90,73 @@ export const WHATSAPP_PLACEHOLDERS = [
   { token: '[المبلغ]', label: 'المبلغ' },
   { token: '[التاريخ]', label: 'التاريخ' },
 ]
+
+// ========== V2: WHATSAPP RECEIPT SHARING (Agent 4) ==========
+
+/**
+ * Build a simple 3-line receipt text for a transaction.
+ * Format:
+ *   إيصال قبض
+ *
+ *   المبلغ: 1,500
+ *   الوصف: دفعة من زبون
+ *   التاريخ: 15 يوليو 2026
+ *
+ *   شكراً لتعاملكم معنا
+ *
+ * @param {Object} transaction - { type, amount, description, date }
+ * @param {string} businessName - optional business name for the footer
+ * @returns {string} - formatted receipt text
+ */
+export function buildReceiptText(transaction, businessName = null) {
+  const typeLabel = transaction.type === 'income' ? 'إيصال قبض'
+    : transaction.type === 'expense' ? 'إيصال صرف'
+    : transaction.type === 'withdrawal' ? 'إيصال سحب شخصي'
+    : 'إيصال'
+
+  const amount = (transaction.amount || 0).toLocaleString('en-US')
+  const date = formatArabicDate(transaction.date)
+  const desc = transaction.description || ''
+
+  let text = `${typeLabel}\n\n`
+  text += `المبلغ: ${amount}\n`
+  if (desc) text += `الوصف: ${desc}\n`
+  text += `التاريخ: ${date}\n`
+  text += `\n${businessName || 'شكراً لتعاملكم معنا'}`
+
+  return text
+}
+
+/**
+ * Share a transaction receipt via WhatsApp.
+ * Uses Web Share API with text, or copies to clipboard as fallback.
+ *
+ * @param {Object} transaction - the transaction to share
+ * @param {string} businessName - optional business name
+ */
+export async function shareReceipt(transaction, businessName = null) {
+  try {
+    // Try to get business name from settings if not provided
+    if (!businessName) {
+      businessName = await db.getBusinessName()
+    }
+
+    const text = buildReceiptText(transaction, businessName)
+
+    if (navigator.share) {
+      await navigator.share({
+        title: 'إيصال',
+        text,
+      })
+    } else {
+      // Fallback: copy to clipboard
+      await navigator.clipboard.writeText(text)
+      alert('تم نسخ الإيصال. الصقه في واتساب.')
+    }
+  } catch (e) {
+    // User may have cancelled the share — don't show error in that case
+    if (e.name !== 'AbortError' && !e.message?.includes('Abort')) {
+      console.error('Share receipt failed:', e)
+    }
+  }
+}

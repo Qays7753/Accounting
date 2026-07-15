@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { db } from '../db'
 import { useSettings } from '../hooks/useDatabase.js'
 import Icon from '../components/ui/Icon.jsx'
@@ -7,6 +7,7 @@ import { hapticLight, hapticMedium, hapticSuccess } from '../utils/haptics.js'
 import { getWhatsAppTemplate, setWhatsAppTemplate, WHATSAPP_PLACEHOLDERS } from '../utils/whatsapp.js'
 import { exportBackup, importBackup, checkBackupReminder, markBackupDone } from '../utils/backup.js'
 import { requestNotificationPermission, sendTestNotification } from '../utils/notifications.js'
+import { THEME_PRESETS, setAndApplyTheme, applyTheme, generateShades } from '../utils/theme.js'
 
 export default function SettingsPage() {
   const { settings, update, refresh } = useSettings()
@@ -16,12 +17,29 @@ export default function SettingsPage() {
   const [pinToggle, setPinToggle] = useState(false)
   const [backupReminder, setBackupReminder] = useState(null)
 
+  // V2: Theme & Branding state
+  const [themeSheetOpen, setThemeSheetOpen] = useState(false)
+  const [currentThemeColor, setCurrentThemeColor] = useState('#1F6FE8')
+  const [selectedPreset, setSelectedPreset] = useState('#1F6FE8')
+  const [customHex, setCustomHex] = useState('#1F6FE8')
+  const [brandingSheetOpen, setBrandingSheetOpen] = useState(false)
+  const [logoPreview, setLogoPreview] = useState(null)
+  const [businessNameInput, setBusinessNameInput] = useState('')
+  const fileInputRef = useRef(null)
+
   useEffect(() => {
     getWhatsAppTemplate().then(setTemplateText)
   }, [])
 
   useEffect(() => {
     checkBackupReminder().then(setBackupReminder)
+  }, [])
+
+  // V2: Load current theme color and branding on mount
+  useEffect(() => {
+    db.getThemeColor().then(setCurrentThemeColor)
+    db.getLogo().then(setLogoPreview)
+    db.getBusinessName().then(name => setBusinessNameInput(name || ''))
   }, [])
 
   const handlePinToggle = async (enabled) => {
@@ -82,6 +100,83 @@ export default function SettingsPage() {
     setTemplateText((prev) => prev + ' ' + token)
   }
 
+  // V2: Theme color handlers
+  const handleOpenThemeSheet = async () => {
+    hapticLight()
+    const color = await db.getThemeColor()
+    setSelectedPreset(color)
+    setCustomHex(color)
+    setThemeSheetOpen(true)
+  }
+
+  const handleSelectPreset = (hex) => {
+    hapticLight()
+    setSelectedPreset(hex)
+    setCustomHex(hex)
+    // Preview the theme immediately (not saved yet)
+    applyTheme(hex)
+  }
+
+  const handleCustomHexChange = (e) => {
+    const val = e.target.value
+    setCustomHex(val)
+    // Only apply if valid hex
+    if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+      setSelectedPreset(val)
+      applyTheme(val)
+    }
+  }
+
+  const handleSaveTheme = async () => {
+    hapticSuccess()
+    await setAndApplyTheme(selectedPreset)
+    setCurrentThemeColor(selectedPreset)
+    setThemeSheetOpen(false)
+  }
+
+  // V2: Logo & branding handlers
+  const handleLogoUpload = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    hapticLight()
+    // Read as base64, resize to 128x128
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        const maxSize = 128
+        const ratio = Math.min(maxSize / img.width, maxSize / img.height)
+        canvas.width = img.width * ratio
+        canvas.height = img.height * ratio
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        const resized = canvas.toDataURL('image/png')
+        setLogoPreview(resized)
+      }
+      img.src = event.target.result
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleRemoveLogo = () => {
+    hapticLight()
+    setLogoPreview(null)
+  }
+
+  const handleSaveBranding = async () => {
+    hapticSuccess()
+    if (logoPreview) {
+      await db.setLogo(logoPreview)
+    } else {
+      await db.setSetting('logo_base64', null)
+    }
+    await db.setBusinessName(businessNameInput.trim())
+    setBrandingSheetOpen(false)
+    // Reload to reflect changes in header
+    window.location.reload()
+  }
+
   return (
     <div className="min-h-screen pb-32">
       {/* Header */}
@@ -136,8 +231,35 @@ export default function SettingsPage() {
               icon="whatsapp"
               iconBg="bg-income-50 text-income-600"
               label="قالب رسالة الطلب"
-              description="تخصيص الرسالة المرسلة للزبائن"
+              description="تخصيص الرسالة المرسلة للزبون"
               onClick={() => setTemplateOpen(true)}
+            />
+          </div>
+        </section>
+
+        {/* V2: Appearance (Theme + Branding) */}
+        <section>
+          <h2 className="text-sm font-semibold text-text-secondary mb-2 px-1">المظهر</h2>
+          <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
+            <SettingsRow
+              icon="info"
+              iconBg="bg-primary-50 text-primary-600"
+              label="اللون الرئيسي"
+              description="تخصيص لون التطبيق"
+              onClick={handleOpenThemeSheet}
+              trailing={
+                <div
+                  className="w-6 h-6 rounded-full border-2 border-white shadow"
+                  style={{ backgroundColor: currentThemeColor }}
+                />
+              }
+            />
+            <SettingsRow
+              icon="user"
+              iconBg="bg-withdrawal-50 text-withdrawal-600"
+              label="شعار واسم النشاط"
+              description="رفع شعار واسم المتجر"
+              onClick={() => setBrandingSheetOpen(true)}
             />
           </div>
         </section>
@@ -287,13 +409,152 @@ export default function SettingsPage() {
           </p>
         </div>
       </BottomSheet>
+
+      {/* V2: Theme Color Picker Sheet */}
+      <BottomSheet open={themeSheetOpen} onClose={() => { setThemeSheetOpen(false); applyTheme(currentThemeColor) }} title="اللون الرئيسي">
+        <div className="space-y-5 pb-4">
+          {/* Preset palette */}
+          <div>
+            <label className="block text-sm font-semibold text-text-secondary mb-3">ألوان جاهزة</label>
+            <div className="grid grid-cols-4 gap-3">
+              {THEME_PRESETS.map((preset) => (
+                <button
+                  key={preset.hex}
+                  type="button"
+                  onClick={() => handleSelectPreset(preset.hex)}
+                  className={`aspect-square rounded-2xl transition-all active:scale-95 ${
+                    selectedPreset === preset.hex ? 'ring-4 ring-offset-2' : ''
+                  }`}
+                  style={{
+                    backgroundColor: preset.hex,
+                    // Use the same color for the ring with some opacity
+                    boxShadow: selectedPreset === preset.hex ? `0 0 0 2px ${preset.hex}` : 'none',
+                  }}
+                  aria-label={preset.name}
+                  title={preset.name}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Custom hex input */}
+          <div>
+            <label className="block text-sm font-semibold text-text-secondary mb-2">لون مخصص (Hex)</label>
+            <input
+              type="text"
+              value={customHex}
+              onChange={handleCustomHexChange}
+              placeholder="#1F6FE8"
+              className="input-field text-center font-mono"
+              dir="ltr"
+            />
+          </div>
+
+          {/* Live preview */}
+          <div className="bg-background rounded-2xl p-4">
+            <p className="text-xs text-txt-secondary mb-3">معاينة</p>
+            <button
+              type="button"
+              className="w-full bg-primary text-white font-bold rounded-2xl py-3.5 active:scale-[0.98] transition-transform"
+              style={{ backgroundColor: selectedPreset }}
+            >
+              زر رئيسي
+            </button>
+            <div className="grid grid-cols-3 gap-2 mt-3">
+              <div className="rounded-xl p-2 text-center" style={{ backgroundColor: selectedPreset }}>
+                <p className="text-[10px] text-white">500</p>
+              </div>
+              <div className="rounded-xl p-2 text-center" style={{ backgroundColor: generateShades(selectedPreset)[600] }}>
+                <p className="text-[10px] text-white">600</p>
+              </div>
+              <div className="rounded-xl p-2 text-center" style={{ backgroundColor: generateShades(selectedPreset)[50] }}>
+                <p className="text-[10px]" style={{ color: selectedPreset }}>50</p>
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleSaveTheme}
+            className="w-full btn-primary"
+            style={{ backgroundColor: selectedPreset }}
+          >
+            حفظ
+          </button>
+        </div>
+      </BottomSheet>
+
+      {/* V2: Branding Sheet (Logo + Business Name) */}
+      <BottomSheet open={brandingSheetOpen} onClose={() => setBrandingSheetOpen(false)} title="شعار واسم النشاط">
+        <div className="space-y-5 pb-4">
+          {/* Logo upload */}
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-24 h-24 rounded-3xl bg-primary-50 flex items-center justify-center border-2 border-dashed border-primary overflow-hidden">
+              {logoPreview ? (
+                <img src={logoPreview} alt="شعار" className="w-full h-full object-cover" />
+              ) : (
+                <Icon name="user" className="w-10 h-10 text-primary" strokeWidth={1.5} />
+              )}
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="text-sm text-primary-600 font-semibold bg-primary-50 px-4 py-2 rounded-lg active:scale-95 transition-transform"
+              >
+                {logoPreview ? 'تغيير الشعار' : 'رفع شعار'}
+              </button>
+              {logoPreview && (
+                <button
+                  type="button"
+                  onClick={handleRemoveLogo}
+                  className="text-sm text-expense-600 font-semibold bg-expense-50 px-4 py-2 rounded-lg active:scale-95 transition-transform"
+                >
+                  إزالة
+                </button>
+              )}
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/jpg"
+              onChange={handleLogoUpload}
+              className="hidden"
+            />
+            <p className="text-xs text-text-tertiary text-center">يتم تصغير الصورة تلقائياً إلى 128×128 بكسل</p>
+          </div>
+
+          {/* Business name */}
+          <div>
+            <label className="block text-sm font-semibold text-text-secondary mb-2">اسم النشاط</label>
+            <input
+              type="text"
+              value={businessNameInput}
+              onChange={(e) => setBusinessNameInput(e.target.value)}
+              placeholder="مثال: محل الأمل"
+              className="input-field"
+              dir="rtl"
+            />
+            <p className="text-xs text-text-tertiary mt-1">سيظهر في الصفحة الرئيسية بدلاً من 'أهلاً بك'</p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleSaveBranding}
+            className="w-full btn-primary"
+          >
+            حفظ
+          </button>
+        </div>
+      </BottomSheet>
     </div>
   )
 }
 
-function SettingsRow({ icon, iconBg, label, description, onClick }) {
+function SettingsRow({ icon, iconBg, label, description, onClick, trailing }) {
   return (
     <button
+      type="button"
       onClick={onClick}
       className="w-full flex items-center gap-3 p-4 active:bg-background transition-colors text-right"
     >
@@ -304,7 +565,7 @@ function SettingsRow({ icon, iconBg, label, description, onClick }) {
         <p className="font-semibold text-text-primary text-sm">{label}</p>
         {description && <p className="text-xs text-text-tertiary mt-0.5">{description}</p>}
       </div>
-      <Icon name="chevronLeft" className="w-5 h-5 text-text-tertiary" />
+      {trailing || <Icon name="chevronLeft" className="w-5 h-5 text-text-tertiary" />}
     </button>
   )
 }

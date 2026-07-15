@@ -74,20 +74,37 @@ class AccountingDatabase extends Dexie {
       notifications: '++id, orderId, scheduledTime, sent, createdAt',
     })
 
+    // Version 4 - V2 features: recurring, debts, settlements, theming
+    // New transaction fields: isRecurring, frequency, recurringParentId, debtStatus, debtAmountPaid, linkedDebtId, edited
+    // New transaction types: 'debt_given' (receivable), 'debt_taken' (payable)
+    // New table: settlements (tracks debt settlement payments)
+    this.version(4).stores({
+      // Add recurringParentId and debtStatus indexes for fast queries
+      transactions: '++id, type, [type+dateTimestamp], dateTimestamp, category, orderId, amount, createdAt, isRecurring, recurringParentId, debtStatus, linkedDebtId, edited',
+      orders: '++id, status, [status+scheduledTimestamp], scheduledTimestamp, customerName, customerId, orderType, amount, createdAt',
+      customers: '++id, name, phone, archived, createdAt',
+      settings: '++id, &key',
+      meta: '++id, &key',
+      notifications: '++id, orderId, scheduledTime, sent, createdAt',
+      // New: settlements table - links a debt to its payment transaction
+      settlements: '++id, debtTransactionId, paymentTransactionId, amount, createdAt',
+    })
+
     this.open()
   }
 
   // ========== TRANSACTION HELPERS ==========
 
   /**
-   * Add a new transaction
-   * @param {Object} data - { type, amount, description, category, date, orderId }
+   * Add a new transaction (V2: supports recurring + debt fields)
+   * @param {Object} data - { type, amount, description, category, date, orderId,
+   *   isRecurring, frequency, recurringParentId, debtStatus, debtAmountPaid, linkedDebtId, edited }
    */
   async addTransaction(data) {
     const now = Date.now()
     const dateObj = data.date ? new Date(data.date) : new Date()
     const transaction = {
-      type: data.type, // 'income' | 'expense' | 'withdrawal' | 'opening_balance'
+      type: data.type, // 'income' | 'expense' | 'withdrawal' | 'opening_balance' | 'debt_given' | 'debt_taken'
       amount: Number(data.amount) || 0,
       description: data.description || '',
       category: data.category || '',
@@ -96,13 +113,25 @@ class AccountingDatabase extends Dexie {
       orderId: data.orderId || null,
       createdAt: now,
       updatedAt: now,
+      // V2: recurring support
+      isRecurring: data.isRecurring || false,
+      frequency: data.frequency || null, // 'daily' | 'weekly' | 'monthly'
+      recurringParentId: data.recurringParentId || null, // original recurring tx id
+      // V2: debt support
+      debtStatus: data.debtStatus || null, // 'unpaid' | 'partial' | 'settled' (for debt_given/debt_taken)
+      debtAmountPaid: data.debtAmountPaid || 0,
+      linkedDebtId: data.linkedDebtId || null, // settlement payment links back to original debt
+      // V2: edit tracking
+      edited: data.edited || false,
     }
     const id = await this.transactions.add(transaction)
     return { ...transaction, id }
   }
 
   /**
-   * Update an existing transaction
+   * Update an existing transaction.
+   * V2: Automatically marks the transaction as `edited: true` to track changes.
+   * Settlement transactions (linkedDebtId set) are excluded from the edit flag.
    */
   async updateTransaction(id, updates) {
     const updateData = { ...updates, updatedAt: Date.now() }
@@ -113,6 +142,10 @@ class AccountingDatabase extends Dexie {
     }
     if (updates.amount !== undefined) {
       updateData.amount = Number(updates.amount) || 0
+    }
+    // Mark as edited (unless this is a settlement status update)
+    if (!updates.linkedDebtId && updates.edited === undefined) {
+      updateData.edited = true
     }
     await this.transactions.update(id, updateData)
   }
@@ -627,6 +660,246 @@ class AccountingDatabase extends Dexie {
 
   async deleteNotification(id) {
     await this.notifications.delete(id)
+  }
+
+  // ========== V2: RECURRING TRANSACTIONS ==========
+
+  /**
+   * Get all active recurring templates (transactions where isRecurring=true).
+   * These are the "parent" records that spawn child transactions on schedule.
+   */
+  async getRecurringTemplates() {
+    return await this.transactions
+      .where('isRecurring').equals(1) // Dexie stores boolean true as 1
+      .toArray()
+      .then(arr => arr.filter(t => t.isRecurring))
+  }
+
+  /**
+   * Check for due recurring templates and auto-generate child transactions.
+   * Called on app launch. Returns the number of transactions generated.
+   *
+   * Strategy: For each recurring template, check if there's a child transaction
+   * for the current period. If not, create one.
+   */
+  async processDueRecurringTransactions() {
+    const templates = await this.getRecurringTemplates()
+    let generated = 0
+
+    for (const tmpl of templates) {
+      // Find the most recent child of this template
+      const children = await this.transactions
+        .where('recurringParentId').equals(tmpl.id)
+        .toArray()
+      const lastChild = children.sort((a, b) => b.dateTimestamp - a.dateTimestamp)[0]
+
+      // Determine the next due date
+      let nextDate
+      if (lastChild) {
+        nextDate = this._advanceDate(new Date(lastChild.dateTimestamp), tmpl.frequency)
+      } else {
+        // No children yet — first occurrence is based on template date
+        nextDate = new Date(tmpl.dateTimestamp)
+        // If template date is in the past, advance to current period
+        const now = new Date()
+        while (nextDate < now) {
+          nextDate = this._advanceDate(nextDate, tmpl.frequency)
+        }
+      }
+
+      // Generate transactions for all missed periods (up to current date)
+      const now = new Date()
+      while (nextDate <= now) {
+        await this.addTransaction({
+          type: tmpl.type,
+          amount: tmpl.amount,
+          description: tmpl.description,
+          category: tmpl.category,
+          date: nextDate,
+          recurringParentId: tmpl.id,
+          // Child is NOT a template itself
+          isRecurring: false,
+          frequency: null,
+        })
+        generated++
+        nextDate = this._advanceDate(nextDate, tmpl.frequency)
+      }
+    }
+
+    return generated
+  }
+
+  /**
+   * Advance a date by the given frequency.
+   * @param {Date} date - starting date
+   * @param {string} frequency - 'daily' | 'weekly' | 'monthly'
+   * @returns {Date} - the next occurrence date
+   */
+  _advanceDate(date, frequency) {
+    const d = new Date(date)
+    switch (frequency) {
+      case 'daily':
+        d.setDate(d.getDate() + 1)
+        break
+      case 'weekly':
+        d.setDate(d.getDate() + 7)
+        break
+      case 'monthly':
+        d.setMonth(d.getMonth() + 1)
+        break
+      default:
+        d.setMonth(d.getMonth() + 1) // default to monthly
+    }
+    return d
+  }
+
+  // ========== V2: DEBT TRACKING ==========
+
+  /**
+   * Get all active receivables (money owed TO the user).
+   * These are 'debt_given' transactions that are not fully settled.
+   */
+  async getReceivables() {
+    return await this.transactions
+      .where('type').equals('debt_given')
+      .and(t => t.debtStatus !== 'settled')
+      .toArray()
+  }
+
+  /**
+   * Get all active payables (money the user owes).
+   * These are 'debt_taken' transactions that are not fully settled.
+   */
+  async getPayables() {
+    return await this.transactions
+      .where('type').equals('debt_taken')
+      .and(t => t.debtStatus !== 'settled')
+      .toArray()
+  }
+
+  /**
+   * Get total receivable amount (outstanding balance).
+   */
+  async getReceivableTotal() {
+    const receivables = await this.getReceivables()
+    return receivables.reduce((sum, d) => sum + (d.amount - (d.debtAmountPaid || 0)), 0)
+  }
+
+  /**
+   * Get total payable amount (outstanding balance).
+   */
+  async getPayableTotal() {
+    const payables = await this.getPayables()
+    return payables.reduce((sum, d) => sum + (d.amount - (d.debtAmountPaid || 0)), 0)
+  }
+
+  /**
+   * Settle (partially or fully) a debt.
+   * Creates a balancing income/expense transaction AND updates the debt's paid amount.
+   *
+   * @param {number} debtTransactionId - the original debt_given/debt_taken transaction ID
+   * @param {number} paymentAmount - how much is being paid now
+   * @returns {Object} - { paymentTransaction, updatedDebt, isFullySettled }
+   */
+  async settleDebt(debtTransactionId, paymentAmount) {
+    const debt = await this.transactions.get(debtTransactionId)
+    if (!debt) throw new Error('Debt transaction not found')
+    if (debt.type !== 'debt_given' && debt.type !== 'debt_taken') {
+      throw new Error('Transaction is not a debt')
+    }
+
+    const newPaidAmount = (debt.debtAmountPaid || 0) + Number(paymentAmount)
+    const isFullySettled = newPaidAmount >= debt.amount
+
+    // Create a balancing transaction:
+    // - If debt_given (receivable): settlement is income (customer pays us)
+    // - If debt_taken (payable): settlement is expense (we pay supplier)
+    const paymentTransaction = await this.addTransaction({
+      type: debt.type === 'debt_given' ? 'income' : 'expense',
+      amount: Number(paymentAmount),
+      description: `تسديد دين: ${debt.description || ''}`,
+      category: 'تسديد دين',
+      date: new Date(),
+      linkedDebtId: debt.id,
+    })
+
+    // Record the settlement link
+    await this.settlements.add({
+      debtTransactionId: debt.id,
+      paymentTransactionId: paymentTransaction.id,
+      amount: Number(paymentAmount),
+      createdAt: Date.now(),
+    })
+
+    // Update the debt's paid amount and status
+    const updateData = {
+      debtAmountPaid: newPaidAmount,
+      debtStatus: isFullySettled ? 'settled' : 'partial',
+      updatedAt: Date.now(),
+    }
+    await this.transactions.update(debt.id, updateData)
+
+    return {
+      paymentTransaction,
+      updatedDebt: { ...debt, ...updateData },
+      isFullySettled,
+    }
+  }
+
+  /**
+   * Get all settlements for a specific debt (payment history).
+   */
+  async getDebtSettlements(debtTransactionId) {
+    const settlements = await this.settlements
+      .where('debtTransactionId').equals(debtTransactionId)
+      .toArray()
+    // Sort by most recent first
+    settlements.sort((a, b) => b.createdAt - a.createdAt)
+    return settlements
+  }
+
+  // ========== V2: THEME & BRANDING ==========
+
+  /**
+   * Get the current theme color (hex string). Default: Samsung Blue.
+   */
+  async getThemeColor() {
+    return await this.getSetting('theme_color', '#1F6FE8')
+  }
+
+  /**
+   * Set the theme color.
+   */
+  async setThemeColor(hex) {
+    await this.setSetting('theme_color', hex)
+  }
+
+  /**
+   * Get the uploaded logo (base64 string). Returns null if no logo.
+   */
+  async getLogo() {
+    return await this.getSetting('logo_base64', null)
+  }
+
+  /**
+   * Set the logo (base64 string).
+   */
+  async setLogo(base64) {
+    await this.setSetting('logo_base64', base64)
+  }
+
+  /**
+   * Get the business name. Returns null if not set.
+   */
+  async getBusinessName() {
+    return await this.getSetting('business_name', null)
+  }
+
+  /**
+   * Set the business name.
+   */
+  async setBusinessName(name) {
+    await this.setSetting('business_name', name)
   }
 }
 

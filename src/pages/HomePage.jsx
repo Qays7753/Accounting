@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useDashboardStats } from '../hooks/useDatabase.js'
+import { db } from '../db'
 import { formatAmount } from '../utils/format.js'
 import { getGreeting, formatArabicDate, getRelativeTime } from '../utils/date.js'
 import Fab from '../components/sheets/Fab.jsx'
@@ -12,6 +13,14 @@ import { Link } from 'react-router-dom'
 export default function HomePage() {
   const stats = useDashboardStats()
   const [sheetOpen, setSheetOpen] = useState(null) // 'income' | 'expense' | 'withdrawal' | 'order' | null
+  // V2: Branding (logo + business name)
+  const [logo, setLogo] = useState(null)
+  const [businessName, setBusinessName] = useState(null)
+
+  useEffect(() => {
+    db.getLogo().then(setLogo)
+    db.getBusinessName().then(setBusinessName)
+  }, [])
 
   const handleFabAction = (action) => {
     setSheetOpen(action)
@@ -29,12 +38,17 @@ export default function HomePage() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-text-secondary">{getGreeting()}</p>
-            <h1 className="text-2xl font-bold mt-0.5">أهلاً بك</h1>
+            <h1 className="text-2xl font-bold mt-0.5">{businessName || 'أهلاً بك'}</h1>
             <p className="text-xs text-text-tertiary mt-1">{formatArabicDate(new Date())}</p>
           </div>
-          <div className="w-11 h-11 rounded-full bg-primary-50 flex items-center justify-center">
-            <Icon name="wallet" className="w-6 h-6 text-primary-600" />
-          </div>
+          {/* V2: Show logo if uploaded, otherwise default wallet icon */}
+          {logo ? (
+            <img src={logo} alt="شعار" className="w-11 h-11 rounded-full object-cover" />
+          ) : (
+            <div className="w-11 h-11 rounded-full bg-primary-50 flex items-center justify-center">
+              <Icon name="wallet" className="w-6 h-6 text-primary-600" />
+            </div>
+          )}
         </div>
       </header>
 

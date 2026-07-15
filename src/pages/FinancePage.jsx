@@ -6,8 +6,8 @@ import { getRelativeTime } from '../utils/date.js'
 import EmptyState from '../components/ui/EmptyState.jsx'
 import Snackbar from '../components/ui/Snackbar.jsx'
 import Icon from '../components/ui/Icon.jsx'
+import TransactionFormSheet from '../components/sheets/TransactionFormSheet.jsx'
 import { hapticLight, hapticSuccess, hapticMedium } from '../utils/haptics.js'
-// hapticMedium used in SwipeableTransactionCard handleDeleteClick
 
 const FILTERS = [
   { id: 'today', label: 'اليوم' },
@@ -20,6 +20,8 @@ export default function FinancePage() {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('today')
   const [snackbar, setSnackbar] = useState(null) // { message, actionLabel, onAction }
+  const [editTransaction, setEditTransaction] = useState(null) // V2: transaction being edited
+  const [editSheetOpen, setEditSheetOpen] = useState(false)
 
   // Debounce search to prevent query thrash on every keystroke
   const debouncedSearch = useDebounce(search, 300)
@@ -91,6 +93,20 @@ export default function FinancePage() {
         hapticSuccess()
       },
     })
+  }, [refresh])
+
+  // V2: Open the transaction form in edit mode
+  const handleEdit = useCallback((transaction) => {
+    hapticLight()
+    setEditTransaction(transaction)
+    setEditSheetOpen(true)
+  }, [])
+
+  // V2: Called when edit form is saved
+  const handleEditSaved = useCallback(() => {
+    refresh()
+    setEditSheetOpen(false)
+    setEditTransaction(null)
   }, [refresh])
 
   const handleSearchChange = (e) => {
@@ -205,6 +221,7 @@ export default function FinancePage() {
               key={transaction.id}
               transaction={transaction}
               onDelete={handleDelete}
+              onEdit={handleEdit}
             />
           ))
         )}
@@ -235,16 +252,29 @@ export default function FinancePage() {
         onClose={() => setSnackbar(null)}
         duration={5000}
       />
+
+      {/* V2: Edit Transaction Sheet */}
+      <TransactionFormSheet
+        open={editSheetOpen}
+        type={editTransaction?.type || 'income'}
+        editData={editTransaction}
+        onClose={() => {
+          setEditSheetOpen(false)
+          setEditTransaction(null)
+        }}
+        onSaved={handleEditSaved}
+      />
     </div>
   )
 }
 
 /**
- * Swipeable Transaction Card - swipe left reveals delete button.
+ * Swipeable Transaction Card - swipe left reveals Edit & Delete buttons.
+ * V2: Now supports both edit and delete actions behind the card.
  * Uses a ref to track the live swipe position so handleTouchEnd reads
  * the current value (not stale state from the last render).
  */
-function SwipeableTransactionCard({ transaction, onDelete }) {
+function SwipeableTransactionCard({ transaction, onDelete, onEdit }) {
   const [swipeX, setSwipeX] = useState(0)
   const [isSwiping, setIsSwiping] = useState(false)
   const startX = useRef(0)
@@ -256,6 +286,8 @@ function SwipeableTransactionCard({ transaction, onDelete }) {
     expense: { icon: 'arrowUp', color: 'expense', bg: 'bg-expense-50', text: 'text-expense-600', label: 'صرف' },
     withdrawal: { icon: 'userMinus', color: 'withdrawal', bg: 'bg-withdrawal-50', text: 'text-withdrawal-600', label: 'سحب شخصي' },
     opening_balance: { icon: 'wallet', color: 'income', bg: 'bg-income-50', text: 'text-income-600', label: 'رصيد افتتاحي' },
+    debt_given: { icon: 'arrowDown', color: 'income', bg: 'bg-income-50', text: 'text-income-600', label: 'دين مستحق لي' },
+    debt_taken: { icon: 'arrowUp', color: 'expense', bg: 'bg-expense-50', text: 'text-expense-600', label: 'دين مستحق علي' },
   }
   const c = config[transaction.type] || config.income
 
@@ -267,8 +299,9 @@ function SwipeableTransactionCard({ transaction, onDelete }) {
   const handleTouchMove = (e) => {
     if (!isSwiping) return
     const deltaX = e.touches[0].clientX - startX.current
-    // Swipe left (negative deltaX) reveals delete button on the right
-    const newSwipe = Math.max(-80, Math.min(0, deltaX))
+    // Swipe left (negative deltaX) reveals edit+delete buttons on the right
+    // V2: wider swipe area (140px) to fit both Edit and Delete
+    const newSwipe = Math.max(-140, Math.min(0, deltaX))
     currentSwipeX.current = newSwipe
     setSwipeX(newSwipe)
   }
@@ -278,8 +311,8 @@ function SwipeableTransactionCard({ transaction, onDelete }) {
     // Read from ref (live value) instead of state (which may be stale)
     const finalX = currentSwipeX.current
     if (finalX < -40) {
-      setSwipeX(-80)
-      currentSwipeX.current = -80
+      setSwipeX(-140)
+      currentSwipeX.current = -140
     } else {
       setSwipeX(0)
       currentSwipeX.current = 0
@@ -288,21 +321,41 @@ function SwipeableTransactionCard({ transaction, onDelete }) {
 
   const handleDeleteClick = () => {
     hapticMedium()
+    // Reset swipe position before deleting
+    setSwipeX(0)
+    currentSwipeX.current = 0
     onDelete(transaction)
+  }
+
+  const handleEditClick = () => {
+    hapticLight()
+    // Reset swipe position before opening edit sheet
+    setSwipeX(0)
+    currentSwipeX.current = 0
+    onEdit(transaction)
   }
 
   return (
     <div className="relative overflow-hidden rounded-2xl" ref={cardRef}>
-      {/* Delete action behind */}
-      <div className="absolute inset-0 flex items-center justify-end pr-5 bg-expense-500">
+      {/* V2: Edit & Delete actions behind the card */}
+      <div className="absolute inset-0 flex items-center justify-end pr-3 bg-expense-500">
+        <button
+          type="button"
+          onClick={handleEditClick}
+          className="flex items-center gap-1.5 text-white font-semibold active:scale-95 transition-transform py-2 px-2 mr-1"
+          aria-label={`تعديل معاملة ${transaction.description || c.label}`}
+        >
+          <Icon name="edit" className="w-5 h-5" />
+          <span className="text-xs">تعديل</span>
+        </button>
         <button
           type="button"
           onClick={handleDeleteClick}
-          className="flex items-center gap-2 text-white font-semibold active:scale-95 transition-transform py-2 px-2"
+          className="flex items-center gap-1.5 text-white font-semibold active:scale-95 transition-transform py-2 px-2"
           aria-label={`حذف معاملة ${transaction.description || c.label}`}
         >
           <Icon name="trash" className="w-5 h-5" />
-          <span className="text-sm">حذف</span>
+          <span className="text-xs">حذف</span>
         </button>
       </div>
 
@@ -324,9 +377,23 @@ function SwipeableTransactionCard({ transaction, onDelete }) {
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-text-primary text-sm truncate">
-            {transaction.description || c.label}
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="font-semibold text-text-primary text-sm truncate">
+              {transaction.description || c.label}
+            </p>
+            {/* V2: Edited badge */}
+            {transaction.edited && (
+              <span className="text-[10px] text-withdrawal-600 bg-withdrawal-50 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                معدلة
+              </span>
+            )}
+            {/* V2: Recurring badge */}
+            {transaction.isRecurring && (
+              <span className="text-[10px] text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                متكررة
+              </span>
+            )}
+          </div>
           {transaction.category && (
             <p className="text-xs text-text-tertiary truncate mt-0.5">{transaction.category}</p>
           )}

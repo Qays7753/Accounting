@@ -4,6 +4,7 @@ import AmountInput from '../ui/AmountInput.jsx'
 import Icon from '../ui/Icon.jsx'
 import { db } from '../../db'
 import { hapticSuccess, hapticError } from '../../utils/haptics.js'
+import { shareReceipt } from '../../utils/whatsapp.js'
 
 /**
  * Transaction Form Sheet - Add/Edit income/expense/withdrawal
@@ -22,6 +23,10 @@ export default function TransactionFormSheet({ open, onClose, type = 'income', e
     return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
   })
   const [saving, setSaving] = useState(false)
+  // V2: Recurring frequency state
+  const [frequency, setFrequency] = useState('none') // 'none' | 'daily' | 'weekly' | 'monthly'
+  // V2: Track saved transaction for receipt sharing (Agent 4)
+  const [savedTransaction, setSavedTransaction] = useState(null)
 
   const config = {
     income: {
@@ -61,14 +66,18 @@ export default function TransactionFormSheet({ open, onClose, type = 'income', e
         const d = new Date(editData.date)
         setDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`)
         setTime(`${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`)
+        // V2: Restore recurring state when editing
+        setFrequency(editData.isRecurring ? (editData.frequency || 'monthly') : 'none')
       } else {
         setAmount(0)
         setDescription('')
         setCategory('')
+        setFrequency('none')
         const now = new Date()
         setDate(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`)
         setTime(`${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`)
       }
+      setSavedTransaction(null)
     }
   }, [open, editData, type])
 
@@ -81,28 +90,45 @@ export default function TransactionFormSheet({ open, onClose, type = 'income', e
     setSaving(true)
     try {
       const dateObj = new Date(`${date}T${time}`)
+      const isRecurring = frequency !== 'none'
       const payload = {
         type,
         amount: Number(amount),
         description: description.trim(),
         category: category.trim(),
         date: dateObj.toISOString(),
+        // V2: Recurring fields
+        isRecurring,
+        frequency: isRecurring ? frequency : null,
       }
 
+      let result
       if (editData?.id) {
         await db.updateTransaction(editData.id, payload)
+        result = { ...editData, ...payload, id: editData.id }
       } else {
-        await db.addTransaction(payload)
+        result = await db.addTransaction(payload)
       }
 
       hapticSuccess()
-      onSaved?.()
-      onClose?.()
+      setSavedTransaction(result)
+      onSaved?.(result)
+      // Don't close immediately — show receipt share option (Agent 4)
+      // onClose?.()  // commented out to allow receipt sharing
     } catch (e) {
       console.error('Save failed:', e)
       hapticError()
     } finally {
       setSaving(false)
+    }
+  }
+
+  // V2 (Agent 4): Share receipt via WhatsApp
+  const handleShareReceipt = async (transaction) => {
+    try {
+      await shareReceipt(transaction)
+    } catch (e) {
+      console.error('Share receipt failed:', e)
     }
   }
 
@@ -167,6 +193,45 @@ export default function TransactionFormSheet({ open, onClose, type = 'income', e
           </div>
         </div>
 
+        {/* V2: Recurring Frequency Toggle */}
+        {!editData && (
+          <div>
+            <label className="block text-sm font-semibold text-text-secondary mb-2">التكرار</label>
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                { value: 'none', label: 'بدون' },
+                { value: 'daily', label: 'يومي' },
+                { value: 'weekly', label: 'أسبوعي' },
+                { value: 'monthly', label: 'شهري' },
+              ].map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setFrequency(opt.value)}
+                  className={`py-2.5 rounded-xl text-xs font-semibold transition-all active:scale-95 ${
+                    frequency === opt.value
+                      ? 'bg-primary text-white'
+                      : 'bg-background text-txt-secondary border border-divider'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {frequency !== 'none' && (
+              <p className="text-xs text-text-tertiary mt-2">
+                سيتم تسجيل هذه المعاملة تلقائياً كل {frequency === 'daily' ? 'يوم' : frequency === 'weekly' ? 'أسبوع' : 'شهر'}
+              </p>
+            )}
+          </div>
+        )}
+        {editData && editData.isRecurring && (
+          <div className="bg-primary-50 rounded-xl p-3 flex items-center gap-2">
+            <Icon name="info" className="w-4 h-4 text-primary-600 flex-shrink-0" />
+            <p className="text-xs text-primary-700">هذه معاملة متكررة ({editData.frequency === 'daily' ? 'يومية' : editData.frequency === 'weekly' ? 'أسبوعية' : 'شهرية'})</p>
+          </div>
+        )}
+
         {/* Submit */}
         <button
           onClick={handleSave}
@@ -175,6 +240,34 @@ export default function TransactionFormSheet({ open, onClose, type = 'income', e
         >
           {saving ? 'جار الحفظ...' : editData ? 'تحديث' : 'حفظ'}
         </button>
+
+        {/* V2 (Agent 4): Share Receipt button — appears after save */}
+        {savedTransaction && (
+          <div className="animate-fade-in space-y-3">
+            <div className="bg-income-50 rounded-xl p-3 flex items-center gap-2">
+              <Icon name="checkCircle" className="w-5 h-5 text-income-600 flex-shrink-0" />
+              <p className="text-sm text-income-700 font-semibold">تم الحفظ بنجاح</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleShareReceipt(savedTransaction)}
+              className="w-full bg-income-50 text-income-600 font-semibold rounded-2xl py-3.5 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+            >
+              <Icon name="whatsapp" className="w-5 h-5" />
+              مشاركة إيصال واتساب
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSavedTransaction(null)
+                onClose?.()
+              }}
+              className="w-full bg-background text-txt-secondary font-semibold rounded-2xl py-3.5 active:scale-[0.98] transition-transform"
+            >
+              تم
+            </button>
+          </div>
+        )}
       </div>
     </BottomSheet>
   )

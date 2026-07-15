@@ -434,6 +434,81 @@ The complete, production-ready Offline-First PWA is at `/home/z/my-project/accou
 
 ---
 
-## 🎉 Project Complete
+## 🎉 Project Complete (V1)
 
 All 8 agents have completed their work. The application is **production-ready** and meets all requirements from the original specification.
+
+---
+
+# V2 Feature Implementation (2026-07-15)
+
+## Agent 1: Database Architect (V2 Schema) ✅ COMPLETED
+
+- [x] Updated Dexie.js schema to version 4
+- [x] Added `isRecurring`, `frequency`, `recurringParentId` fields to Transactions
+- [x] Added new transaction types: `debt_given` (receivable) and `debt_taken` (payable)
+- [x] Added `debtStatus`, `debtAmountPaid`, `linkedDebtId`, `edited` fields
+- [x] Created `settlements` table for debt payment tracking
+- [x] Added DB helpers: getRecurringTemplates, processDueRecurringTransactions, getReceivables, getPayables, settleDebt, getThemeColor, setThemeColor, getLogo, setLogo, getBusinessName, setBusinessName
+
+## Agent 2: Core Feature Developer (Edit, Recurring, Debts) ✅ COMPLETED
+
+- [x] Edit Transactions: swipe reveals Edit + Delete buttons; tapping Edit opens TransactionFormSheet in edit mode
+- [x] "Edited" badge (معدلة) shown on modified transactions
+- [x] "Recurring" badge (متكررة) shown on recurring templates
+- [x] Recurring Transactions: frequency toggle (بدون/يومي/أسبوعي/شهري) in TransactionFormSheet
+- [x] processDueRecurringTransactions() runs on app launch, auto-generates missed transactions
+- [x] New DebtsPage with receivables (ديون لي) and payables (ديون علي)
+- [x] Debt summary cards with gradient backgrounds
+- [x] DebtCard with progress bar for partial payments
+- [x] DebtFormSheet for adding new debts
+- [x] SettleDebtSheet for recording payments (defaults to remaining amount)
+- [x] DebtDetailSheet with payment history
+- [x] settleDebt() creates balancing income/expense transaction AND updates debt status
+- [x] Added "الديون" as 5th tab in BottomNav
+
+## Agent 3: Customization & Theming Developer ✅ COMPLETED
+
+- [x] Migrated Tailwind config to use CSS variables for primary color (var(--color-primary-50) through var(--color-primary-900))
+- [x] Created theme.js utility with generateShades() (HSL-based shade generation), applyTheme(), applyThemeFromDB(), setAndApplyTheme()
+- [x] 8 preset colors: Samsung Blue, Warm Orange, Forest Green, Royal Purple, Teal, Crimson, Amber, Slate
+- [x] Custom hex input with validation
+- [x] Live preview in theme picker sheet
+- [x] Theme applied on app launch (applyThemeFromDB called in App.jsx)
+- [x] Logo Upload: file picker, canvas resize to 128x128, base64 storage in Dexie
+- [x] Business Name input field
+- [x] HomePage header shows logo image if uploaded, otherwise default wallet icon
+- [x] HomePage header shows business name if set, otherwise "أهلاً بك"
+
+## Agent 4: Integration Developer (WhatsApp Receipts) ✅ COMPLETED
+
+- [x] Created buildReceiptText() in whatsapp.js — generates 3-line receipt (Amount, Description, Date)
+- [x] Created shareReceipt() — uses Web Share API with clipboard fallback
+- [x] Receipt includes business name footer (from settings)
+- [x] "Share Receipt" button appears in TransactionFormSheet after saving
+- [x] Success banner + "مشاركة إيصال واتساب" button + "تم" close button
+
+## Agent 5: QA, Build & Final Reviewer ✅ COMPLETED
+
+- [x] Final `npm run build` with ZERO errors (69 modules, 2.63s build time)
+- [x] PWA: 25 precache entries (431 KB), service worker generated
+- [x] All V2 features verified: Edit, Recurring, Debts, Theme, Logo, WhatsApp Receipts
+- [x] No regressions in V1 features (Pagination, Offline PWA, Undo Snackbar, Haptics)
+- [x] TASKS.md updated with V2 completion status
+- [x] All commits pushed to GitHub
+
+---
+
+## 🎉 V2 Project Complete
+
+All 5 V2 agents have completed their work. The application now includes:
+- **Edit Transactions** — fix mistakes without delete-and-reenter
+- **Recurring Transactions** — auto-generates rent/bills on schedule
+- **Debt Tracking** — full receivables/payables dashboard with settlement flow
+- **Theme Color Picker** — 8 presets + custom hex, dynamic CSS variables
+- **Logo & Branding** — upload logo, set business name, displayed in header
+- **WhatsApp Receipts** — share 3-line receipt after any transaction
+
+**Build**: 0 errors, 25 precache entries, ~431 KB total (140 KB gzip)
+**Commits**: 3 V2 commits pushed to GitHub (Agent 1, Agent 2, Agent 3&4)
+

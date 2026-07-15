@@ -5,12 +5,14 @@ import AppLayout from './components/layout/AppLayout.jsx'
 import OnboardingPage from './pages/OnboardingPage.jsx'
 import BackupReminderBanner from './components/common/BackupReminderBanner.jsx'
 import { checkBackupReminder } from './utils/backup.js'
+import { applyThemeFromDB } from './utils/theme.js'
 
 // Lazy-load route components for faster initial load.
 // Each page becomes a separate chunk loaded on demand.
 const HomePage = lazy(() => import('./pages/HomePage.jsx'))
 const FinancePage = lazy(() => import('./pages/FinancePage.jsx'))
 const OrdersPage = lazy(() => import('./pages/OrdersPage.jsx'))
+const DebtsPage = lazy(() => import('./pages/DebtsPage.jsx'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'))
 
 // Lightweight fallback while a lazy chunk is loading
@@ -35,8 +37,25 @@ function App() {
         if (cancelled) return
         setIsFirstLaunch(!onboarded)
 
-        // Check backup reminder on app open (proactive)
         if (onboarded) {
+          // V2: Process due recurring transactions on app launch
+          try {
+            const generated = await db.processDueRecurringTransactions()
+            if (generated > 0) {
+              console.log(`V2: Auto-generated ${generated} recurring transaction(s)`)
+            }
+          } catch (e) {
+            console.error('Recurring transaction processing failed:', e)
+          }
+
+          // V2: Apply saved theme color on app launch
+          try {
+            await applyThemeFromDB()
+          } catch (e) {
+            console.error('Theme application failed:', e)
+          }
+
+          // Check backup reminder on app open (proactive)
           const reminder = await checkBackupReminder()
           if (!cancelled) setBackupReminder(reminder)
         }
@@ -85,6 +104,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/finance" element={<FinancePage />} />
           <Route path="/orders" element={<OrdersPage />} />
+          <Route path="/debts" element={<DebtsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -10,19 +10,20 @@ export default {
         // Samsung One UI inspired palette
         background: '#F9F9F9',
         surface: '#FFFFFF',
-        // Primary - Samsung Blue
+        // Primary - V2: uses CSS variables for dynamic theming
+        // Default values match Samsung Blue; overridden at runtime by applyTheme()
         primary: {
-          50: '#E8F1FE',
-          100: '#D0E2FD',
-          200: '#A3C5FB',
-          300: '#76A8F9',
-          400: '#498BF7',
-          500: '#1F6FE8',
-          600: '#0B57D0',
-          700: '#0846A3',
-          800: '#063577',
-          900: '#04244B',
-          DEFAULT: '#1F6FE8',
+          50: 'var(--color-primary-50, #E8F1FE)',
+          100: 'var(--color-primary-100, #D0E2FD)',
+          200: 'var(--color-primary-200, #A3C5FB)',
+          300: 'var(--color-primary-300, #76A8F9)',
+          400: 'var(--color-primary-400, #498BF7)',
+          500: 'var(--color-primary-500, #1F6FE8)',
+          600: 'var(--color-primary-600, #0B57D0)',
+          700: 'var(--color-primary-700, #0846A3)',
+          800: 'var(--color-primary-800, #063577)',
+          900: 'var(--color-primary-900, #04244B)',
+          DEFAULT: 'var(--color-primary, #1F6FE8)',
         },
         // Income / Profit - Bright Green
         income: {
