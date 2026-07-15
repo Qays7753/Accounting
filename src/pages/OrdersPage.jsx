@@ -1,9 +1,7 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
-import { useOrders } from '../hooks/useDatabase.js'
-import { db } from '../db'
+import { useState, useCallback } from 'react'
+import { useOrders, useDebounce, useInfiniteScroll } from '../hooks/useDatabase.js'
 import { formatAmount } from '../utils/format.js'
-import { formatArabicDateTime, formatTime, getRelativeTime } from '../utils/date.js'
-import { useInfiniteScroll } from '../hooks/useDatabase.js'
+import { getRelativeTime } from '../utils/date.js'
 import EmptyState from '../components/ui/EmptyState.jsx'
 import Icon from '../components/ui/Icon.jsx'
 import CalendarView from '../components/ui/CalendarView.jsx'
@@ -32,6 +30,9 @@ export default function OrdersPage() {
   const [editOrder, setEditOrder] = useState(null)
   const [detailOrder, setDetailOrder] = useState(null)
 
+  // Debounce search to prevent query thrash
+  const debouncedSearch = useDebounce(search, 300)
+
   const {
     items,
     total,
@@ -41,7 +42,7 @@ export default function OrdersPage() {
     loadMore,
     refresh,
   } = useOrders({
-    search,
+    search: debouncedSearch,
     status: statusFilter,
     page: 1,
     pageSize: 20,

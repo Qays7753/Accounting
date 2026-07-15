@@ -1,9 +1,8 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { db } from '../../db'
-import { ARABIC_DAYS, ARABIC_MONTHS, formatTime, formatArabicDate } from '../../utils/date.js'
+import { ARABIC_MONTHS, formatTime } from '../../utils/date.js'
 import { hapticLight } from '../../utils/haptics.js'
 import Icon from './Icon.jsx'
-import EmptyState from './EmptyState.jsx'
 
 const STATUS_CONFIG = {
   in_progress: { label: 'قيد التنفيذ', color: 'bg-status-progress', text: 'text-status-progress', badge: 'badge-progress' },
@@ -40,23 +39,26 @@ export default function CalendarView({ onOrderClick }) {
   const daysInMonth = new Date(year, month + 1, 0).getDate()
   const firstDayOfMonth = new Date(year, month, 1).getDay()
 
-  // Build calendar grid (RTL: Saturday on the right, Friday on the left, but we use Sat-Fri or Sun-Sat)
-  // For Arabic locale, the week typically starts on Saturday. But to align with One UI conventions, we'll use Sun-Sat.
-  const weekDays = ['أحد', 'إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت']
+  // Static weekday labels (RTL order: Sunday on the right)
+  const weekDays = useMemo(() => ['أحد', 'إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'], [])
 
-  const calendarDays = []
-  // Empty cells for days before the 1st
-  for (let i = 0; i < firstDayOfMonth; i++) {
-    calendarDays.push(null)
-  }
-  // Days 1 to N
-  for (let d = 1; d <= daysInMonth; d++) {
-    calendarDays.push(d)
-  }
+  // Build calendar grid - memoized so it only recomputes when month/year change
+  const calendarDays = useMemo(() => {
+    const days = []
+    for (let i = 0; i < firstDayOfMonth; i++) {
+      days.push(null)
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      days.push(d)
+    }
+    return days
+  }, [daysInMonth, firstDayOfMonth])
 
-  const today = new Date()
-  const isToday = (day) =>
-    day === today.getDate() && month === today.getMonth() && year === today.getFullYear()
+  const today = useMemo(() => new Date(), [year, month])
+  const isToday = useCallback((day) =>
+    day === today.getDate() && month === today.getMonth() && year === today.getFullYear(),
+    [today, month, year]
+  )
 
   const handlePrevMonth = () => {
     hapticLight()

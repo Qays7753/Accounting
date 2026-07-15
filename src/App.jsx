@@ -1,15 +1,26 @@
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { db } from './db'
 import AppLayout from './components/layout/AppLayout.jsx'
-import HomePage from './pages/HomePage.jsx'
-import FinancePage from './pages/FinancePage.jsx'
-import OrdersPage from './pages/OrdersPage.jsx'
-import SettingsPage from './pages/SettingsPage.jsx'
 import OnboardingPage from './pages/OnboardingPage.jsx'
 import BackupReminderBanner from './components/common/BackupReminderBanner.jsx'
-import ErrorBoundary from './components/common/ErrorBoundary.jsx'
 import { checkBackupReminder } from './utils/backup.js'
+
+// Lazy-load route components for faster initial load.
+// Each page becomes a separate chunk loaded on demand.
+const HomePage = lazy(() => import('./pages/HomePage.jsx'))
+const FinancePage = lazy(() => import('./pages/FinancePage.jsx'))
+const OrdersPage = lazy(() => import('./pages/OrdersPage.jsx'))
+const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'))
+
+// Lightweight fallback while a lazy chunk is loading
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center py-20">
+      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+    </div>
+  )
+}
 
 function App() {
   const [isFirstLaunch, setIsFirstLaunch] = useState(null) // null = loading
@@ -17,22 +28,25 @@ function App() {
   const navigate = useNavigate()
 
   useEffect(() => {
+    let cancelled = false
     async function init() {
       try {
         const onboarded = await db.getMeta('onboarded', false)
+        if (cancelled) return
         setIsFirstLaunch(!onboarded)
 
         // Check backup reminder on app open (proactive)
         if (onboarded) {
           const reminder = await checkBackupReminder()
-          setBackupReminder(reminder)
+          if (!cancelled) setBackupReminder(reminder)
         }
       } catch (e) {
         console.error('Failed to check first launch:', e)
-        setIsFirstLaunch(true)
+        if (!cancelled) setIsFirstLaunch(true)
       }
     }
     init()
+    return () => { cancelled = true }
   }, [])
 
   if (isFirstLaunch === null) {
@@ -66,13 +80,15 @@ function App() {
           }}
         />
       )}
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/finance" element={<FinancePage />} />
-        <Route path="/orders" element={<OrdersPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/finance" element={<FinancePage />} />
+          <Route path="/orders" element={<OrdersPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
     </AppLayout>
   )
 }

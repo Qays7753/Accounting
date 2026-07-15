@@ -16,6 +16,8 @@ const NOTIFICATION_CHECK_INTERVAL = 60 * 1000 // Check every minute
 const ORDER_REMINDER_HOURS_BEFORE = 1 // Remind 1 hour before scheduled time
 
 let checkInterval = null
+let visibilityHandler = null
+let initialized = false
 
 export function initNotificationService() {
   if (!('Notification' in window)) {
@@ -23,18 +25,39 @@ export function initNotificationService() {
     return
   }
 
+  // Guard against double-initialization (React StrictMode calls effects twice)
+  if (initialized) return
+  initialized = true
+
   // Start periodic check for due notifications
   startNotificationCheck()
 
-  // Check on app visibility change
-  document.addEventListener('visibilitychange', () => {
+  // Check on app visibility change (store handler so it can be removed if needed)
+  visibilityHandler = () => {
     if (!document.hidden) {
       checkDueNotifications()
     }
-  })
+  }
+  document.addEventListener('visibilitychange', visibilityHandler)
 
   // Initial check after a short delay
   setTimeout(checkDueNotifications, 2000)
+}
+
+/**
+ * Cleanup function - useful for tests or if the service needs to be stopped.
+ * In production, the service runs for the lifetime of the page.
+ */
+export function teardownNotificationService() {
+  if (checkInterval) {
+    clearInterval(checkInterval)
+    checkInterval = null
+  }
+  if (visibilityHandler) {
+    document.removeEventListener('visibilitychange', visibilityHandler)
+    visibilityHandler = null
+  }
+  initialized = false
 }
 
 function startNotificationCheck() {

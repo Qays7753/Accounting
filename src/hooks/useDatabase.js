@@ -2,7 +2,27 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { db } from '../db'
 
 /**
- * Custom hook for paginated transactions with filters
+ * Debounce a value - useful for search inputs to prevent excessive re-renders/queries.
+ * @param {any} value - The value to debounce
+ * @param {number} delay - Delay in ms (default 300ms)
+ */
+export function useDebounce(value, delay = 300) {
+  const [debouncedValue, setDebouncedValue] = useState(value)
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value)
+    }, delay)
+    return () => clearTimeout(handler)
+  }, [value, delay])
+
+  return debouncedValue
+}
+
+/**
+ * Custom hook for paginated transactions with filters.
+ * - Accepts memoizable primitive filter values (not Date objects).
+ * - Debounces search internally to prevent query thrash.
  */
 export function useTransactions(initialFilters = {}) {
   const [data, setData] = useState({ items: [], total: 0, hasMore: false, page: 1 })
@@ -11,6 +31,7 @@ export function useTransactions(initialFilters = {}) {
   const [filters, setFilters] = useState(initialFilters)
   const [refreshKey, setRefreshKey] = useState(0)
 
+  // Memoize the load function so it only changes when filters actually change
   const load = useCallback(async (page = 1) => {
     if (page === 1) {
       setLoading(true)
@@ -33,7 +54,7 @@ export function useTransactions(initialFilters = {}) {
       setLoading(false)
       setLoadingMore(false)
     }
-  }, [filters])
+  }, [JSON.stringify(filters)]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     load(1)
@@ -43,7 +64,7 @@ export function useTransactions(initialFilters = {}) {
     if (data.hasMore && !loadingMore) {
       load(data.page + 1)
     }
-  }, [data, loadingMore, load])
+  }, [data.hasMore, data.page, loadingMore, load])
 
   const refresh = useCallback(() => {
     setRefreshKey((k) => k + 1)
@@ -98,7 +119,7 @@ export function useOrders(initialFilters = {}) {
       setLoading(false)
       setLoadingMore(false)
     }
-  }, [filters])
+  }, [JSON.stringify(filters)]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     load(1)
@@ -108,7 +129,7 @@ export function useOrders(initialFilters = {}) {
     if (data.hasMore && !loadingMore) {
       load(data.page + 1)
     }
-  }, [data, loadingMore, load])
+  }, [data.hasMore, data.page, loadingMore, load])
 
   const refresh = useCallback(() => {
     setRefreshKey((k) => k + 1)
@@ -191,10 +212,15 @@ export function useDashboardStats() {
 }
 
 /**
- * Infinite scroll hook
+ * Infinite scroll hook - uses IntersectionObserver with proper cleanup.
  */
 export function useInfiniteScroll(onLoadMore, enabled = true) {
   const sentinelRef = useRef(null)
+  // Keep latest onLoadMore without re-creating the observer on every render
+  const onLoadMoreRef = useRef(onLoadMore)
+  useEffect(() => {
+    onLoadMoreRef.current = onLoadMore
+  }, [onLoadMore])
 
   useEffect(() => {
     if (!enabled || !sentinelRef.current) return
@@ -202,7 +228,7 @@ export function useInfiniteScroll(onLoadMore, enabled = true) {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          onLoadMore()
+          onLoadMoreRef.current?.()
         }
       },
       { rootMargin: '100px' }
@@ -210,7 +236,7 @@ export function useInfiniteScroll(onLoadMore, enabled = true) {
 
     observer.observe(sentinelRef.current)
     return () => observer.disconnect()
-  }, [onLoadMore, enabled])
+  }, [enabled])
 
   return sentinelRef
 }
@@ -224,17 +250,19 @@ export function useSettings() {
   const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
+    let cancelled = false
     async function load() {
       try {
         const all = await db.getAllSettings()
-        setSettings(all)
+        if (!cancelled) setSettings(all)
       } catch (e) {
         console.error('Failed to load settings:', e)
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
     load()
+    return () => { cancelled = true }
   }, [refreshKey])
 
   const update = useCallback(async (key, value) => {

@@ -1,9 +1,8 @@
-import { useState, useRef, useCallback } from 'react'
-import { useTransactions } from '../hooks/useDatabase.js'
+import { useState, useRef, useCallback, useMemo } from 'react'
+import { useTransactions, useDebounce, useInfiniteScroll } from '../hooks/useDatabase.js'
 import { db } from '../db'
 import { formatAmount } from '../utils/format.js'
-import { formatArabicDateTime, getRelativeTime } from '../utils/date.js'
-import { useInfiniteScroll } from '../hooks/useDatabase.js'
+import { getRelativeTime } from '../utils/date.js'
 import EmptyState from '../components/ui/EmptyState.jsx'
 import Snackbar from '../components/ui/Snackbar.jsx'
 import Icon from '../components/ui/Icon.jsx'
@@ -21,30 +20,32 @@ export default function FinancePage() {
   const [filter, setFilter] = useState('today')
   const [snackbar, setSnackbar] = useState(null) // { message, actionLabel, onAction }
 
-  const getDateRange = (filterId) => {
+  // Debounce search to prevent query thrash on every keystroke
+  const debouncedSearch = useDebounce(search, 300)
+
+  // Memoize date range so it only recomputes when filter changes (not every render)
+  const dateRange = useMemo(() => {
     const now = new Date()
-    if (filterId === 'today') {
+    if (filter === 'today') {
       return {
         startDate: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0),
         endDate: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999),
       }
     }
-    if (filterId === 'week') {
+    if (filter === 'week') {
       const start = new Date(now)
       start.setDate(now.getDate() - now.getDay())
       start.setHours(0, 0, 0, 0)
       return { startDate: start, endDate: now }
     }
-    if (filterId === 'month') {
+    if (filter === 'month') {
       return {
         startDate: new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0),
         endDate: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999),
       }
     }
     return { startDate: null, endDate: null }
-  }
-
-  const dateRange = getDateRange(filter)
+  }, [filter])
 
   const {
     items,
@@ -55,7 +56,7 @@ export default function FinancePage() {
     loadMore,
     refresh,
   } = useTransactions({
-    search,
+    search: debouncedSearch,
     startDate: dateRange.startDate,
     endDate: dateRange.endDate,
     page: 1,
@@ -100,16 +101,18 @@ export default function FinancePage() {
     setFilter(newFilter)
   }
 
-  // Totals for current filter
-  const totals = items.reduce(
-    (acc, t) => {
-      if (t.type === 'income' || t.type === 'opening_balance') acc.income += t.amount
-      else if (t.type === 'expense') acc.expense += t.amount
-      else if (t.type === 'withdrawal') acc.withdrawal += t.amount
-      return acc
-    },
-    { income: 0, expense: 0, withdrawal: 0 }
-  )
+  // Totals for current filter (memoized to prevent recompute on every render)
+  const totals = useMemo(() => {
+    return items.reduce(
+      (acc, t) => {
+        if (t.type === 'income' || t.type === 'opening_balance') acc.income += t.amount
+        else if (t.type === 'expense') acc.expense += t.amount
+        else if (t.type === 'withdrawal') acc.withdrawal += t.amount
+        return acc
+      },
+      { income: 0, expense: 0, withdrawal: 0 }
+    )
+  }, [items])
 
   return (
     <div className="min-h-screen pb-32">
