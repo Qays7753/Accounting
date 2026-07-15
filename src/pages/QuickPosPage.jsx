@@ -311,15 +311,19 @@ export default function QuickPosPage() {
 function ProductManageSheet({ open, editData, onClose, onSave }) {
   const [name, setName] = useState('')
   const [price, setPrice] = useState(0)
+  // V4 Phase 3: Cost price for profit hint
+  const [costPrice, setCostPrice] = useState(0)
 
   useEffect(() => {
     if (open) {
       if (editData) {
         setName(editData.name || '')
         setPrice(editData.price || 0)
+        setCostPrice(0) // Reset cost price on edit
       } else {
         setName('')
         setPrice(0)
+        setCostPrice(0)
       }
     }
   }, [open, editData])
@@ -328,6 +332,10 @@ function ProductManageSheet({ open, editData, onClose, onSave }) {
     if (!name.trim() || !price) return
     onSave({ name: name.trim(), price: Number(price) })
   }
+
+  // V4 Phase 3: Profit hint calculation
+  const profit = Number(price) - Number(costPrice)
+  const showHint = Number(costPrice) > 0 && Number(price) > 0
 
   return (
     <BottomSheet open={open} onClose={onClose} title={editData ? 'تعديل منتج' : 'منتج جديد'}>
@@ -343,7 +351,28 @@ function ProductManageSheet({ open, editData, onClose, onSave }) {
             dir="rtl"
           />
         </div>
-        <AmountInput value={price} onChange={setPrice} label="السعر" autoFocus />
+        <AmountInput value={price} onChange={setPrice} label="سعر البيع" autoFocus />
+        {/* V4 Phase 3: Cost Price for profit hint */}
+        <AmountInput value={costPrice} onChange={setCostPrice} label="سعر الشراء (اختياري)" />
+        {/* V4 Phase 3: Profit Hint */}
+        {showHint && (
+          profit >= 0 ? (
+            <div className="bg-income-50 rounded-xl p-3 text-center">
+              <p className="text-sm font-semibold text-income-700">
+                هالصنف بتكسب منه {profit.toLocaleString('en-US')} دينار على كل قطعة
+              </p>
+            </div>
+          ) : (
+            <div className="bg-expense-50 rounded-xl p-3 text-center">
+              <p className="text-sm font-bold text-expense-700">
+                انتبه: أنت تبيع بأقل من التكلفة!
+              </p>
+              <p className="text-xs text-expense-600 mt-0.5">
+                خسارة {Math.abs(profit).toLocaleString('en-US')} دينار على كل قطعة
+              </p>
+            </div>
+          )
+        )}
         <button
           type="button"
           onClick={handleSave}

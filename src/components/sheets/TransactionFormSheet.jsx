@@ -218,6 +218,25 @@ export default function TransactionFormSheet({ open, onClose, type = 'income', e
                     </div>
                   </div>
                 )}
+                {/* V4 Phase 3: Profit Hint (conversational) */}
+                {Number(costOfGoods) > 0 && Number(amount) > 0 && (
+                  Number(amount) >= Number(costOfGoods) ? (
+                    <div className="bg-income-50 rounded-xl p-3 text-center">
+                      <p className="text-sm font-semibold text-income-700">
+                        هالصنف بتكسب منه {formatAmount(Number(amount) - Number(costOfGoods))} دينار على كل قطعة
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="bg-expense-50 rounded-xl p-3 text-center">
+                      <p className="text-sm font-bold text-expense-700">
+                        انتبه: أنت تبيع بأقل من التكلفة!
+                      </p>
+                      <p className="text-xs text-expense-600 mt-0.5">
+                        خسارة {formatAmount(Number(costOfGoods) - Number(amount))} دينار على كل قطعة
+                      </p>
+                    </div>
+                  )
+                )}
               </div>
             )}
           </div>
