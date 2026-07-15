@@ -512,3 +512,75 @@ All 5 V2 agents have completed their work. The application now includes:
 **Build**: 0 errors, 25 precache entries, ~431 KB total (140 KB gzip)
 **Commits**: 3 V2 commits pushed to GitHub (Agent 1, Agent 2, Agent 3&4)
 
+---
+
+# V3: Professional Business Suite Upgrade (2026-07-15)
+
+## Agent 1: Database & Schema Architect ✅ COMPLETED
+
+- [x] Dexie.js schema upgraded to version 5
+- [x] New `materials` table (id, name, unit_type, unit_cost) for BOM costing
+- [x] Orders table: added is_paid, paymentTransactionId, phone, paymentType indexes
+- [x] Customers table: now actively used for CRM (dedup by phone)
+- [x] addOrder() updated with V3 fields: phone, components_used, total_cost, is_paid, paymentTransactionId, paymentType
+- [x] New DB helpers: addMaterial, updateMaterial, deleteMaterial, getMaterials, calculateBOMCost
+- [x] New DB helpers: addCustomer, getAllCustomers, getOrdersByCustomer
+- [x] completeOrder(orderId, paymentType) — 3-scenario payment flow
+- [x] getReport(startDate, endDate) — real cash vs theoretical profit
+
+## Agent 2: Costing & Order Logic Developer ✅ COMPLETED
+
+- [x] BOM Cost & Profit Calculator in OrderFormSheet (collapsible)
+- [x] Add components from materials DB or free-text (name, qty, unit_type, unit_cost)
+- [x] Shows Total Cost, Expected Profit, Profit Margin %
+- [x] PURELY ANALYTICAL — does NOT affect finance (business rule enforced)
+- [x] "إتمام الطلب والبيع" (Complete & Sell) button in OrderDetailSheet
+- [x] 3-scenario flow: Cash (income), Credit (debt_given), Just Done (status only)
+- [x] BOM cost NEVER deducted from finance
+
+## Agent 3: CRM & Mockup Sync Engineer ✅ COMPLETED
+
+- [x] OrdersPage OrderCard: shows customer phone with icon
+- [x] Payment status badges: مدفوع (cash), أجل (credit), تتبع (done)
+- [x] Quick Call (tel:) and WhatsApp (wa.me) buttons on each order card
+- [x] mockup/index.html fully updated with V3 features:
+  - Order cards with phone, payment badges, call/whatsapp buttons
+  - Order form sheet: phone field + BOM calculator (collapsible)
+  - Order detail sheet: phone, payment badge, BOM summary, Complete & Sell button
+  - Complete & Sell payment sheet with 3 scenarios
+  - toggleBOM() JS function
+
+## Agent 4: Reporting & Analytics Developer ✅ COMPLETED
+
+- [x] New ReportsPage with custom date range picker (From/To)
+- [x] Quick presets: Today, This Week, This Month, Last Month, This Year
+- [x] Real Cash Flow: income, expense, withdrawal, net cash profit
+- [x] Theoretical Profit: order revenue - BOM cost (analytical)
+- [x] Variance Analysis: real vs theoretical difference with explanation
+- [x] Order stats: total orders, completed orders
+- [x] Added to BottomNav as 6th tab (التقارير)
+
+## Agent 5: QA, Build & Final Reviewer ✅ COMPLETED
+
+- [x] Final `npm run build` with ZERO errors (27 precache entries, 457 KB)
+- [x] Backward compatibility verified: V1 (pagination, snackbar, haptics, PWA) + V2 (edit, recurring, debts, theme, receipts) all intact
+- [x] V3 features verified: BOM calculator, Complete & Sell, CRM, Reports
+- [x] TASKS.md updated with V3 completion status
+- [x] All commits pushed to GitHub
+
+---
+
+## 🎉 V3 Project Complete
+
+The app is now a **Professional Business Management System** with:
+- **BOM Cost Calculator** — analytical profit margin per order (no finance impact)
+- **Order Completion Flow** — 3 scenarios: Cash Sale, Credit Sale (Debt), or Just Track
+- **CRM** — customer phone, quick Call/WhatsApp buttons, payment status badges
+- **Professional Reporting** — custom date range, real cash vs theoretical profit, variance analysis
+- **Materials Database** — reusable BOM components with unit types and costs
+
+**Build**: 0 errors, 27 precache entries, ~457 KB total (149 KB gzip)
+**Critical Business Rules Enforced**:
+1. BOM cost is purely analytical — NEVER deducted from financial cash flow
+2. Orders can be logged for tracking only (unpaid) without financial impact
+3. "Complete & Sell" explicitly asks about payment before touching finance
