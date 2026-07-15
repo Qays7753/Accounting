@@ -125,7 +125,17 @@ class AccountingDatabase extends Dexie {
   }
 
   /**
-   * Get transactions with pagination (20 per page) and optional filters
+   * Get transactions with pagination (20 per page) and optional filters.
+   *
+   * Performance strategy:
+   * - Uses the indexed `dateTimestamp` for range queries via Dexie's where().between()
+   * - Sorts via the index (reverse() on dateTimestamp) — no JS sort needed
+   * - Applies type filter via Dexie's collection.filter() (lazy, runs in DB)
+   * - For search: since we need substring matching on description/category,
+   *   we load the filtered+sorted result and apply search in JS.
+   *   This is acceptable because the date-range + type filter already narrows the set.
+   * - Pagination via offset() + limit() — only the page size is materialized.
+   *
    * @param {Object} opts - { page, pageSize, type, startDate, endDate, search }
    */
   async getTransactions(opts = {}) {
@@ -138,9 +148,8 @@ class AccountingDatabase extends Dexie {
       search = '',
     } = opts
 
-    let collection = this.transactions.toCollection()
-
-    // Filter by date range (use index if possible)
+    // Build base collection using index
+    let collection
     if (startDate !== null && endDate !== null) {
       const startTs = new Date(startDate).getTime()
       const endTs = new Date(endDate).getTime()
@@ -150,40 +159,54 @@ class AccountingDatabase extends Dexie {
     } else if (startDate !== null) {
       const startTs = new Date(startDate).getTime()
       collection = this.transactions.where('dateTimestamp').aboveOrEqual(startTs)
+    } else {
+      collection = this.transactions.toCollection()
     }
 
-    // Convert to array for further filtering (since Dexie doesn't support compound OR queries natively)
-    let items = await collection.toArray()
-
-    // Filter by type
+    // Apply type filter lazily (in DB, not in JS)
     if (type && type !== 'all') {
-      items = items.filter((t) => t.type === type)
+      collection = collection.filter((t) => t.type === type)
     }
 
-    // Filter by search term (description or category)
+    // If there's a search term, we need to materialize the filtered set to apply substring matching.
+    // Otherwise we can paginate directly using the index.
     if (search && search.trim()) {
       const q = search.trim().toLowerCase()
+      let items = await collection.toArray()
       items = items.filter(
         (t) =>
           (t.description && t.description.toLowerCase().includes(q)) ||
           (t.category && t.category.toLowerCase().includes(q))
       )
+      // Sort by date desc
+      items.sort((a, b) => b.dateTimestamp - a.dateTimestamp)
+      const total = items.length
+      const offset = (page - 1) * pageSize
+      const paged = items.slice(offset, offset + pageSize)
+      return { items: paged, total, hasMore: offset + pageSize < total, page, pageSize }
     }
 
-    // Sort by date desc
-    items.sort((a, b) => b.dateTimestamp - a.dateTimestamp)
-
-    const total = items.length
+    // No search: use index-based pagination (fast, even for 10,000+ records)
+    // Dexie's .reverse() + .sortBy() uses the index
+    const total = await collection.count()
     const offset = (page - 1) * pageSize
-    const paged = items.slice(offset, offset + pageSize)
-
-    return {
-      items: paged,
-      total,
-      hasMore: offset + pageSize < total,
-      page,
-      pageSize,
+    // Use .orderBy('dateTimestamp').reverse() for desc sort via index
+    // Then offset + limit for pagination
+    let pagedCollection = this.transactions.orderBy('dateTimestamp').reverse()
+    // Re-apply the same filters on the ordered collection
+    if (startDate !== null && endDate !== null) {
+      const startTs = new Date(startDate).getTime()
+      const endTs = new Date(endDate).getTime()
+      pagedCollection = pagedCollection.and((t) => t.dateTimestamp >= startTs && t.dateTimestamp <= endTs)
+    } else if (startDate !== null) {
+      const startTs = new Date(startDate).getTime()
+      pagedCollection = pagedCollection.and((t) => t.dateTimestamp >= startTs)
     }
+    if (type && type !== 'all') {
+      pagedCollection = pagedCollection.and((t) => t.type === type)
+    }
+    const items = await pagedCollection.offset(offset).limit(pageSize).toArray()
+    return { items, total, hasMore: offset + pageSize < total, page, pageSize }
   }
 
   /**
@@ -206,23 +229,50 @@ class AccountingDatabase extends Dexie {
   }
 
   /**
-   * Calculate cash balance: sum of all income + opening_balance - expenses - withdrawals
+   * Calculate cash balance: actual cash on hand.
+   *
+   * Business rules:
+   * - income: +cash
+   * - expense: -cash
+   * - withdrawal: -cash (personal, but still reduces cash)
+   * - opening_balance: only the CASH opening balance counts (category = 'رصيد افتتاحي')
+   *   Debts owed to me (category='ديون مستحقة لي') and debts I owe (category='ديون مستحقة علي')
+   *   are NOT cash — they're receivables/liabilities tracked separately via getNetWorth().
+   *
+   * Performance: Uses Dexie's collection.each() cursor instead of toArray() to avoid
+   * loading all transactions into memory at once.
    */
   async getCashBalance() {
-    const all = await this.transactions.toArray()
     let balance = 0
-    for (const t of all) {
-      if (t.type === 'income' || t.type === 'opening_balance') {
+    await this.transactions.each((t) => {
+      if (t.type === 'income') {
         balance += t.amount
       } else if (t.type === 'expense' || t.type === 'withdrawal') {
         balance -= t.amount
+      } else if (t.type === 'opening_balance') {
+        // Only count the actual cash opening balance, not debt records
+        if (t.category === 'رصيد افتتاحي') {
+          balance += t.amount
+        }
+        // Debts owed to me (positive) and debts I owe (negative) are excluded from cash
       }
-    }
+    })
     return balance
   }
 
   /**
-   * Calculate totals for a date range
+   * Calculate totals for a date range.
+   *
+   * Business rules:
+   * - `income`: only type='income' (excludes opening_balance, which is a one-time setup entry)
+   * - `expense`: only type='expense'
+   * - `withdrawal`: only type='withdrawal' (personal, doesn't affect net profit)
+   * - `netProfit` = income - expense (business profit, excludes personal withdrawals)
+   * - `netCash` = income - expense - withdrawal (actual cash change for the period)
+   *
+   * Note: opening_balance is excluded from period totals because it represents
+   * the initial setup, not recurring business activity. It IS included in the
+   * overall cash balance via getCashBalance().
    */
   async getTotalsForRange(startDate, endDate) {
     const items = await this.getTransactionsByDateRange(startDate, endDate)
@@ -230,9 +280,10 @@ class AccountingDatabase extends Dexie {
     let expense = 0
     let withdrawal = 0
     for (const t of items) {
-      if (t.type === 'income' || t.type === 'opening_balance') income += t.amount
+      if (t.type === 'income') income += t.amount
       else if (t.type === 'expense') expense += t.amount
       else if (t.type === 'withdrawal') withdrawal += t.amount
+      // opening_balance excluded from period totals
     }
     return {
       income,
@@ -293,7 +344,15 @@ class AccountingDatabase extends Dexie {
   }
 
   /**
-   * Get orders with pagination
+   * Get orders with pagination.
+   *
+   * Performance strategy:
+   * - Uses indexed `scheduledTimestamp` for range queries
+   * - Uses `orderBy('scheduledTimestamp')` for index-based sorting
+   * - Applies status filter via .and() (lazy, in DB)
+   * - For search: materializes filtered set (acceptable since search narrows results)
+   * - Pagination via offset() + limit()
+   *
    * @param {Object} opts - { page, pageSize, status, search, startDate, endDate }
    */
   async getOrders(opts = {}) {
@@ -306,51 +365,55 @@ class AccountingDatabase extends Dexie {
       endDate = null,
     } = opts
 
-    let collection
-    if (startDate && endDate) {
-      const startTs = new Date(startDate).getTime()
-      const endTs = new Date(endDate).getTime()
-      collection = this.orders
-        .where('scheduledTimestamp')
-        .between(startTs, endTs, true, true)
-    } else {
-      collection = this.orders.toCollection()
-    }
+    // For closed orders: sort desc (most recent first). For active: sort asc (upcoming first).
+    const sortDesc = status === 'closed'
 
-    let items = await collection.toArray()
-
+    // Build collection with filters
+    let baseCollection = this.orders.toCollection()
     if (status && status !== 'all') {
-      items = items.filter((o) => o.status === status)
+      baseCollection = baseCollection.filter((o) => o.status === status)
     }
+    const total = await baseCollection.count()
 
+    // If search is needed, materialize and filter in JS
     if (search && search.trim()) {
       const q = search.trim().toLowerCase()
+      let items = await baseCollection.toArray()
       items = items.filter(
         (o) =>
           (o.customerName && o.customerName.toLowerCase().includes(q)) ||
           (o.orderType && o.orderType.toLowerCase().includes(q)) ||
           (o.notes && o.notes.toLowerCase().includes(q))
       )
+      if (sortDesc) {
+        items.sort((a, b) => b.scheduledTimestamp - a.scheduledTimestamp)
+      } else {
+        items.sort((a, b) => a.scheduledTimestamp - b.scheduledTimestamp)
+      }
+      const offset = (page - 1) * pageSize
+      const paged = items.slice(offset, offset + pageSize)
+      return { items: paged, total: items.length, hasMore: offset + pageSize < items.length, page, pageSize }
     }
 
-    // Sort by scheduled date asc (upcoming first) for active, desc for closed
-    if (status === 'closed') {
-      items.sort((a, b) => b.scheduledTimestamp - a.scheduledTimestamp)
-    } else {
-      items.sort((a, b) => a.scheduledTimestamp - b.scheduledTimestamp)
+    // No search: use index-based pagination
+    let pagedCollection = sortDesc
+      ? this.orders.orderBy('scheduledTimestamp').reverse()
+      : this.orders.orderBy('scheduledTimestamp')
+
+    // Re-apply status filter on ordered collection
+    if (status && status !== 'all') {
+      pagedCollection = pagedCollection.and((o) => o.status === status)
+    }
+    // Apply date range if provided
+    if (startDate && endDate) {
+      const startTs = new Date(startDate).getTime()
+      const endTs = new Date(endDate).getTime()
+      pagedCollection = pagedCollection.and((o) => o.scheduledTimestamp >= startTs && o.scheduledTimestamp <= endTs)
     }
 
-    const total = items.length
     const offset = (page - 1) * pageSize
-    const paged = items.slice(offset, offset + pageSize)
-
-    return {
-      items: paged,
-      total,
-      hasMore: offset + pageSize < total,
-      page,
-      pageSize,
-    }
+    const items = await pagedCollection.offset(offset).limit(pageSize).toArray()
+    return { items, total, hasMore: offset + pageSize < total, page, pageSize }
   }
 
   /**

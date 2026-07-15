@@ -103,10 +103,11 @@ export default function FinancePage() {
   }
 
   // Totals for current filter (memoized to prevent recompute on every render)
+  // Note: opening_balance excluded from period totals (it's a one-time setup entry)
   const totals = useMemo(() => {
     return items.reduce(
       (acc, t) => {
-        if (t.type === 'income' || t.type === 'opening_balance') acc.income += t.amount
+        if (t.type === 'income') acc.income += t.amount
         else if (t.type === 'expense') acc.expense += t.amount
         else if (t.type === 'withdrawal') acc.withdrawal += t.amount
         return acc
