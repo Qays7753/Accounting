@@ -73,11 +73,17 @@ export default {
           ready: '#1F6FE8',    // Blue - Ready
           closed: '#9E9E9E',   // Gray - Delivered/Closed
         },
-        // Text colors
+        // Text colors — V4.1: darkened tertiary for WCAG AA contrast
         text: {
           primary: '#1F1F1F',
-          secondary: '#666666',
-          tertiary: '#999999',
+          secondary: '#5A5A5A',
+          tertiary: '#6E6E6E',
+        },
+        // V4.1: alias 'txt' = 'text' so both text-text-* and text-txt-* work
+        txt: {
+          primary: '#1F1F1F',
+          secondary: '#5A5A5A',
+          tertiary: '#6E6E6E',
         },
         // Borders & dividers
         divider: '#E5E5E5',

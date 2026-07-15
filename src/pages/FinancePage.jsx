@@ -8,6 +8,7 @@ import Snackbar from '../components/ui/Snackbar.jsx'
 import Icon from '../components/ui/Icon.jsx'
 import TransactionFormSheet from '../components/sheets/TransactionFormSheet.jsx'
 import { hapticLight, hapticSuccess, hapticMedium } from '../utils/haptics.js'
+import { Link } from 'react-router-dom'
 
 const FILTERS = [
   { id: 'today', label: 'اليوم' },
@@ -136,7 +137,18 @@ export default function FinancePage() {
     <div className="min-h-screen pb-32">
       {/* Header */}
       <header className="px-5 pt-12 pb-3 safe-area-top sticky top-0 bg-background z-20">
-        <h1 className="text-2xl font-bold mb-3">السجل المالي</h1>
+        <div className="flex items-center justify-between mb-3">
+          <h1 className="text-2xl font-bold">السجل المالي</h1>
+          {/* V4.1: Quick links to Debts and Reports (since they're not in Bottom Nav) */}
+          <div className="flex gap-2">
+            <Link to="/debts" className="w-10 h-10 rounded-full bg-withdrawal-50 flex items-center justify-center active:scale-95 transition-transform" aria-label="الديون">
+              <Icon name="wallet" className="w-5 h-5 text-withdrawal-600" />
+            </Link>
+            <Link to="/reports" className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center active:scale-95 transition-transform" aria-label="التقارير">
+              <Icon name="document" className="w-5 h-5 text-primary-600" />
+            </Link>
+          </div>
+        </div>
 
         {/* Search */}
         <div className="relative mb-3">
