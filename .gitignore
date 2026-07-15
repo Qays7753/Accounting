@@ -34,3 +34,6 @@ dev-dist/
 
 # OS files
 Thumbs.db
+
+# GitHub Actions workflows (token lacks workflow scope; add via web UI)
+.github/workflows/
