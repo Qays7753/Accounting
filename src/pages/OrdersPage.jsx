@@ -228,12 +228,20 @@ export default function OrdersPage() {
   )
 }
 
+// V3: Payment status config for order cards
+const PAYMENT_BADGE = {
+  cash: { label: 'مدفوع', class: 'bg-income-50 text-income-600' },
+  credit: { label: 'أجل', class: 'bg-withdrawal-50 text-withdrawal-600' },
+  done: { label: 'تتبع', class: 'bg-gray-100 text-text-secondary' },
+}
+
 function OrderCard({ order, onClick }) {
   const c = STATUS_CONFIG[order.status] || STATUS_CONFIG.in_progress
+  const payment = order.paymentType ? PAYMENT_BADGE[order.paymentType] : null
   return (
-    <button
+    <div
       onClick={onClick}
-      className="w-full bg-surface rounded-2xl p-4 shadow-card active:scale-[0.98] transition-transform text-right"
+      className="w-full bg-surface rounded-2xl p-4 shadow-card active:scale-[0.98] transition-transform text-right cursor-pointer"
     >
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -243,17 +251,57 @@ function OrderCard({ order, onClick }) {
           <div className="flex-1 min-w-0">
             <p className="font-bold text-text-primary truncate">{order.customerName || 'زبون'}</p>
             <p className="text-xs text-text-secondary mt-0.5">{order.orderType}</p>
+            {/* V3: Show phone */}
+            {order.phone && (
+              <p className="text-xs text-text-tertiary mt-0.5 flex items-center gap-1" dir="ltr">
+                <Icon name="phone" className="w-3 h-3" />
+                <span>{order.phone}</span>
+              </p>
+            )}
           </div>
         </div>
-        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${c.badge} flex-shrink-0`}>
-          {c.label}
-        </span>
+        <div className="flex flex-col items-end gap-1 flex-shrink-0">
+          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${c.badge}`}>
+            {c.label}
+          </span>
+          {/* V3: Payment status badge */}
+          {payment && (
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${payment.class}`}>
+              {payment.label}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="flex items-center justify-between pt-2 border-t border-divider">
-        <div className="flex items-center gap-1.5 text-xs text-text-tertiary">
-          <Icon name="clock" className="w-3.5 h-3.5" />
-          <span>{getRelativeTime(order.scheduledDate)}</span>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 text-xs text-text-tertiary">
+            <Icon name="clock" className="w-3.5 h-3.5" />
+            <span>{getRelativeTime(order.scheduledDate)}</span>
+          </div>
+          {/* V3: Quick Call/WhatsApp buttons */}
+          {order.phone && (
+            <div className="flex items-center gap-1">
+              <a
+                href={`tel:${order.phone}`}
+                onClick={(e) => e.stopPropagation()}
+                className="w-7 h-7 rounded-full bg-primary-50 flex items-center justify-center active:scale-95 transition-transform"
+                aria-label="اتصال"
+              >
+                <Icon name="phone" className="w-3.5 h-3.5 text-primary-600" />
+              </a>
+              <a
+                href={`https://wa.me/${order.phone.replace(/[^\d]/g, '').replace(/^0/, '962')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="w-7 h-7 rounded-full bg-income-50 flex items-center justify-center active:scale-95 transition-transform"
+                aria-label="واتساب"
+              >
+                <Icon name="whatsapp" className="w-3.5 h-3.5 text-income-600" />
+              </a>
+            </div>
+          )}
         </div>
         {order.amount > 0 && (
           <p className="font-bold text-text-primary tabular-nums text-sm">
@@ -261,6 +309,6 @@ function OrderCard({ order, onClick }) {
           </p>
         )}
       </div>
-    </button>
+    </div>
   )
 }
