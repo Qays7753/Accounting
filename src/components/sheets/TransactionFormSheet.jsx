@@ -3,12 +3,17 @@ import BottomSheet from '../ui/BottomSheet.jsx'
 import AmountInput from '../ui/AmountInput.jsx'
 import Icon from '../ui/Icon.jsx'
 import { db } from '../../db'
-import { hapticSuccess, hapticError } from '../../utils/haptics.js'
+import { hapticSuccess, hapticError, hapticMedium } from '../../utils/haptics.js'
 import { shareReceipt } from '../../utils/whatsapp.js'
+import { formatAmount } from '../../utils/format.js'
 
 /**
  * Transaction Form Sheet - Add/Edit income/expense/withdrawal
  * type: 'income' | 'expense' | 'withdrawal'
+ *
+ * V4 Phase 1:
+ * - Income: optional cost_of_goods (COGS) input for Two Jars split
+ * - Withdrawal: Capital Protection Warning if amount > profit jar (حق التاجر)
  */
 export default function TransactionFormSheet({ open, onClose, type = 'income', editData = null, onSaved }) {
   const [amount, setAmount] = useState(0)
@@ -27,6 +32,14 @@ export default function TransactionFormSheet({ open, onClose, type = 'income', e
   const [frequency, setFrequency] = useState('none') // 'none' | 'daily' | 'weekly' | 'monthly'
   // V2: Track saved transaction for receipt sharing (Agent 4)
   const [savedTransaction, setSavedTransaction] = useState(null)
+
+  // V4 Phase 1: Cost of Goods (for income Two Jars split)
+  const [costOfGoods, setCostOfGoods] = useState(0)
+  const [showCOGS, setShowCOGS] = useState(false)
+
+  // V4 Phase 1: Capital Protection Warning (for withdrawal)
+  const [capitalWarning, setCapitalWarning] = useState(false)
+  const [profitJarBalance, setProfitJarBalance] = useState(0)
 
   const config = {
     income: {
@@ -68,23 +81,44 @@ export default function TransactionFormSheet({ open, onClose, type = 'income', e
         setTime(`${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`)
         // V2: Restore recurring state when editing
         setFrequency(editData.isRecurring ? (editData.frequency || 'monthly') : 'none')
+        // V4: Restore COGS when editing
+        setCostOfGoods(editData.cost_of_goods || 0)
+        setShowCOGS(!!(editData.cost_of_goods && editData.cost_of_goods > 0))
       } else {
         setAmount(0)
         setDescription('')
         setCategory('')
         setFrequency('none')
+        setCostOfGoods(0)
+        setShowCOGS(false)
         const now = new Date()
         setDate(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`)
         setTime(`${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`)
       }
       setSavedTransaction(null)
+      setCapitalWarning(false)
+
+      // V4: For withdrawals, load current profit jar balance for capital protection check
+      if (type === 'withdrawal' && !editData) {
+        db.getTwoJars().then(jars => setProfitJarBalance(jars.profitJar))
+      }
     }
   }, [open, editData, type])
 
-  const handleSave = async () => {
+  const handleSave = async (overrideCapitalWarning = false) => {
     if (!amount || amount <= 0) {
       hapticError()
       return
+    }
+
+    // V4 Phase 1: Capital Protection Warning for withdrawals
+    // If withdrawal amount > profit jar (حق التاجر), show blocking warning
+    if (type === 'withdrawal' && !overrideCapitalWarning) {
+      if (Number(amount) > profitJarBalance && profitJarBalance !== 0) {
+        hapticMedium()
+        setCapitalWarning(true)
+        return
+      }
     }
 
     setSaving(true)
@@ -102,6 +136,11 @@ export default function TransactionFormSheet({ open, onClose, type = 'income', e
         frequency: isRecurring ? frequency : null,
       }
 
+      // V4 Phase 1: Include cost_of_goods for income transactions
+      if (type === 'income') {
+        payload.cost_of_goods = Number(costOfGoods) || 0
+      }
+
       let result
       if (editData?.id) {
         await db.updateTransaction(editData.id, payload)
@@ -113,8 +152,7 @@ export default function TransactionFormSheet({ open, onClose, type = 'income', e
       hapticSuccess()
       setSavedTransaction(result)
       onSaved?.(result)
-      // Don't close immediately — show receipt share option (Agent 4)
-      // onClose?.()  // commented out to allow receipt sharing
+      setCapitalWarning(false)
     } catch (e) {
       console.error('Save failed:', e)
       hapticError()
@@ -133,6 +171,7 @@ export default function TransactionFormSheet({ open, onClose, type = 'income', e
   }
 
   return (
+    <>
     <BottomSheet open={open} onClose={onClose} title={currentConfig.title}>
       <div className="space-y-5 pb-4">
         {/* Amount */}
@@ -142,6 +181,47 @@ export default function TransactionFormSheet({ open, onClose, type = 'income', e
           label={currentConfig.amountLabel}
           autoFocus
         />
+
+        {/* V4 Phase 1: Cost of Goods (COGS) — only for income */}
+        {type === 'income' && (
+          <div className="bg-background rounded-2xl p-4">
+            <button
+              type="button"
+              onClick={() => { setShowCOGS(!showCOGS) }}
+              className="w-full flex items-center justify-between"
+            >
+              <div className="flex items-center gap-2">
+                <Icon name="info" className="w-5 h-5 text-primary-600" />
+                <span className="font-semibold text-text-primary text-sm">تكلفة البضاعة (اختياري)</span>
+              </div>
+              <Icon name={showCOGS ? 'chevronDown' : 'chevronLeft'} className="w-5 h-5 text-text-tertiary" />
+            </button>
+            {showCOGS && (
+              <div className="mt-3 space-y-3 animate-fade-in">
+                <p className="text-xs text-text-tertiary">
+                  أدخل تكلفة البضاعة لفصل رأس المال عن الربح. سيذهب هذا المبلغ إلى "حق المحل" للحفاظ على رأس المال.
+                </p>
+                <AmountInput
+                  value={costOfGoods}
+                  onChange={setCostOfGoods}
+                  label="تكلفة البضاعة"
+                />
+                {costOfGoods > 0 && Number(amount) > 0 && (
+                  <div className="bg-surface rounded-xl p-3 space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-text-tertiary">حق المحل (رأس المال):</span>
+                      <span className="font-semibold text-primary-600 tabular-nums">{formatAmount(Number(costOfGoods))}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-text-tertiary">حق التاجر (الربح):</span>
+                      <span className="font-semibold text-income-600 tabular-nums">{formatAmount(Number(amount) - Number(costOfGoods))}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Description */}
         <div>
@@ -270,5 +350,65 @@ export default function TransactionFormSheet({ open, onClose, type = 'income', e
         )}
       </div>
     </BottomSheet>
+
+    {/* V4 Phase 1: Capital Protection Warning Sheet */}
+    <BottomSheet
+      open={capitalWarning}
+      onClose={() => setCapitalWarning(false)}
+      title="تحذير: حماية رأس المال"
+    >
+      <div className="space-y-5 pb-4">
+        <div className="flex justify-center">
+          <div className="w-16 h-16 rounded-full bg-expense-50 flex items-center justify-center">
+            <Icon name="info" className="w-8 h-8 text-expense-600" strokeWidth={2} />
+          </div>
+        </div>
+
+        <div className="text-center space-y-2">
+          <p className="text-lg font-bold text-expense-600">
+            انتبه! أنت تسحب من رأس مال البضاعة.
+          </p>
+          <p className="text-sm text-text-secondary leading-relaxed">
+            هذا السحب يتجاوز رصيد "حق التاجر" (الأرباح المتاحة للصرف).
+            السحب من رأس المال قد يمنعك من إعادة تعبئة البضاعة.
+          </p>
+        </div>
+
+        <div className="bg-background rounded-2xl p-4 space-y-1.5">
+          <div className="flex justify-between text-sm">
+            <span className="text-text-secondary">رصيد حق التاجر:</span>
+            <span className="font-bold tabular-nums text-income-600">{formatAmount(profitJarBalance)}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-text-secondary">مبلغ السحب:</span>
+            <span className="font-bold tabular-nums text-expense-600">{formatAmount(Number(amount))}</span>
+          </div>
+          <div className="flex justify-between text-sm pt-1.5 border-t border-divider">
+            <span className="font-semibold text-text-primary">الزيادة من رأس المال:</span>
+            <span className="font-bold tabular-nums text-expense-600">
+              {formatAmount(Number(amount) - profitJarBalance)}
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => setCapitalWarning(false)}
+            className="bg-background text-text-secondary font-semibold rounded-2xl py-3.5 active:scale-[0.98] transition-transform"
+          >
+            إلغاء
+          </button>
+          <button
+            type="button"
+            onClick={() => handleSave(true)}
+            className="bg-expense-500 text-white font-bold rounded-2xl py-3.5 active:scale-[0.98] transition-transform"
+          >
+            متابعة
+          </button>
+        </div>
+      </div>
+    </BottomSheet>
+    </>
   )
 }
