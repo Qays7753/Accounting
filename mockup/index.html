@@ -627,6 +627,34 @@
         </div>
       </div>
 
+      <!-- V4 Phase 3: Opening Balance Prompt Card -->
+      <div class="px-5 mb-4">
+        <div class="bg-income-50 border border-income-200 rounded-2xl p-4">
+          <div class="flex items-start gap-3 mb-3">
+            <div class="w-10 h-10 rounded-xl bg-income-100 flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 text-income-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+            </div>
+            <div class="flex-1">
+              <p class="font-bold text-income-700 text-sm">أدخل رصيدك الحالي</p>
+              <p class="text-xs text-income-600 mt-0.5">أدخل رصيدك الحالي لبدء الحساب بدقة. يمكنك القيام بذلك لاحقاً.</p>
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="showToast('إدخال الرصيد')" class="flex-1 bg-income-500 text-white font-semibold rounded-xl py-2.5 active:scale-95 transition-transform text-sm">إدخال الرصيد</button>
+            <button onclick="showToast('تم التأجيل')" class="bg-surface text-text-secondary font-semibold rounded-xl py-2.5 px-4 active:scale-95 transition-transform text-sm">لاحقاً</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- V4 Phase 3: Simple Report Card (preview on Home) -->
+      <div class="px-5 mb-4">
+        <div class="bg-gradient-to-br from-income-400 to-income-500 rounded-2xl p-5 text-white shadow-md">
+          <p class="text-sm text-income-50 mb-1">في هالفترة كسبت</p>
+          <p class="text-3xl font-bold tabular-nums">2,250</p>
+          <p class="text-xs text-income-50 mt-2">ربح صافي</p>
+        </div>
+      </div>
+
       <!-- ============ SETTINGS PAGE ============ -->
       <div id="page-settings" class="page flex-1 pb-28 hidden">
         <header class="px-5 pt-12 pb-3" style="padding-top: max(3rem, env(safe-area-inset-top));">
@@ -692,6 +720,26 @@
                 </div>
                 <div class="flex-1"><p class="font-semibold text-txt-primary text-sm">قالب رسالة الطلب</p><p class="text-xs text-txt-tertiary mt-0.5">تخصيص الرسالة المرسلة للزبائن</p></div>
                 <svg class="w-5 h-5 text-txt-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+              </div>
+            </div>
+          </section>
+
+          <!-- V4 Phase 3: Report Display Mode -->
+          <section>
+            <h2 class="text-sm font-semibold text-txt-secondary mb-2 px-1">عرض التقارير</h2>
+            <div class="bg-surface rounded-2xl shadow-card p-4">
+              <div class="flex items-center gap-3 mb-3">
+                <div class="w-9 h-9 rounded-xl bg-primary-50 flex items-center justify-center text-primary-600 flex-shrink-0">
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                </div>
+                <div class="flex-1">
+                  <p class="font-semibold text-txt-primary text-sm">أسلوب العرض</p>
+                  <p class="text-xs text-txt-tertiary mt-0.5">بسيطة (بطاقات) أو احترافية (جداول)</p>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <button class="py-3 rounded-xl text-sm font-semibold bg-primary text-white">بسيطة</button>
+                <button class="py-3 rounded-xl text-sm font-semibold bg-background text-txt-secondary border border-divider">احترافية</button>
               </div>
             </div>
           </section>
@@ -816,6 +864,15 @@
             <div>
               <label class="block text-sm font-semibold text-txt-secondary mb-2">المبلغ المستلم</label>
               <input type="text" inputmode="decimal" value="1,500" class="w-full bg-background rounded-2xl px-4 py-3.5 text-2xl font-bold text-center tabular-nums outline-none border border-transparent focus:border-primary focus:bg-surface" dir="ltr">
+            </div>
+            <!-- V4 Phase 3: COGS + Profit Hint -->
+            <div class="bg-background rounded-2xl p-4">
+              <p class="text-sm font-semibold text-txt-secondary mb-2">تكلفة البضاعة (اختياري)</p>
+              <input type="text" inputmode="decimal" value="800" class="w-full bg-surface rounded-2xl px-4 py-3.5 text-2xl font-bold text-center tabular-nums outline-none border border-transparent focus:border-primary" dir="ltr">
+              <!-- V4 Phase 3: Profit Hint -->
+              <div class="mt-3 bg-income-50 rounded-xl p-3 text-center">
+                <p class="text-sm font-semibold text-income-700">هالصنف بتكسب منه 700 دينار على كل قطعة</p>
+              </div>
             </div>
             <!-- Description -->
             <div>
