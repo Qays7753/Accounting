@@ -1,4 +1,5 @@
 import { db } from '../db'
+import { formatArabicDate } from './date.js'
 
 /**
  * WhatsApp sharing utilities
@@ -22,7 +23,8 @@ const STATUS_LABELS = {
 }
 
 /**
- * Build the WhatsApp message from template + order data
+ * Build the WhatsApp message from template + order data.
+ * Replaces all placeholders with actual values.
  */
 export async function buildOrderMessage(order) {
   const template = await getWhatsAppTemplate()
@@ -32,7 +34,7 @@ export async function buildOrderMessage(order) {
     .replace(/\[نوع الطلب\]/g, order.orderType || '')
     .replace(/\[حالة الطلب\]/g, statusLabel)
     .replace(/\[المبلغ\]/g, (order.amount || 0).toLocaleString('en-US'))
-    .replace(/\[التاريخ\]/g, new Date(order.scheduledDate).toLocaleDateString('ar'))
+    .replace(/\[التاريخ\]/g, formatArabicDate(order.scheduledDate))
   return message
 }
 

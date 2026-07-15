@@ -3,7 +3,6 @@ import { db } from '../db'
 import AmountInput from '../components/ui/AmountInput.jsx'
 import Icon from '../components/ui/Icon.jsx'
 import { hapticSuccess, hapticLight, hapticMedium } from '../utils/haptics.js'
-import { formatAmount } from '../utils/format.js'
 
 /**
  * Onboarding Page - Opening Balances (First Launch Only)
