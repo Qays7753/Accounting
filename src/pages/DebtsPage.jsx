@@ -7,20 +7,23 @@ import Icon from '../components/ui/Icon.jsx'
 import BottomSheet from '../components/ui/BottomSheet.jsx'
 import AmountInput from '../components/ui/AmountInput.jsx'
 import { hapticLight, hapticSuccess, hapticMedium, hapticError } from '../utils/haptics.js'
+import { sendDebtReminder } from '../utils/whatsapp.js'
 
 /**
- * Debts Page (V2) - Tracks receivables (money owed TO user) and payables (money user owes).
+ * Debts Page (V4 Phase 1) - Tracks receivables and payables with tabs.
  *
- * Shows:
- * - Summary cards: total receivable, total payable
- * - Receivables list: debts owed to the user
- * - Payables list: debts the user owes
- * - Settle debt flow: record a payment that creates a balancing income/expense transaction
+ * V4 Updates:
+ * - Tab system: "لهم عندي" (Receivables) / "عندي لهم" (Payables)
+ * - WhatsApp reminder button on receivable debts (uses settings template)
+ * - Summary: "إجمالي لهم عندي" and "إجمالي عندي لهم"
  */
 export default function DebtsPage() {
   const [receivables, setReceivables] = useState([])
   const [payables, setPayables] = useState([])
   const [loading, setLoading] = useState(true)
+
+  // V4 Phase 1: Active tab ('receivables' = لهم عندي | 'payables' = عندي لهم)
+  const [activeTab, setActiveTab] = useState('receivables')
 
   // Form states
   const [debtFormOpen, setDebtFormOpen] = useState(false)
@@ -84,6 +87,18 @@ export default function DebtsPage() {
     setDetailSheetOpen(true)
   }
 
+  // V4 Phase 1: Send polite WhatsApp debt reminder (uses settings template)
+  const handleSendReminder = async (debt) => {
+    hapticLight()
+    await sendDebtReminder(debt)
+  }
+
+  // V4 Phase 1: Switch tab
+  const handleTabChange = (tab) => {
+    hapticLight()
+    setActiveTab(tab)
+  }
+
   return (
     <div className="min-h-screen pb-32">
       {/* Header */}
@@ -101,11 +116,11 @@ export default function DebtsPage() {
         </div>
       </header>
 
-      {/* Summary Cards */}
+      {/* V4 Phase 1: Summary Cards with new labels */}
       <div className="px-5 mb-4">
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-gradient-to-br from-income-400 to-income-500 rounded-2xl p-5 text-white shadow-md">
-            <p className="text-sm font-medium text-income-50 mb-1">مستحق لي</p>
+            <p className="text-sm font-medium text-income-50 mb-1">إجمالي لهم عندي</p>
             {loading ? (
               <div className="h-8 w-24 bg-white/20 rounded animate-pulse" />
             ) : (
@@ -114,7 +129,7 @@ export default function DebtsPage() {
             <p className="text-xs text-income-50 mt-1">من {receivables.length} شخص</p>
           </div>
           <div className="bg-gradient-to-br from-expense-400 to-expense-500 rounded-2xl p-5 text-white shadow-md">
-            <p className="text-sm font-medium text-expense-50 mb-1">مستحق علي</p>
+            <p className="text-sm font-medium text-expense-50 mb-1">إجمالي عندي لهم</p>
             {loading ? (
               <div className="h-8 w-24 bg-white/20 rounded animate-pulse" />
             ) : (
@@ -125,101 +140,128 @@ export default function DebtsPage() {
         </div>
       </div>
 
-      {/* Quick Add Buttons */}
-      <div className="px-5 mb-6">
-        <div className="grid grid-cols-2 gap-3">
+      {/* V4 Phase 1: Tab System (لهم عندي / عندي لهم) */}
+      <div className="px-5 mb-4">
+        <div className="bg-surface rounded-2xl p-1 flex shadow-card">
           <button
             type="button"
-            onClick={() => handleAddDebt('debt_given')}
-            className="bg-surface rounded-2xl p-4 shadow-card active:scale-95 transition-transform flex items-center gap-3"
+            onClick={() => handleTabChange('receivables')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+              activeTab === 'receivables' ? 'bg-income-500 text-white' : 'text-text-secondary'
+            }`}
           >
-            <div className="w-10 h-10 rounded-xl bg-income-50 flex items-center justify-center">
-              <Icon name="arrowDown" className="w-5 h-5 text-income-600" strokeWidth={2} />
-            </div>
-            <div className="text-right">
-              <p className="font-semibold text-text-primary text-sm">دين لي</p>
-              <p className="text-xs text-text-tertiary">زبون يشتري الآن ويدفع لاحقاً</p>
-            </div>
+            <Icon name="arrowDown" className="w-4 h-4" />
+            لهم عندي
           </button>
           <button
             type="button"
-            onClick={() => handleAddDebt('debt_taken')}
-            className="bg-surface rounded-2xl p-4 shadow-card active:scale-95 transition-transform flex items-center gap-3"
+            onClick={() => handleTabChange('payables')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+              activeTab === 'payables' ? 'bg-expense-500 text-white' : 'text-text-secondary'
+            }`}
           >
-            <div className="w-10 h-10 rounded-xl bg-expense-50 flex items-center justify-center">
-              <Icon name="arrowUp" className="w-5 h-5 text-expense-600" strokeWidth={2} />
-            </div>
-            <div className="text-right">
-              <p className="font-semibold text-text-primary text-sm">دين علي</p>
-              <p className="text-xs text-text-tertiary">مواد على الحساب</p>
-            </div>
+            <Icon name="arrowUp" className="w-4 h-4" />
+            عندي لهم
           </button>
         </div>
       </div>
 
-      {/* Receivables List */}
-      <section className="px-5 mb-6">
-        <h2 className="text-sm font-bold text-txt-secondary mb-3 px-1">ديون لي على الآخرين</h2>
-        {loading ? (
-          <div className="space-y-2">
-            {Array.from({ length: 2 }).map((_, i) => (
-              <div key={i} className="bg-surface rounded-2xl p-4 shadow-card">
-                <div className="h-4 w-1/2 bg-gray-200 rounded animate-pulse mb-2" />
-                <div className="h-3 w-1/3 bg-gray-100 rounded animate-pulse" />
-              </div>
-            ))}
+      {/* Quick Add Button (context-aware) */}
+      <div className="px-5 mb-4">
+        <button
+          type="button"
+          onClick={() => handleAddDebt(activeTab === 'receivables' ? 'debt_given' : 'debt_taken')}
+          className={`w-full rounded-2xl p-4 shadow-card active:scale-95 transition-transform flex items-center gap-3 ${
+            activeTab === 'receivables' ? 'bg-income-50' : 'bg-expense-50'
+          }`}
+        >
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+            activeTab === 'receivables' ? 'bg-income-100' : 'bg-expense-100'
+          }`}>
+            <Icon name="plus" className={`w-5 h-5 ${activeTab === 'receivables' ? 'text-income-600' : 'text-expense-600'}`} strokeWidth={2} />
           </div>
-        ) : receivables.length === 0 ? (
-          <EmptyState
-            icon="checkCircle"
-            title="لا توجد ديون لك"
-            description="عندما يطلب أحد مبلغاً مؤجلاً، ستظهر هنا"
-          />
-        ) : (
-          <div className="space-y-2">
-            {receivables.map((debt) => (
-              <DebtCard
-                key={debt.id}
-                debt={debt}
-                isReceivable={true}
-                onSettle={() => handleSettle(debt)}
-                onViewDetail={() => handleViewDetail(debt)}
-              />
-            ))}
+          <div className="text-right">
+            <p className="font-semibold text-text-primary text-sm">
+              {activeTab === 'receivables' ? 'إضافة دين لهم عندي' : 'إضافة دين عندي لهم'}
+            </p>
+            <p className="text-xs text-text-tertiary">
+              {activeTab === 'receivables' ? 'زبون يشتري الآن ويدفع لاحقاً' : 'مواد على الحساب من مورد'}
+            </p>
           </div>
-        )}
-      </section>
+        </button>
+      </div>
 
-      {/* Payables List */}
+      {/* V4 Phase 1: Tabbed Debt List */}
       <section className="px-5 mb-6">
-        <h2 className="text-sm font-bold text-txt-secondary mb-3 px-1">ديون علي للآخرين</h2>
-        {loading ? (
-          <div className="space-y-2">
-            {Array.from({ length: 1 }).map((_, i) => (
-              <div key={i} className="bg-surface rounded-2xl p-4 shadow-card">
-                <div className="h-4 w-1/2 bg-gray-200 rounded animate-pulse mb-2" />
-                <div className="h-3 w-1/3 bg-gray-100 rounded animate-pulse" />
+        {activeTab === 'receivables' ? (
+          <>
+            <h2 className="text-sm font-bold text-txt-secondary mb-3 px-1">
+              لهم عندي ({receivables.length})
+            </h2>
+            {loading ? (
+              <div className="space-y-2">
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <div key={i} className="bg-surface rounded-2xl p-4 shadow-card">
+                    <div className="h-4 w-1/2 bg-gray-200 rounded animate-pulse mb-2" />
+                    <div className="h-3 w-1/3 bg-gray-100 rounded animate-pulse" />
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        ) : payables.length === 0 ? (
-          <EmptyState
-            icon="checkCircle"
-            title="لا توجد ديون عليك"
-            description="عندما تأخذ مواد على الحساب، ستظهر هنا"
-          />
-        ) : (
-          <div className="space-y-2">
-            {payables.map((debt) => (
-              <DebtCard
-                key={debt.id}
-                debt={debt}
-                isReceivable={false}
-                onSettle={() => handleSettle(debt)}
-                onViewDetail={() => handleViewDetail(debt)}
+            ) : receivables.length === 0 ? (
+              <EmptyState
+                icon="checkCircle"
+                title="لا توجد ديون لهم عندي"
+                description="عندما يطلب أحد مبلغاً مؤجلاً، ستظهر هنا"
               />
-            ))}
-          </div>
+            ) : (
+              <div className="space-y-2">
+                {receivables.map((debt) => (
+                  <DebtCard
+                    key={debt.id}
+                    debt={debt}
+                    isReceivable={true}
+                    onSettle={() => handleSettle(debt)}
+                    onViewDetail={() => handleViewDetail(debt)}
+                    onSendReminder={() => handleSendReminder(debt)}
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <h2 className="text-sm font-bold text-txt-secondary mb-3 px-1">
+              عندي لهم ({payables.length})
+            </h2>
+            {loading ? (
+              <div className="space-y-2">
+                {Array.from({ length: 1 }).map((_, i) => (
+                  <div key={i} className="bg-surface rounded-2xl p-4 shadow-card">
+                    <div className="h-4 w-1/2 bg-gray-200 rounded animate-pulse mb-2" />
+                    <div className="h-3 w-1/3 bg-gray-100 rounded animate-pulse" />
+                  </div>
+                ))}
+              </div>
+            ) : payables.length === 0 ? (
+              <EmptyState
+                icon="checkCircle"
+                title="لا توجد ديون عندي لهم"
+                description="عندما تأخذ مواد على الحساب، ستظهر هنا"
+              />
+            ) : (
+              <div className="space-y-2">
+                {payables.map((debt) => (
+                  <DebtCard
+                    key={debt.id}
+                    debt={debt}
+                    isReceivable={false}
+                    onSettle={() => handleSettle(debt)}
+                    onViewDetail={() => handleViewDetail(debt)}
+                  />
+                ))}
+              </div>
+            )}
+          </>
         )}
       </section>
 
@@ -261,9 +303,9 @@ export default function DebtsPage() {
 }
 
 /**
- * Debt Card - shows a single debt with progress bar and settle button
+ * Debt Card - shows a single debt with progress bar, settle button, and WhatsApp reminder (V4)
  */
-function DebtCard({ debt, isReceivable, onSettle, onViewDetail }) {
+function DebtCard({ debt, isReceivable, onSettle, onViewDetail, onSendReminder }) {
   const remaining = debt.amount - (debt.debtAmountPaid || 0)
   const paidPercent = debt.amount > 0 ? ((debt.debtAmountPaid || 0) / debt.amount) * 100 : 0
   const isPartial = (debt.debtAmountPaid || 0) > 0 && debt.debtStatus !== 'settled'
@@ -296,20 +338,37 @@ function DebtCard({ debt, isReceivable, onSettle, onViewDetail }) {
             </span>
           </p>
         </div>
-        {debt.debtStatus !== 'settled' && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              onSettle()
-            }}
-            className={`text-white text-xs font-semibold px-3 py-2 rounded-lg active:scale-95 transition-transform ${
-              isReceivable ? 'bg-income-500' : 'bg-expense-500'
-            }`}
-          >
-            {isReceivable ? 'تسجيل دفعة' : 'سداد دفعة'}
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {/* V4 Phase 1: WhatsApp Reminder Button (receivables only) */}
+          {isReceivable && debt.debtStatus !== 'settled' && onSendReminder && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                onSendReminder()
+              }}
+              className="w-9 h-9 rounded-lg bg-income-50 flex items-center justify-center active:scale-95 transition-transform"
+              aria-label="تذكير واتساب"
+              title="إرسال تذكير واتساب"
+            >
+              <Icon name="whatsapp" className="w-4 h-4 text-income-600" />
+            </button>
+          )}
+          {debt.debtStatus !== 'settled' && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                onSettle()
+              }}
+              className={`text-white text-xs font-semibold px-3 py-2 rounded-lg active:scale-95 transition-transform ${
+                isReceivable ? 'bg-income-500' : 'bg-expense-500'
+              }`}
+            >
+              {isReceivable ? 'تسجيل دفعة' : 'سداد دفعة'}
+            </button>
+          )}
+        </div>
       </div>
       {/* Progress bar for partial payments */}
       {isPartial && (

@@ -16,11 +16,14 @@ export default function HomePage() {
   // V2: Branding (logo + business name)
   const [logo, setLogo] = useState(null)
   const [businessName, setBusinessName] = useState(null)
+  // V4 Phase 1: Two Jars (حق المحل & حق التاجر)
+  const [jars, setJars] = useState({ capitalJar: 0, profitJar: 0, totalCash: 0 })
 
   useEffect(() => {
     db.getLogo().then(setLogo)
     db.getBusinessName().then(setBusinessName)
-  }, [])
+    db.getTwoJars().then(setJars)
+  }, [stats.cashBalance]) // refresh jars when cashBalance changes
 
   const handleFabAction = (action) => {
     setSheetOpen(action)
@@ -29,6 +32,8 @@ export default function HomePage() {
   const handleSaved = () => {
     stats.refresh()
     setSheetOpen(null)
+    // V4: Refresh jars after save
+    db.getTwoJars().then(setJars)
   }
 
   return (
@@ -52,22 +57,56 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* Main Cash Card */}
+      {/* V4 Phase 1: Two Jars Dashboard (حق المحل & حق التاجر) */}
       <section className="px-5 mb-4">
-        <div className="bg-gradient-to-br from-income-400 to-income-500 rounded-3xl p-6 shadow-md text-white">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-income-50">الرصيد المتاح</p>
-            <Icon name="wallet" className="w-5 h-5 text-income-50" />
+        {/* Total Cash Summary */}
+        <div className="bg-gradient-to-br from-primary-500 to-primary-600 rounded-3xl p-5 shadow-md text-white mb-3">
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-sm font-medium text-primary-50">إجمالي النقد المتاح</p>
+            <Icon name="wallet" className="w-5 h-5 text-primary-50" />
           </div>
           {stats.loading ? (
-            <div className="h-10 w-40 bg-white/20 rounded-lg animate-pulse" />
+            <div className="h-9 w-40 bg-white/20 rounded-lg animate-pulse" />
           ) : (
-            <p className="text-4xl font-bold tabular-nums tracking-tight">
-              {formatAmount(stats.cashBalance)}
+            <p className="text-3xl font-bold tabular-nums tracking-tight">
+              {formatAmount(jars.totalCash)}
             </p>
           )}
-          <p className="text-xs text-income-50 mt-2">إجمالي النقد المتاح حالياً</p>
         </div>
+
+        {/* Two Jars Split */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* Jar A: حق المحل (Capital) */}
+          <div className="bg-surface rounded-2xl p-4 shadow-card border-r-4 border-primary">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
+                <Icon name="wallet" className="w-4 h-4 text-primary-600" strokeWidth={2} />
+              </div>
+              <p className="text-xs font-bold text-primary-600">حق المحل</p>
+            </div>
+            <p className="text-xl font-bold tabular-nums text-text-primary">
+              {formatAmount(jars.capitalJar)}
+            </p>
+            <p className="text-[10px] text-text-tertiary mt-1">رأس المال (للتعبئة)</p>
+          </div>
+
+          {/* Jar B: حق التاجر (Profit) */}
+          <div className="bg-surface rounded-2xl p-4 shadow-card border-r-4 border-income-500">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-income-50 flex items-center justify-center">
+                <Icon name="trendingUp" className="w-4 h-4 text-income-600" strokeWidth={2} />
+              </div>
+              <p className="text-xs font-bold text-income-600">حق التاجر</p>
+            </div>
+            <p className={`text-xl font-bold tabular-nums ${jars.profitJar >= 0 ? 'text-income-600' : 'text-expense-600'}`}>
+              {formatAmount(jars.profitJar)}
+            </p>
+            <p className="text-[10px] text-text-tertiary mt-1">الأرباح (آمن للصرف)</p>
+          </div>
+        </div>
+        <p className="text-[10px] text-text-tertiary mt-2 text-center px-2">
+          لا تنسحب من "حق المحل" إلا لإعادة تعبئة البضاعة
+        </p>
       </section>
 
       {/* Today's Income & Expenses */}
