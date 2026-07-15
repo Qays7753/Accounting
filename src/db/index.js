@@ -90,6 +90,23 @@ class AccountingDatabase extends Dexie {
       settlements: '++id, debtTransactionId, paymentTransactionId, amount, createdAt',
     })
 
+    // Version 5 - V3: Professional Business Suite
+    // New table: materials (BOM components - analytical/advisory ONLY, does NOT affect finance)
+    // Orders: add is_paid, payment_transaction_id, phone indexes for CRM
+    // Customers: already exists, now actively used for CRM
+    this.version(5).stores({
+      transactions: '++id, type, [type+dateTimestamp], dateTimestamp, category, orderId, amount, createdAt, isRecurring, recurringParentId, debtStatus, linkedDebtId, edited',
+      // V3: add is_paid and paymentTransactionId indexes for order payment tracking
+      orders: '++id, status, [status+scheduledTimestamp], scheduledTimestamp, customerName, customerId, phone, orderType, amount, is_paid, paymentTransactionId, createdAt',
+      customers: '++id, name, phone, archived, createdAt',
+      // V3: new materials table for BOM costing (analytical only)
+      materials: '++id, name, unit_type, unit_cost, createdAt',
+      settings: '++id, &key',
+      meta: '++id, &key',
+      notifications: '++id, orderId, scheduledTime, sent, createdAt',
+      settlements: '++id, debtTransactionId, paymentTransactionId, amount, createdAt',
+    })
+
     this.open()
   }
 
@@ -330,8 +347,9 @@ class AccountingDatabase extends Dexie {
   // ========== ORDER HELPERS ==========
 
   /**
-   * Add a new order
-   * @param {Object} data - { customerName, customerId, orderType, scheduledDate, amount, status, notes }
+   * Add a new order (V3: supports CRM + BOM + payment tracking)
+   * @param {Object} data - { customerName, customerId, phone, orderType, scheduledDate,
+   *   amount, status, notes, components_used (array of {materialId, name, unit_type, qty, unit_cost, total_cost}) }
    */
   async addOrder(data) {
     const now = Date.now()
@@ -339,12 +357,20 @@ class AccountingDatabase extends Dexie {
     const order = {
       customerName: data.customerName || '',
       customerId: data.customerId || null,
+      phone: data.phone || '', // V3: CRM phone number
       orderType: data.orderType || '',
       scheduledDate: scheduledObj.toISOString(),
       scheduledTimestamp: scheduledObj.getTime(),
       amount: Number(data.amount) || 0,
       status: data.status || 'in_progress', // 'in_progress' | 'ready' | 'closed'
       notes: data.notes || '',
+      // V3: BOM components (analytical/advisory ONLY - does NOT affect finance)
+      components_used: data.components_used || [],
+      total_cost: data.total_cost || 0, // calculated BOM total (analytical)
+      // V3: Payment tracking
+      is_paid: data.is_paid || false, // true when order is sold and paid
+      paymentTransactionId: data.paymentTransactionId || null, // link to income/debt transaction
+      paymentType: data.paymentType || null, // 'cash' | 'credit' | null
       createdAt: now,
       updatedAt: now,
     }
@@ -900,6 +926,261 @@ class AccountingDatabase extends Dexie {
    */
   async setBusinessName(name) {
     await this.setSetting('business_name', name)
+  }
+
+  // ========== V3: MATERIALS (BOM - Analytical Only) ==========
+
+  /**
+   * Add a new material (for BOM costing).
+   * @param {Object} data - { name, unit_type, unit_cost }
+   * unit_type: 'piece' | 'gram' | 'ml' | 'meter' | 'liter' | 'kg'
+   */
+  async addMaterial(data) {
+    const now = Date.now()
+    const material = {
+      name: data.name || '',
+      unit_type: data.unit_type || 'piece',
+      unit_cost: Number(data.unit_cost) || 0,
+      createdAt: now,
+      updatedAt: now,
+    }
+    const id = await this.materials.add(material)
+    return { ...material, id }
+  }
+
+  /**
+   * Update a material.
+   */
+  async updateMaterial(id, updates) {
+    const updateData = { ...updates, updatedAt: Date.now() }
+    if (updates.unit_cost !== undefined) {
+      updateData.unit_cost = Number(updates.unit_cost) || 0
+    }
+    await this.materials.update(id, updateData)
+  }
+
+  /**
+   * Delete a material.
+   */
+  async deleteMaterial(id) {
+    await this.materials.delete(id)
+  }
+
+  /**
+   * Get all materials.
+   */
+  async getMaterials() {
+    const items = await this.materials.toArray()
+    items.sort((a, b) => a.name.localeCompare(b.name, 'ar'))
+    return items
+  }
+
+  /**
+   * Calculate the total BOM cost for a set of components.
+   * PURELY ANALYTICAL — does NOT create transactions or affect cash flow.
+   * @param {Array} components - [{ materialId, name, unit_type, qty, unit_cost }]
+   * @returns {number} total cost
+   */
+  calculateBOMCost(components) {
+    if (!components || !Array.isArray(components)) return 0
+    return components.reduce((sum, c) => {
+      return sum + (Number(c.qty) || 0) * (Number(c.unit_cost) || 0)
+    }, 0)
+  }
+
+  // ========== V3: CUSTOMERS (CRM) ==========
+
+  /**
+   * Add a new customer (or find existing by phone).
+   */
+  async addCustomer(data) {
+    const now = Date.now()
+    // Check if customer with this phone already exists
+    if (data.phone) {
+      const existing = await this.customers
+        .where('phone').equals(data.phone)
+        .and(c => !c.archived)
+        .first()
+      if (existing) return existing
+    }
+    const customer = {
+      name: data.name || '',
+      phone: data.phone || '',
+      notes: data.notes || '',
+      archived: false,
+      createdAt: now,
+      updatedAt: now,
+    }
+    const id = await this.customers.add(customer)
+    return { ...customer, id }
+  }
+
+  /**
+   * Get all active (non-archived) customers.
+   */
+  async getAllCustomers(search = '') {
+    let items = await this.customers.toArray()
+    items = items.filter(c => !c.archived)
+    if (search && search.trim()) {
+      const q = search.trim().toLowerCase()
+      items = items.filter(c =>
+        (c.name && c.name.toLowerCase().includes(q)) ||
+        (c.phone && c.phone.includes(q))
+      )
+    }
+    items.sort((a, b) => a.name.localeCompare(b.name, 'ar'))
+    return items
+  }
+
+  /**
+   * Get orders for a specific customer.
+   */
+  async getOrdersByCustomer(customerName) {
+    return await this.orders
+      .where('customerName').equals(customerName)
+      .toArray()
+  }
+
+  // ========== V3: ORDER COMPLETION & PAYMENT ==========
+
+  /**
+   * Complete & Sell an order with 3 scenarios:
+   * - 'cash': Creates an income transaction, marks order as paid
+   * - 'credit': Creates a debt_given transaction, marks order as unpaid (credit sale)
+   * - 'done': Just marks status as closed, NO financial transaction
+   *
+   * CRITICAL BUSINESS RULE: BOM cost is NEVER deducted from finance.
+   * Only the sale amount (order.amount) is recorded as income or debt.
+   *
+   * @param {number} orderId - the order to complete
+   * @param {string} paymentType - 'cash' | 'credit' | 'done'
+   * @returns {Object} - { transaction, updatedOrder }
+   */
+  async completeOrder(orderId, paymentType) {
+    const order = await this.orders.get(orderId)
+    if (!order) throw new Error('Order not found')
+
+    let transaction = null
+    const updates = {
+      status: 'closed',
+      updatedAt: Date.now(),
+    }
+
+    if (paymentType === 'cash') {
+      // Create income transaction for the sale amount
+      transaction = await this.addTransaction({
+        type: 'income',
+        amount: order.amount,
+        description: `بيع: ${order.customerName || 'زبون'} - ${order.orderType || 'طلب'}`,
+        category: 'مبيعات',
+        date: new Date(),
+        orderId: order.id,
+      })
+      updates.is_paid = true
+      updates.paymentTransactionId = transaction.id
+      updates.paymentType = 'cash'
+    } else if (paymentType === 'credit') {
+      // Create debt_given transaction (customer owes us)
+      transaction = await this.addTransaction({
+        type: 'debt_given',
+        amount: order.amount,
+        description: `بيع بالأجل: ${order.customerName || 'زبون'} - ${order.orderType || 'طلب'}`,
+        category: 'دين مستحقة لي',
+        date: new Date(),
+        orderId: order.id,
+        debtStatus: 'unpaid',
+        debtAmountPaid: 0,
+      })
+      updates.is_paid = false
+      updates.paymentTransactionId = transaction.id
+      updates.paymentType = 'credit'
+    } else if (paymentType === 'done') {
+      // Just mark as done, NO financial impact
+      updates.is_paid = false
+      updates.paymentType = 'done'
+    }
+
+    await this.orders.update(order.id, updates)
+    return {
+      transaction,
+      updatedOrder: { ...order, ...updates },
+    }
+  }
+
+  // ========== V3: REPORTING & ANALYTICS ==========
+
+  /**
+   * Get comprehensive report for a date range.
+   *
+   * CRITICAL: Distinguishes between:
+   * - Real Cash Profit: income - expense (actual money received and spent)
+   * - Theoretical Profit: order revenue - BOM cost (what profit SHOULD be based on materials)
+   *
+   * @param {Date} startDate
+   * @param {Date} endDate
+   * @returns {Object} report data
+   */
+  async getReport(startDate, endDate) {
+    const startTs = new Date(startDate).getTime()
+    const endTs = new Date(endDate).getTime()
+
+    // Get all transactions in range
+    const transactions = await this.transactions
+      .where('dateTimestamp')
+      .between(startTs, endTs, true, true)
+      .toArray()
+
+    // Real cash flow (from actual transactions)
+    let cashReceived = 0 // income
+    let cashSpent = 0 // expense
+    let withdrawal = 0 // personal
+    for (const t of transactions) {
+      if (t.type === 'income') cashReceived += t.amount
+      else if (t.type === 'expense') cashSpent += t.amount
+      else if (t.type === 'withdrawal') withdrawal += t.amount
+    }
+
+    // Get all orders completed in this range
+    const orders = await this.orders
+      .where('scheduledTimestamp')
+      .between(startTs, endTs, true, true)
+      .toArray()
+
+    // Theoretical profit from BOM (analytical)
+    let theoreticalRevenue = 0
+    let theoreticalCost = 0
+    let completedOrders = 0
+    for (const o of orders) {
+      if (o.status === 'closed') {
+        completedOrders++
+        theoreticalRevenue += o.amount || 0
+        theoreticalCost += o.total_cost || 0
+      }
+    }
+
+    const realCashProfit = cashReceived - cashSpent
+    const theoreticalProfit = theoreticalRevenue - theoreticalCost
+
+    return {
+      period: { start: new Date(startDate), end: new Date(endDate) },
+      // Real cash flow
+      cashReceived,
+      cashSpent,
+      withdrawal,
+      netCash: cashReceived - cashSpent - withdrawal,
+      realCashProfit,
+      // Theoretical (BOM-based)
+      theoreticalRevenue,
+      theoreticalCost,
+      theoreticalProfit,
+      // Order stats
+      totalOrders: orders.length,
+      completedOrders,
+      // Variance: difference between theoretical and real
+      // Positive = collected less than theoretical (credit sales outstanding)
+      // Negative = collected more than theoretical (prepayments)
+      variance: realCashProfit - theoreticalProfit,
+    }
   }
 }
 
