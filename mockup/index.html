@@ -523,6 +523,110 @@
         </div>
       </div>
 
+      <!-- ============ V4 PHASE 2: QUICK POS PAGE ============ -->
+      <div id="page-pos" class="page flex-1 pb-28 hidden">
+        <header class="px-5 pt-12 pb-3 bg-background sticky top-0 z-20" style="padding-top: max(3rem, env(safe-area-inset-top));">
+          <div class="flex items-center justify-between">
+            <h1 class="text-2xl font-bold">البيع السريع</h1>
+            <button onclick="showToast('إضافة منتج')" class="w-10 h-10 rounded-full bg-primary flex items-center justify-center shadow-fab active:scale-95 transition-transform">
+              <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+            </button>
+          </div>
+        </header>
+
+        <!-- Products Grid -->
+        <div class="px-5 mb-4">
+          <div class="grid grid-cols-2 gap-3">
+            <button onclick="addToCart('قهوة', 5)" class="bg-surface rounded-2xl p-4 shadow-card active:scale-95 transition-transform text-right">
+              <div class="w-full h-16 rounded-xl bg-primary-50 flex items-center justify-center mb-2">
+                <svg class="w-8 h-8 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+              </div>
+              <p class="font-bold text-txt-primary text-sm">قهوة</p>
+              <p class="text-lg font-bold text-primary-600 tabular-nums mt-1">5</p>
+            </button>
+            <button onclick="addToCart('شاي', 3)" class="bg-surface rounded-2xl p-4 shadow-card active:scale-95 transition-transform text-right">
+              <div class="w-full h-16 rounded-xl bg-primary-50 flex items-center justify-center mb-2">
+                <svg class="w-8 h-8 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+              </div>
+              <p class="font-bold text-txt-primary text-sm">شاي</p>
+              <p class="text-lg font-bold text-primary-600 tabular-nums mt-1">3</p>
+            </button>
+            <button onclick="addToCart('ساندويش', 8)" class="bg-surface rounded-2xl p-4 shadow-card active:scale-95 transition-transform text-right">
+              <div class="w-full h-16 rounded-xl bg-primary-50 flex items-center justify-center mb-2">
+                <svg class="w-8 h-8 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+              </div>
+              <p class="font-bold text-txt-primary text-sm">ساندويش</p>
+              <p class="text-lg font-bold text-primary-600 tabular-nums mt-1">8</p>
+            </button>
+            <button onclick="addToCart('عصير', 4)" class="bg-surface rounded-2xl p-4 shadow-card active:scale-95 transition-transform text-right">
+              <div class="w-full h-16 rounded-xl bg-primary-50 flex items-center justify-center mb-2">
+                <svg class="w-8 h-8 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+              </div>
+              <p class="font-bold text-txt-primary text-sm">عصير</p>
+              <p class="text-lg font-bold text-primary-600 tabular-nums mt-1">4</p>
+            </button>
+          </div>
+        </div>
+
+        <!-- Mini Cart (Fixed at bottom) -->
+        <div id="pos-cart" class="fixed bottom-16 inset-x-0 max-w-[420px] mx-auto px-5 z-30" style="display:none;">
+          <div class="bg-surface rounded-2xl shadow-xl p-4">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
+                  <span id="cart-count" class="text-sm font-bold text-primary-600 tabular-nums">0</span>
+                </div>
+                <p class="font-bold text-txt-primary text-sm">السلة</p>
+              </div>
+              <button onclick="clearCart()" class="text-xs text-expense-600 font-semibold active:scale-95">مسح</button>
+            </div>
+            <div id="cart-items" class="space-y-1.5 mb-3 max-h-32 overflow-y-auto hide-scrollbar"></div>
+            <div class="flex items-center justify-between pt-2 border-t border-divider">
+              <div>
+                <p class="text-xs text-txt-tertiary">الإجمالي</p>
+                <p id="cart-total" class="text-xl font-bold text-primary-600 tabular-nums">0</p>
+              </div>
+              <button onclick="openSheet('pos-payment-sheet')" class="bg-income-500 text-white font-bold rounded-2xl px-6 py-3 active:scale-95 transition-transform flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                إتمام البيع
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- V4 Phase 2: Z-Report Reminder Card (on Home page, after Two Jars) -->
+      <div id="z-report-card" class="px-5 mb-4" style="display:none;">
+        <button onclick="openSheet('z-report-sheet')" class="w-full bg-withdrawal-50 border border-withdrawal-200 rounded-2xl p-4 flex items-center gap-3 active:scale-[0.98] transition-transform text-right">
+          <div class="w-12 h-12 rounded-xl bg-withdrawal-100 flex items-center justify-center flex-shrink-0">
+            <svg class="w-6 h-6 text-withdrawal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <div class="flex-1">
+            <p class="font-bold text-withdrawal-700 text-sm">حان وقت إقفال اليوم</p>
+            <p class="text-xs text-withdrawal-600 mt-0.5">اضغط هنا لعد النقد ومطابقته مع السجلات</p>
+          </div>
+        </button>
+      </div>
+
+      <!-- V4 Phase 2: Weekly Backup Prompt -->
+      <div id="backup-prompt" class="px-5 mb-4">
+        <div class="bg-primary-50 border border-primary-100 rounded-2xl p-4">
+          <div class="flex items-start gap-3 mb-3">
+            <div class="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            </div>
+            <div class="flex-1">
+              <p class="font-bold text-primary-700 text-sm">حماية بياناتك</p>
+              <p class="text-xs text-primary-600 mt-0.5">لحماية بياناتك، اضغط هنا لإرسال نسخة احتياطية لنفسك عبر واتساب</p>
+            </div>
+          </div>
+          <button onclick="showToast('تم إرسال النسخة الاحتياطية عبر واتساب')" class="w-full bg-primary text-white font-semibold rounded-xl py-2.5 active:scale-95 transition-transform text-sm flex items-center justify-center gap-2">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+            إرسال نسخة احتياطية عبر واتساب
+          </button>
+        </div>
+      </div>
+
       <!-- ============ SETTINGS PAGE ============ -->
       <div id="page-settings" class="page flex-1 pb-28 hidden">
         <header class="px-5 pt-12 pb-3" style="padding-top: max(3rem, env(safe-area-inset-top));">
@@ -625,9 +729,13 @@
             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
             <span class="text-[10px] font-medium">المالية</span>
           </button>
-          <button onclick="switchPage('orders')" class="nav-btn flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl min-w-[64px] text-txt-tertiary" data-page="orders">
+          <button onclick="switchPage('orders')" class="nav-btn flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl min-w-[48px] text-txt-tertiary" data-page="orders">
             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
             <span class="text-[10px] font-medium">الطلبات</span>
+          </button>
+          <button onclick="switchPage('pos')" class="nav-btn flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl min-w-[48px] text-txt-tertiary" data-page="pos">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+            <span class="text-[10px] font-medium">البيع</span>
           </button>
           <button onclick="switchPage('debts')" class="nav-btn flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl min-w-[64px] text-txt-tertiary" data-page="debts">
             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-2M21 12a2 2 0 00-2-2h-6a2 2 0 100 4h6a2 2 0 002-2z"/></svg>
@@ -1310,6 +1418,74 @@
       </div>
     </div>
 
+    <!-- V4 Phase 2: POS Payment Sheet -->
+    <div id="pos-payment-sheet" class="sheet-overlay fixed inset-0 z-40 hidden">
+      <div class="absolute inset-0 bg-black/40" onclick="closeSheet('pos-payment-sheet')"></div>
+      <div class="absolute inset-x-0 bottom-0 bg-surface rounded-t-3xl shadow-sheet z-50 flex flex-col animate-slide-up" style="max-height: 85vh; padding-bottom: env(safe-area-inset-bottom);">
+        <div class="flex justify-center pt-3 pb-1"><div class="w-10 h-1.5 bg-gray-300 rounded-full"></div></div>
+        <div class="px-5 py-3 flex items-center justify-between border-b border-divider">
+          <h2 class="text-lg font-bold text-txt-primary">إتمام البيع</h2>
+          <button onclick="closeSheet('pos-payment-sheet')" class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center active:scale-95">
+            <svg class="w-5 h-5 text-txt-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="px-5 py-4 overflow-y-auto hide-scrollbar">
+          <div class="space-y-4 pb-4">
+            <div class="bg-background rounded-2xl p-4 text-center">
+              <p class="text-sm text-txt-secondary mb-1">الإجمالي</p>
+              <p id="pos-payment-total" class="text-3xl font-bold tabular-nums text-txt-primary">0</p>
+            </div>
+            <p class="text-sm text-txt-secondary text-center">كيف تم الاستلام؟</p>
+            <button onclick="closeSheet('pos-payment-sheet'); showToast('تم البيع نقداً'); clearCart()" class="w-full bg-income-500 text-white font-bold rounded-2xl py-4 active:scale-[0.98] transition-transform flex items-center justify-center gap-2">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+              نقداً (كاش)
+            </button>
+            <button onclick="closeSheet('pos-payment-sheet'); showToast('تم البيع بالأجل'); clearCart()" class="w-full bg-withdrawal-500 text-white font-bold rounded-2xl py-4 active:scale-[0.98] transition-transform flex items-center justify-center gap-2">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              بالأجل (دين)
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- V4 Phase 2: Z-Report Sheet -->
+    <div id="z-report-sheet" class="sheet-overlay fixed inset-0 z-40 hidden">
+      <div class="absolute inset-0 bg-black/40" onclick="closeSheet('z-report-sheet')"></div>
+      <div class="absolute inset-x-0 bottom-0 bg-surface rounded-t-3xl shadow-sheet z-50 flex flex-col animate-slide-up" style="max-height: 85vh; padding-bottom: env(safe-area-inset-bottom);">
+        <div class="flex justify-center pt-3 pb-1"><div class="w-10 h-1.5 bg-gray-300 rounded-full"></div></div>
+        <div class="px-5 py-3 flex items-center justify-between border-b border-divider">
+          <h2 class="text-lg font-bold text-txt-primary">إقفال اليومية</h2>
+          <button onclick="closeSheet('z-report-sheet')" class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center active:scale-95">
+            <svg class="w-5 h-5 text-txt-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="px-5 py-4 overflow-y-auto hide-scrollbar">
+          <div class="space-y-5 pb-4">
+            <div class="bg-background rounded-2xl p-4">
+              <p class="text-xs text-txt-secondary mb-1">النقد المتوقع في الصندوق</p>
+              <p class="text-3xl font-bold tabular-nums text-txt-primary">8,450</p>
+              <p class="text-xs text-txt-tertiary mt-1">بناءً على سجلات التطبيق</p>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-txt-secondary mb-2">النقد الفعلي الذي عده التاجر</label>
+              <input type="text" inputmode="decimal" placeholder="0" class="w-full bg-background rounded-2xl px-4 py-3.5 text-2xl font-bold text-center tabular-nums outline-none border border-transparent focus:border-primary focus:bg-surface" dir="ltr">
+            </div>
+            <div class="bg-expense-50 rounded-2xl p-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm font-semibold text-expense-700">عجز</p>
+                  <p class="text-xs text-text-tertiary mt-0.5">الفرق بين المتوقع والفعلي</p>
+                </div>
+                <p class="text-2xl font-bold tabular-nums text-expense-600">-150</p>
+              </div>
+            </div>
+            <button onclick="closeSheet('z-report-sheet'); showToast('تم حفظ الإقفال')" class="w-full bg-primary text-white font-bold rounded-2xl py-4 active:scale-[0.98] transition-transform">حفظ الإقفال</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ============ SNACKBAR ============ -->
     <div id="snackbar" class="fixed inset-x-0 bottom-24 z-[60] flex justify-center px-4 pointer-events-none hidden">
       <div class="pointer-events-auto bg-txt-primary text-white rounded-2xl shadow-xl px-4 py-3 flex items-center gap-3 max-w-sm w-full snackbar-in">
@@ -1561,6 +1737,48 @@
       content.style.display = 'none'
       chevron.style.transform = 'rotate(0deg)'
     }
+  }
+
+  // ============ V4 PHASE 2: QUICK POS CART ============
+  let posCart = []
+  function addToCart(name, price) {
+    const existing = posCart.find(item => item.name === name)
+    if (existing) {
+      existing.qty++
+    } else {
+      posCart.push({ name, price, qty: 1 })
+    }
+    renderCart()
+  }
+  function clearCart() {
+    posCart = []
+    renderCart()
+  }
+  function renderCart() {
+    const cartEl = document.getElementById('pos-cart')
+    const itemsEl = document.getElementById('cart-items')
+    const totalEl = document.getElementById('cart-total')
+    const countEl = document.getElementById('cart-count')
+    const paymentTotalEl = document.getElementById('pos-payment-total')
+
+    if (posCart.length === 0) {
+      cartEl.style.display = 'none'
+      return
+    }
+    cartEl.style.display = 'block'
+
+    const total = posCart.reduce((s, i) => s + i.price * i.qty, 0)
+    const count = posCart.reduce((s, i) => s + i.qty, 0)
+
+    itemsEl.innerHTML = posCart.map(item =>
+      `<div class="flex items-center justify-between text-sm">
+        <span class="text-txt-primary">${item.name} ×${item.qty}</span>
+        <span class="font-semibold tabular-nums text-txt-primary">${(item.price * item.qty).toLocaleString('en-US')}</span>
+      </div>`
+    ).join('')
+    totalEl.textContent = total.toLocaleString('en-US')
+    countEl.textContent = count
+    if (paymentTotalEl) paymentTotalEl.textContent = total.toLocaleString('en-US')
   }
 
   // ============ V4: DEBT TAB SWITCHER ============
