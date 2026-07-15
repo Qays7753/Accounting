@@ -107,15 +107,35 @@ class AccountingDatabase extends Dexie {
       settlements: '++id, debtTransactionId, paymentTransactionId, amount, createdAt',
     })
 
+    // Version 6 - V4 Phase 1: Financial Clarity & Debt Automation
+    // New transaction field: cost_of_goods (COGS for Two Jars calculation)
+    //   - When income is recorded with cost_of_goods > 0:
+    //     * cost_of_goods goes to "حق المحل" (Capital/COGS jar)
+    //     * (amount - cost_of_goods) goes to "حق التاجر" (Profit jar)
+    //   - When cost_of_goods is 0 or not provided: 100% goes to "حق المحل" (conservative)
+    // Debt types already exist: 'debt_given' (receivable / لهم عندي) and 'debt_taken' (payable / عندي لهم)
+    this.version(6).stores({
+      // Add cost_of_goods index for Two Jars calculation
+      transactions: '++id, type, [type+dateTimestamp], dateTimestamp, category, orderId, amount, createdAt, isRecurring, recurringParentId, debtStatus, linkedDebtId, edited, cost_of_goods',
+      orders: '++id, status, [status+scheduledTimestamp], scheduledTimestamp, customerName, customerId, phone, orderType, amount, is_paid, paymentTransactionId, createdAt',
+      customers: '++id, name, phone, archived, createdAt',
+      materials: '++id, name, unit_type, unit_cost, createdAt',
+      settings: '++id, &key',
+      meta: '++id, &key',
+      notifications: '++id, orderId, scheduledTime, sent, createdAt',
+      settlements: '++id, debtTransactionId, paymentTransactionId, amount, createdAt',
+    })
+
     this.open()
   }
 
   // ========== TRANSACTION HELPERS ==========
 
   /**
-   * Add a new transaction (V2: supports recurring + debt fields)
+   * Add a new transaction (V2: recurring + debt; V4: cost_of_goods for Two Jars)
    * @param {Object} data - { type, amount, description, category, date, orderId,
-   *   isRecurring, frequency, recurringParentId, debtStatus, debtAmountPaid, linkedDebtId, edited }
+   *   isRecurring, frequency, recurringParentId, debtStatus, debtAmountPaid, linkedDebtId, edited,
+   *   cost_of_goods (V4: COGS amount for Two Jars split) }
    */
   async addTransaction(data) {
     const now = Date.now()
@@ -140,6 +160,10 @@ class AccountingDatabase extends Dexie {
       linkedDebtId: data.linkedDebtId || null, // settlement payment links back to original debt
       // V2: edit tracking
       edited: data.edited || false,
+      // V4 Phase 1: Cost of Goods Sold (for Two Jars split)
+      // When income has cost_of_goods > 0: COGS → حق المحل, (amount - COGS) → حق التاجر
+      // When cost_of_goods is 0/null: 100% → حق المحل (conservative, protect capital)
+      cost_of_goods: Number(data.cost_of_goods) || 0,
     }
     const id = await this.transactions.add(transaction)
     return { ...transaction, id }
@@ -308,6 +332,65 @@ class AccountingDatabase extends Dexie {
       }
     })
     return balance
+  }
+
+  // ========== V4 Phase 1: TWO JARS FINANCIAL SYSTEM ==========
+
+  /**
+   * Calculate the "Two Jars" split: حق المحل (Capital) and حق التاجر (Profit).
+   *
+   * CRITICAL BUSINESS RULES:
+   * - Income with cost_of_goods > 0:
+   *   * cost_of_goods → حق المحل (must be preserved to restock)
+   *   * (amount - cost_of_goods) → حق التاجر (safe to spend)
+   * - Income with cost_of_goods = 0 or null:
+   *   * 100% → حق المحل (CONSERVATIVE: protect capital when COGS unknown)
+   * - Expense: deducts from حق التاجر (Profit)
+   * - Personal Withdrawal: deducts from حق التاجر (Profit)
+   * - Opening Balance (Cash): 100% → حق المحل (initial capital)
+   * - Debt settlements (income from debt repayment): 100% → حق التاجر (already earned)
+   * - Debts (debt_given/debt_taken): NOT counted in either jar (separate tracking)
+   *
+   * @returns {Object} { capitalJar, profitJar, totalCash }
+   */
+  async getTwoJars() {
+    let capitalJar = 0 // حق المحل - Capital/COGS to preserve
+    let profitJar = 0  // حق التاجر - Net profit, safe to spend
+
+    await this.transactions.each((t) => {
+      if (t.type === 'income') {
+        // Check if this is a debt settlement (linkedDebtId set)
+        if (t.linkedDebtId) {
+          // Debt repayment = already earned money, goes to profit
+          profitJar += t.amount
+        } else if (t.cost_of_goods && t.cost_of_goods > 0) {
+          // Income with known COGS: split into two jars
+          capitalJar += t.cost_of_goods
+          profitJar += (t.amount - t.cost_of_goods)
+        } else {
+          // Income without COGS: conservative — all goes to capital
+          capitalJar += t.amount
+        }
+      } else if (t.type === 'expense') {
+        // Expenses deduct from profit (operational costs)
+        profitJar -= t.amount
+      } else if (t.type === 'withdrawal') {
+        // Personal withdrawals deduct from profit
+        profitJar -= t.amount
+      } else if (t.type === 'opening_balance') {
+        // Only cash opening balance (not debt records)
+        if (t.category === 'رصيد افتتاحي') {
+          capitalJar += t.amount
+        }
+      }
+      // debt_given, debt_taken: NOT counted in jars (tracked separately)
+    })
+
+    // Profit jar can go negative if expenses exceed profit
+    // Capital jar should never go negative (it's protected)
+    const totalCash = capitalJar + profitJar
+
+    return { capitalJar, profitJar, totalCash }
   }
 
   /**
@@ -1068,6 +1151,7 @@ class AccountingDatabase extends Dexie {
 
     if (paymentType === 'cash') {
       // Create income transaction for the sale amount
+      // V4: Include cost_of_goods (BOM) so the Two Jars split works correctly
       transaction = await this.addTransaction({
         type: 'income',
         amount: order.amount,
@@ -1075,6 +1159,7 @@ class AccountingDatabase extends Dexie {
         category: 'مبيعات',
         date: new Date(),
         orderId: order.id,
+        cost_of_goods: order.total_cost || 0, // V4: BOM cost → capital jar
       })
       updates.is_paid = true
       updates.paymentTransactionId = transaction.id

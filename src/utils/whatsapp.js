@@ -160,3 +160,90 @@ export async function shareReceipt(transaction, businessName = null) {
     }
   }
 }
+
+// ========== V4 Phase 1: WHATSAPP DEBT REMINDER ==========
+
+/**
+ * Default debt reminder template (used if user hasn't customized the order template
+ * or if a separate debt template isn't set).
+ * This is a polite reminder asking for money owed.
+ */
+const DEFAULT_DEBT_TEMPLATE = 'مرحباً [اسم الزبون]، نذكرك بوجود مبلغ [المبلغ] مستحق علينا. نكون شاكرين لو تمكنتم من السداد. شكراً لتفهمكم.'
+
+/**
+ * Build a polite debt reminder message using the settings template.
+ * Replaces placeholders: [اسم الزبون], [المبلغ], [التاريخ]
+ *
+ * @param {Object} debt - { description (person name), amount, date }
+ * @returns {string} - formatted reminder message
+ */
+export async function buildDebtReminderMessage(debt) {
+  // Try to get a dedicated debt template, fall back to default
+  let template = await db.getSetting('whatsapp_debt_template', null)
+  if (!template) {
+    template = DEFAULT_DEBT_TEMPLATE
+  }
+
+  const personName = debt.description || 'الزبون'
+  const amount = (debt.amount || 0).toLocaleString('en-US')
+  const date = formatArabicDate(debt.date)
+
+  return template
+    .replace(/\[اسم الزبون\]/g, personName)
+    .replace(/\[المبلغ\]/g, amount)
+    .replace(/\[التاريخ\]/g, date)
+}
+
+/**
+ * Send a polite WhatsApp debt reminder to a debtor.
+ * Uses the template from Settings (fetches dynamically, NOT hardcoded).
+ *
+ * Flow:
+ * 1. Fetch template from Settings (or default)
+ * 2. Replace placeholders with debt data
+ * 3. If debtor has phone: open wa.me link directly
+ * 4. Otherwise: use Web Share API
+ *
+ * @param {Object} debt - the debt_given transaction { description, amount, date, phone? }
+ */
+export async function sendDebtReminder(debt) {
+  try {
+    const message = await buildDebtReminderMessage(debt)
+
+    // Get phone: check debt.phone, or look up customer by name
+    let phone = debt.phone || ''
+    if (!phone && debt.description) {
+      // Try to find customer by name
+      const customers = await db.getAllCustomers(debt.description)
+      if (customers.length > 0) {
+        phone = customers[0].phone || ''
+      }
+    }
+
+    if (phone) {
+      // Clean phone and add Jordan country code
+      const cleanPhone = phone.replace(/[^\d]/g, '')
+      const phoneWithCode = cleanPhone.startsWith('962')
+        ? cleanPhone
+        : (cleanPhone.startsWith('0') ? '962' + cleanPhone.slice(1) : '962' + cleanPhone)
+      const url = `https://wa.me/${phoneWithCode}?text=${encodeURIComponent(message)}`
+      window.open(url, '_blank')
+      return
+    }
+
+    // No phone — use Web Share API
+    if (navigator.share) {
+      await navigator.share({
+        title: 'تذكير بمبلغ مستحق',
+        text: message,
+      })
+    } else {
+      await navigator.clipboard.writeText(message)
+      alert('تم نسخ الرسالة. الصقها في واتساب.')
+    }
+  } catch (e) {
+    if (e.name !== 'AbortError' && !e.message?.includes('Abort')) {
+      console.error('Send debt reminder failed:', e)
+    }
+  }
+}
