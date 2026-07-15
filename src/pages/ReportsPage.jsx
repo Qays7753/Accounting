@@ -2,24 +2,20 @@ import { useState, useEffect, useCallback } from 'react'
 import { db } from '../db'
 import { formatAmount } from '../utils/format.js'
 import { formatArabicDate } from '../utils/date.js'
+import { ARABIC_DAYS } from '../utils/date.js'
 import EmptyState from '../components/ui/EmptyState.jsx'
 import Icon from '../components/ui/Icon.jsx'
 import { hapticLight, hapticSuccess } from '../utils/haptics.js'
+import { sendDebtReminder } from '../utils/whatsapp.js'
+import { Link } from 'react-router-dom'
 
 /**
- * Reports Page (V3) - Professional Reporting & Analytics
+ * Reports Page (V4 Phase 3) - Adaptive Reporting
  *
- * Features:
- * - Custom date range picker (From / To)
- * - Real Cash Profit: income - expense (actual money)
- * - Theoretical Profit: order revenue - BOM cost (analytical)
- * - Variance analysis: difference between real and theoretical
- *
- * CRITICAL: BOM cost is NEVER deducted from real cash flow.
- * Theoretical profit is purely advisory.
+ * Simple Mode: Conversational cards, CSS bar charts, actionable insights
+ * Pro Mode: Data tables, financial summaries, variance analysis
  */
 export default function ReportsPage() {
-  // Default: current month
   const now = new Date()
   const [startDate, setStartDate] = useState(() => {
     const d = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -31,11 +27,44 @@ export default function ReportsPage() {
   const [report, setReport] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  // V4 Phase 3: Report mode + extra data for Simple mode
+  const [reportMode, setReportMode] = useState('simple')
+  const [topDebtors, setTopDebtors] = useState([])
+  const [dailyBreakdown, setDailyBreakdown] = useState([])
+
   const loadReport = useCallback(async () => {
     setLoading(true)
     try {
       const result = await db.getReport(startDate, endDate)
       setReport(result)
+
+      // V4 Phase 3: Load extra data for Simple mode
+      const [receivables, transactions] = await Promise.all([
+        db.getReceivables(),
+        db.getTransactionsByDateRange(startDate, endDate),
+      ])
+      // Top 3 debtors with outstanding amounts
+      const debtors = receivables
+        .map(d => ({ name: d.description || 'زبون', amount: d.amount - (d.debtAmountPaid || 0), date: d.date, raw: d }))
+        .filter(d => d.amount > 0)
+        .sort((a, b) => b.amount - a.amount)
+        .slice(0, 3)
+      setTopDebtors(debtors)
+
+      // Daily breakdown for bar chart (income per day)
+      const byDay = {}
+      for (const t of transactions) {
+        if (t.type === 'income') {
+          const day = new Date(t.dateTimestamp).getDate()
+          byDay[day] = (byDay[day] || 0) + t.amount
+        }
+      }
+      const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+      const breakdown = []
+      for (let d = 1; d <= daysInMonth; d++) {
+        breakdown.push({ day: d, amount: byDay[d] || 0 })
+      }
+      setDailyBreakdown(breakdown)
     } catch (e) {
       console.error('Failed to load report:', e)
     } finally {
@@ -46,6 +75,11 @@ export default function ReportsPage() {
   useEffect(() => {
     loadReport()
   }, [loadReport])
+
+  // V4 Phase 3: Load report mode from settings
+  useEffect(() => {
+    db.getSetting('report_mode', 'simple').then(setReportMode)
+  }, [])
 
   const handleStartDateChange = (e) => {
     hapticLight()
@@ -165,7 +199,120 @@ export default function ReportsPage() {
           title="لا توجد بيانات"
           description="اختر نطاقاً زمنياً لعرض التقرير"
         />
+      ) : reportMode === 'simple' ? (
+        /* V4 Phase 3: Simple Mode — Conversational cards + CSS bar charts */
+        <div className="px-5 space-y-4">
+          {/* Card 1: Today's earnings */}
+          <div className="bg-gradient-to-br from-income-400 to-income-500 rounded-2xl p-5 text-white shadow-md">
+            <p className="text-sm text-income-50 mb-1">في هالفترة كسبت</p>
+            <p className="text-3xl font-bold tabular-nums">{formatAmount(report.realCashProfit)}</p>
+            <p className="text-xs text-income-50 mt-2">
+              {report.realCashProfit >= 0 ? 'ربح صافي 👍' : 'خسارة — راجع مصاريفك'}
+            </p>
+          </div>
+
+          {/* Card 2: Quick stats */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-surface rounded-2xl p-4 shadow-card text-center">
+              <p className="text-xs text-text-tertiary mb-1">قبضت</p>
+              <p className="text-xl font-bold text-income-600 tabular-nums">{formatAmount(report.cashReceived)}</p>
+            </div>
+            <div className="bg-surface rounded-2xl p-4 shadow-card text-center">
+              <p className="text-xs text-text-tertiary mb-1">صرفت</p>
+              <p className="text-xl font-bold text-expense-600 tabular-nums">{formatAmount(report.cashSpent)}</p>
+            </div>
+          </div>
+
+          {/* Card 3: Best sales day (CSS bar chart) */}
+          {dailyBreakdown.length > 0 && (
+            <div className="bg-surface rounded-2xl p-4 shadow-card">
+              <p className="text-sm font-bold text-text-primary mb-3">مبيعات يومية</p>
+              {(() => {
+                const maxAmount = Math.max(...dailyBreakdown.map(d => d.amount), 1)
+                const bestDay = dailyBreakdown.reduce((best, d) => d.amount > best.amount ? d : best, { day: 0, amount: 0 })
+                return (
+                  <>
+                    {bestDay.amount > 0 && (
+                      <p className="text-xs text-text-secondary mb-2">
+                        أفضل يوم مبيعاً كان يوم {bestDay.day}: {formatAmount(bestDay.amount)}
+                      </p>
+                    )}
+                    <div className="flex items-end gap-0.5 h-24 overflow-x-auto hide-scrollbar">
+                      {dailyBreakdown.map(d => (
+                        <div
+                          key={d.day}
+                          className="flex-shrink-0 flex flex-col items-center gap-1"
+                          style={{ width: '12px' }}
+                        >
+                          <div
+                            className="w-full rounded-t bg-primary rounded-t"
+                            style={{
+                              height: `${(d.amount / maxAmount) * 100}%`,
+                              minHeight: d.amount > 0 ? '4px' : '2px',
+                              opacity: d.amount > 0 ? 1 : 0.15,
+                            }}
+                          />
+                          {d.day % 5 === 0 && (
+                            <span className="text-[8px] text-text-tertiary">{d.day}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )
+              })()}
+            </div>
+          )}
+
+          {/* Card 4: Debt reminders */}
+          {topDebtors.length > 0 && (
+            <div className="bg-surface rounded-2xl p-4 shadow-card">
+              <p className="text-sm font-bold text-text-primary mb-3">عندهم فلوس لك</p>
+              <div className="space-y-2">
+                {topDebtors.map((debtor, i) => (
+                  <div key={i} className="flex items-center justify-between bg-background rounded-xl p-3">
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-text-primary">{debtor.name}</p>
+                      <p className="text-xs text-text-tertiary">عليه {formatAmount(debtor.amount)}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { hapticLight(); sendDebtReminder(debtor.raw) }}
+                      className="bg-income-50 text-income-600 text-xs font-semibold px-3 py-2 rounded-lg active:scale-95 transition-transform flex items-center gap-1.5"
+                    >
+                      <Icon name="whatsapp" className="w-4 h-4" />
+                      تذكير
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Card 5: Order stats */}
+          <div className="bg-surface rounded-2xl p-4 shadow-card">
+            <div className="grid grid-cols-2 gap-3 text-center">
+              <div>
+                <p className="text-2xl font-bold text-primary-600 tabular-nums">{report.totalOrders}</p>
+                <p className="text-xs text-text-tertiary">إجمالي الطلبات</p>
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-income-600 tabular-nums">{report.completedOrders}</p>
+                <p className="text-xs text-text-tertiary">طلبات مكتملة</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Link to Pro mode */}
+          <Link
+            to="/settings"
+            className="block text-center text-xs text-primary-600 font-medium py-2"
+          >
+            تغيير إلى عرض احترافي من الإعدادات
+          </Link>
+        </div>
       ) : (
+        /* V4 Phase 3: Pro Mode — Existing detailed report */
         <div className="px-5 space-y-4">
           {/* Period Summary */}
           <div className="bg-surface rounded-2xl p-4 shadow-card">
