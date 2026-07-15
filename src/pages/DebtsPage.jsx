@@ -347,7 +347,7 @@ function DebtCard({ debt, isReceivable, onSettle, onViewDetail, onSendReminder }
                 e.stopPropagation()
                 onSendReminder()
               }}
-              className="w-9 h-9 rounded-lg bg-income-50 flex items-center justify-center active:scale-95 transition-transform"
+              className="w-10 h-10 rounded-lg bg-income-50 flex items-center justify-center active:scale-95 transition-transform"
               aria-label="تذكير واتساب"
               title="إرسال تذكير واتساب"
             >

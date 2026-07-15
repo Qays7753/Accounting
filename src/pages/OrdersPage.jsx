@@ -285,7 +285,7 @@ function OrderCard({ order, onClick }) {
               <a
                 href={`tel:${order.phone}`}
                 onClick={(e) => e.stopPropagation()}
-                className="w-7 h-7 rounded-full bg-primary-50 flex items-center justify-center active:scale-95 transition-transform"
+                className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center active:scale-95 transition-transform"
                 aria-label="اتصال"
               >
                 <Icon name="phone" className="w-3.5 h-3.5 text-primary-600" />
@@ -295,7 +295,7 @@ function OrderCard({ order, onClick }) {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="w-7 h-7 rounded-full bg-income-50 flex items-center justify-center active:scale-95 transition-transform"
+                className="w-10 h-10 rounded-full bg-income-50 flex items-center justify-center active:scale-95 transition-transform"
                 aria-label="واتساب"
               >
                 <Icon name="whatsapp" className="w-3.5 h-3.5 text-income-600" />

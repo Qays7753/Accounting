@@ -277,7 +277,7 @@ export default function OrderFormSheet({ open, onClose, editData = null, onSaved
                         <button
                           type="button"
                           onClick={() => handleRemoveComponent(i)}
-                          className="w-7 h-7 rounded-full bg-expense-50 flex items-center justify-center active:scale-95 transition-transform flex-shrink-0"
+                          className="w-10 h-10 rounded-full bg-expense-50 flex items-center justify-center active:scale-95 transition-transform flex-shrink-0"
                           aria-label="حذف"
                         >
                           <Icon name="trash" className="w-4 h-4 text-expense-600" />
