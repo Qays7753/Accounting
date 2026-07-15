@@ -9,6 +9,7 @@ import OrderFormSheet from '../components/sheets/OrderFormSheet.jsx'
 import EmptyState from '../components/ui/EmptyState.jsx'
 import Icon from '../components/ui/Icon.jsx'
 import BottomSheet from '../components/ui/BottomSheet.jsx'
+import AmountInput from '../components/ui/AmountInput.jsx'
 import { Link } from 'react-router-dom'
 import { hapticLight, hapticSuccess, hapticMedium } from '../utils/haptics.js'
 import { exportBackup } from '../utils/backup.js'
@@ -30,6 +31,11 @@ export default function HomePage() {
   // V4 Phase 2: Weekly Backup Reminder
   const [showBackupPrompt, setShowBackupPrompt] = useState(false)
 
+  // V4 Phase 3: Opening Balance Prompt (dismissible card)
+  const [showOpeningBalanceCard, setShowOpeningBalanceCard] = useState(false)
+  const [openingBalanceSheetOpen, setOpeningBalanceSheetOpen] = useState(false)
+  const [openingCash, setOpeningCash] = useState(0)
+
   useEffect(() => {
     db.getLogo().then(setLogo)
     db.getBusinessName().then(setBusinessName)
@@ -43,6 +49,13 @@ export default function HomePage() {
       if (should) {
         setShowBackupPrompt(true)
         db.markBackupReminderShown()
+      }
+    })
+
+    // V4 Phase 3: Check if opening balance prompt should show
+    db.getMeta('opening_balance_prompted', false).then(prompted => {
+      if (!prompted) {
+        setShowOpeningBalanceCard(true)
       }
     })
   }, [stats.cashBalance])
@@ -86,6 +99,33 @@ export default function HomePage() {
     } catch (e) {
       console.error('Backup failed:', e)
     }
+  }
+
+  // V4 Phase 3: Opening Balance handlers
+  const handleDismissOpeningBalance = async () => {
+    hapticLight()
+    await db.setMeta('opening_balance_prompted', true)
+    setShowOpeningBalanceCard(false)
+  }
+
+  const handleSaveOpeningBalance = async () => {
+    hapticSuccess()
+    if (openingCash > 0) {
+      const now = new Date()
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0)
+      await db.addTransaction({
+        type: 'opening_balance',
+        amount: openingCash,
+        description: 'الرصيد الافتتاحي - النقد المتاح',
+        category: 'رصيد افتتاحي',
+        date: todayStart,
+      })
+    }
+    await db.setMeta('opening_balance_prompted', true)
+    setShowOpeningBalanceCard(false)
+    setOpeningBalanceSheetOpen(false)
+    db.getTwoJars().then(setJars)
+    stats.refresh()
   }
 
   // Z-Report variance calculation
@@ -217,6 +257,49 @@ export default function HomePage() {
               <Icon name="whatsapp" className="w-4 h-4" />
               إرسال نسخة احتياطية عبر واتساب
             </button>
+          </div>
+        </section>
+      )}
+
+      {/* V4 Phase 3: Opening Balance Prompt Card */}
+      {showOpeningBalanceCard && (
+        <section className="px-5 mb-4">
+          <div className="bg-income-50 border border-income-200 rounded-2xl p-4 animate-fade-in">
+            <div className="flex items-start gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-income-100 flex items-center justify-center flex-shrink-0">
+                <Icon name="wallet" className="w-5 h-5 text-income-600" strokeWidth={2} />
+              </div>
+              <div className="flex-1">
+                <p className="font-bold text-income-700 text-sm">أدخل رصيدك الحالي</p>
+                <p className="text-xs text-income-600 mt-0.5">
+                  أدخل رصيدك الحالي لبدء الحساب بدقة. يمكنك القيام بذلك لاحقاً.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleDismissOpeningBalance}
+                className="text-income-400 active:scale-95"
+                aria-label="إغلاق"
+              >
+                <Icon name="close" className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => { hapticLight(); setOpeningBalanceSheetOpen(true) }}
+                className="flex-1 bg-income-500 text-white font-semibold rounded-xl py-2.5 active:scale-95 transition-transform text-sm"
+              >
+                إدخال الرصيد
+              </button>
+              <button
+                type="button"
+                onClick={handleDismissOpeningBalance}
+                className="bg-surface text-text-secondary font-semibold rounded-xl py-2.5 px-4 active:scale-95 transition-transform text-sm"
+              >
+                لاحقاً
+              </button>
+            </div>
           </div>
         </section>
       )}
@@ -434,6 +517,35 @@ export default function HomePage() {
               </button>
             </>
           )}
+        </div>
+      </BottomSheet>
+
+      {/* V4 Phase 3: Opening Balance Sheet */}
+      <BottomSheet open={openingBalanceSheetOpen} onClose={() => setOpeningBalanceSheetOpen(false)} title="إدخال الرصيد الحالي">
+        <div className="space-y-5 pb-4">
+          <p className="text-sm text-text-secondary leading-relaxed">
+            أدخل المبلغ الذي تملكه حالياً نقداً (في الصندوق أو البنك). سيكون هذا هو رصيدك الافتتاحي.
+          </p>
+          <AmountInput
+            value={openingCash}
+            onChange={setOpeningCash}
+            label="النقد المتاح"
+            autoFocus
+          />
+          <button
+            type="button"
+            onClick={handleSaveOpeningBalance}
+            className="w-full btn-primary"
+          >
+            حفظ الرصيد
+          </button>
+          <button
+            type="button"
+            onClick={handleDismissOpeningBalance}
+            className="w-full bg-background text-text-secondary font-semibold rounded-2xl py-3.5 active:scale-[0.98] transition-transform"
+          >
+            تخطي الآن
+          </button>
         </div>
       </BottomSheet>
     </div>

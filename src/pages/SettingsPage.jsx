@@ -36,6 +36,9 @@ export default function SettingsPage() {
   const [closingTime, setClosingTime] = useState('20:00')
   const { isHelperMode, enterHelperMode, helperModeEnabled } = useHelperMode()
 
+  // V4 Phase 3: Report Mode
+  const [reportMode, setReportMode] = useState('simple')
+
   useEffect(() => {
     getWhatsAppTemplate().then(setTemplateText)
   }, [])
@@ -52,6 +55,8 @@ export default function SettingsPage() {
     // V4 Phase 2: Load Quick POS + closing time settings
     db.getShowQuickPos().then(setShowQuickPosSetting)
     db.getClosingTime().then(setClosingTime)
+    // V4 Phase 3: Load report mode
+    db.getSetting('report_mode', 'simple').then(setReportMode)
   }, [])
 
   // V4 Phase 2: Toggle Quick POS visibility
@@ -277,6 +282,44 @@ export default function SettingsPage() {
               description="تخصيص الرسالة المرسلة للزبون"
               onClick={() => setTemplateOpen(true)}
             />
+          </div>
+        </section>
+
+        {/* V4 Phase 3: Report Display Mode */}
+        <section>
+          <h2 className="text-sm font-semibold text-text-secondary mb-2 px-1">عرض التقارير</h2>
+          <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
+            <div className="w-full p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-primary-50 text-primary-600">
+                  <Icon name="document" className="w-5 h-5" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-text-primary text-sm">أسلوب العرض</p>
+                  <p className="text-xs text-text-tertiary mt-0.5">بسيطة (بطاقات) أو احترافية (جداول)</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={async () => { hapticLight(); setReportMode('simple'); await db.setSetting('report_mode', 'simple') }}
+                  className={`py-3 rounded-xl text-sm font-semibold transition-all active:scale-95 ${
+                    reportMode === 'simple' ? 'bg-primary text-white' : 'bg-background text-text-secondary border border-divider'
+                  }`}
+                >
+                  بسيطة
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => { hapticLight(); setReportMode('pro'); await db.setSetting('report_mode', 'pro') }}
+                  className={`py-3 rounded-xl text-sm font-semibold transition-all active:scale-95 ${
+                    reportMode === 'pro' ? 'bg-primary text-white' : 'bg-background text-text-secondary border border-divider'
+                  }`}
+                >
+                  احترافية
+                </button>
+              </div>
+            </div>
           </div>
         </section>
 
