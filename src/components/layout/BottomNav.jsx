@@ -43,7 +43,7 @@ const navItems = [
 
 export default function BottomNav() {
   return (
-    <nav className="fixed bottom-0 inset-x-0 bg-surface border-t border-divider z-30 safe-area-bottom">
+    <nav className="fixed bottom-0 inset-x-0 bg-surface border-t border-divider z-30 safe-area-bottom" aria-label="التنقل الرئيسي">
       <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
         {navItems.map((item) => (
           <NavLink
@@ -51,8 +51,9 @@ export default function BottomNav() {
             to={item.to}
             end={item.to === '/'}
             onClick={() => hapticLight()}
+            aria-label={item.label}
             className={({ isActive }) =>
-              `flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl transition-colors ${
+              `flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl transition-colors min-w-[64px] ${
                 isActive ? 'tab-active' : 'tab-inactive'
               }`
             }

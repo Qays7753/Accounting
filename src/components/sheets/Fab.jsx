@@ -61,10 +61,11 @@ export default function Fab({ onAction }) {
     <>
       {/* FAB button */}
       <button
+        type="button"
         onClick={handleOpen}
         className="fixed bottom-24 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full bg-primary text-white flex items-center justify-center shadow-fab active:scale-90 transition-transform z-30"
         style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
-        aria-label="إضافة"
+        aria-label="إضافة معاملة أو طلب"
       >
         <Icon name="plus" className="w-7 h-7" strokeWidth={2.5} />
       </button>
@@ -74,11 +75,13 @@ export default function Fab({ onAction }) {
         <div className="grid grid-cols-2 gap-3 pb-4">
           {actions.map((action) => (
             <button
+              type="button"
               key={action.id}
               onClick={() => handleSelect(action.id)}
               className="flex flex-col items-center justify-center gap-3 bg-background rounded-2xl p-5 active:scale-95 transition-transform touch-target"
+              aria-label={action.label}
             >
-              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${action.color}`}>
+              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${action.color}`} aria-hidden="true">
                 <Icon name={action.icon} className="w-7 h-7" strokeWidth={2} />
               </div>
               <div className="text-center">

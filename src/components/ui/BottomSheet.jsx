@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { hapticMedium } from '../../utils/haptics.js'
 import Icon from './Icon.jsx'
@@ -9,11 +9,14 @@ import Icon from './Icon.jsx'
  */
 export default function BottomSheet({ open, onClose, title, children, maxHeight = '85vh' }) {
   const [show, setShow] = useState(false)
+  const sheetRef = useRef(null)
 
   useEffect(() => {
     if (open) {
       setShow(true)
       document.body.style.overflow = 'hidden'
+      // Focus the sheet for screen readers
+      setTimeout(() => sheetRef.current?.focus(), 50)
     } else {
       const t = setTimeout(() => setShow(false), 250)
       document.body.style.overflow = ''
@@ -42,11 +45,17 @@ export default function BottomSheet({ open, onClose, title, children, maxHeight 
           hapticMedium()
           onClose?.()
         }}
+        aria-hidden="true"
       />
 
       {/* Sheet */}
       <div
-        className={`fixed inset-x-0 bottom-0 bg-surface rounded-t-3xl shadow-sheet z-50 flex flex-col transition-transform duration-300 ease-out ${
+        ref={sheetRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title || 'Bottom sheet'}
+        tabIndex={-1}
+        className={`fixed inset-x-0 bottom-0 bg-surface rounded-t-3xl shadow-sheet z-50 flex flex-col transition-transform duration-300 ease-out focus:outline-none ${
           open ? 'translate-y-0' : 'translate-y-full'
         }`}
         style={{ maxHeight, paddingBottom: 'env(safe-area-inset-bottom)' }}
@@ -61,6 +70,7 @@ export default function BottomSheet({ open, onClose, title, children, maxHeight 
           <div className="px-5 py-3 flex items-center justify-between border-b border-divider">
             <h2 className="text-lg font-bold text-text-primary">{title}</h2>
             <button
+              type="button"
               onClick={() => {
                 hapticMedium()
                 onClose?.()

@@ -39,7 +39,7 @@ export default function Snackbar({ open, message, actionLabel, onAction, duratio
   }
 
   return createPortal(
-    <div className="fixed inset-x-0 bottom-24 z-[60] flex justify-center px-4 pointer-events-none">
+    <div className="fixed inset-x-0 bottom-24 z-[60] flex justify-center px-4 pointer-events-none" role="status" aria-live="polite">
       <div
         className={`pointer-events-auto bg-text-primary text-white rounded-2xl shadow-xl px-4 py-3 flex items-center gap-3 max-w-sm w-full transition-all duration-300 ${
           show ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
@@ -48,9 +48,10 @@ export default function Snackbar({ open, message, actionLabel, onAction, duratio
         <p className="flex-1 text-sm font-medium">{message}</p>
         {actionLabel && (
           <button
+            type="button"
             onClick={handleAction}
             onTouchStart={hapticLight}
-            className="text-primary-200 font-bold text-sm whitespace-nowrap active:scale-95 transition-transform"
+            className="text-primary-200 font-bold text-sm whitespace-nowrap active:scale-95 transition-transform py-1 px-2"
           >
             {actionLabel}
           </button>

@@ -320,15 +320,19 @@ function SettingsToggle({ icon, iconBg, label, description, checked, onChange })
         {description && <p className="text-xs text-text-tertiary mt-0.5">{description}</p>}
       </div>
       <button
+        type="button"
         onClick={() => onChange(!checked)}
         className={`relative w-12 h-7 rounded-full transition-colors flex-shrink-0 ${
           checked ? 'bg-primary' : 'bg-gray-200'
         }`}
-        aria-pressed={checked}
+        role="switch"
+        aria-checked={checked}
+        aria-label={label}
       >
+        {/* In RTL: knob starts on the right (off) and slides to the left (on) */}
         <span
-          className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${
-            checked ? 'right-1' : 'right-6'
+          className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-sm transition-all ${
+            checked ? 'left-1' : 'right-1'
           }`}
         />
       </button>
