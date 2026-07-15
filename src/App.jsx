@@ -6,17 +6,17 @@ import OnboardingPage from './pages/OnboardingPage.jsx'
 import BackupReminderBanner from './components/common/BackupReminderBanner.jsx'
 import { checkBackupReminder } from './utils/backup.js'
 import { applyThemeFromDB } from './utils/theme.js'
+import { HelperModeProvider, useHelperMode } from './context/HelperModeContext.jsx'
 
 // Lazy-load route components for faster initial load.
-// Each page becomes a separate chunk loaded on demand.
 const HomePage = lazy(() => import('./pages/HomePage.jsx'))
 const FinancePage = lazy(() => import('./pages/FinancePage.jsx'))
 const OrdersPage = lazy(() => import('./pages/OrdersPage.jsx'))
 const DebtsPage = lazy(() => import('./pages/DebtsPage.jsx'))
+const QuickPosPage = lazy(() => import('./pages/QuickPosPage.jsx'))
 const ReportsPage = lazy(() => import('./pages/ReportsPage.jsx'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'))
 
-// Lightweight fallback while a lazy chunk is loading
 function PageLoader() {
   return (
     <div className="flex items-center justify-center py-20">
@@ -25,9 +25,44 @@ function PageLoader() {
   )
 }
 
+function AppRoutes() {
+  const { isHelperMode } = useHelperMode()
+  const navigate = useNavigate()
+
+  // V4 Phase 2: Helper Mode restricts navigation
+  // Staff can only access Quick POS and Orders (add only, no edit/delete)
+  if (isHelperMode) {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="/pos" element={<QuickPosPage />} />
+          <Route path="/orders" element={<OrdersPage />} />
+          <Route path="*" element={<Navigate to="/pos" replace />} />
+        </Routes>
+      </Suspense>
+    )
+  }
+
+  return (
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/finance" element={<FinancePage />} />
+        <Route path="/orders" element={<OrdersPage />} />
+        <Route path="/debts" element={<DebtsPage />} />
+        <Route path="/pos" element={<QuickPosPage />} />
+        <Route path="/reports" element={<ReportsPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
+  )
+}
+
 function App() {
-  const [isFirstLaunch, setIsFirstLaunch] = useState(null) // null = loading
+  const [isFirstLaunch, setIsFirstLaunch] = useState(null)
   const [backupReminder, setBackupReminder] = useState(null)
+  const [showQuickPos, setShowQuickPos] = useState(true)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -39,7 +74,6 @@ function App() {
         setIsFirstLaunch(!onboarded)
 
         if (onboarded) {
-          // V2: Process due recurring transactions on app launch
           try {
             const generated = await db.processDueRecurringTransactions()
             if (generated > 0) {
@@ -49,16 +83,18 @@ function App() {
             console.error('Recurring transaction processing failed:', e)
           }
 
-          // V2: Apply saved theme color on app launch
           try {
             await applyThemeFromDB()
           } catch (e) {
             console.error('Theme application failed:', e)
           }
 
-          // Check backup reminder on app open (proactive)
           const reminder = await checkBackupReminder()
           if (!cancelled) setBackupReminder(reminder)
+
+          // V4 Phase 2: Load Quick POS visibility setting
+          const posVisible = await db.getShowQuickPos()
+          if (!cancelled) setShowQuickPos(posVisible)
         }
       } catch (e) {
         console.error('Failed to check first launch:', e)
@@ -89,7 +125,7 @@ function App() {
   }
 
   return (
-    <AppLayout>
+    <AppLayout showQuickPos={showQuickPos}>
       {backupReminder && (
         <BackupReminderBanner
           reminder={backupReminder}
@@ -100,19 +136,15 @@ function App() {
           }}
         />
       )}
-      <Suspense fallback={<PageLoader />}>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/finance" element={<FinancePage />} />
-          <Route path="/orders" element={<OrdersPage />} />
-          <Route path="/debts" element={<DebtsPage />} />
-          <Route path="/reports" element={<ReportsPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Suspense>
+      <AppRoutes />
     </AppLayout>
   )
 }
 
-export default App
+export default function AppWithHelperMode() {
+  return (
+    <HelperModeProvider>
+      <App />
+    </HelperModeProvider>
+  )
+}

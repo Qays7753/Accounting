@@ -8,6 +8,7 @@ import { getWhatsAppTemplate, setWhatsAppTemplate, WHATSAPP_PLACEHOLDERS } from 
 import { exportBackup, importBackup, checkBackupReminder, markBackupDone } from '../utils/backup.js'
 import { requestNotificationPermission, sendTestNotification } from '../utils/notifications.js'
 import { THEME_PRESETS, setAndApplyTheme, applyTheme, generateShades } from '../utils/theme.js'
+import { useHelperMode } from '../context/HelperModeContext.jsx'
 
 export default function SettingsPage() {
   const { settings, update, refresh } = useSettings()
@@ -27,6 +28,14 @@ export default function SettingsPage() {
   const [businessNameInput, setBusinessNameInput] = useState('')
   const fileInputRef = useRef(null)
 
+  // V4 Phase 2: Quick POS, Helper Mode, Closing Time
+  const [showQuickPosSetting, setShowQuickPosSetting] = useState(true)
+  const [helperPinSheetOpen, setHelperPinSheetOpen] = useState(false)
+  const [helperPinInput, setHelperPinInput] = useState('')
+  const [helperModeActive, setHelperModeActive] = useState(false)
+  const [closingTime, setClosingTime] = useState('20:00')
+  const { isHelperMode, enterHelperMode, helperModeEnabled } = useHelperMode()
+
   useEffect(() => {
     getWhatsAppTemplate().then(setTemplateText)
   }, [])
@@ -40,7 +49,41 @@ export default function SettingsPage() {
     db.getThemeColor().then(setCurrentThemeColor)
     db.getLogo().then(setLogoPreview)
     db.getBusinessName().then(name => setBusinessNameInput(name || ''))
+    // V4 Phase 2: Load Quick POS + closing time settings
+    db.getShowQuickPos().then(setShowQuickPosSetting)
+    db.getClosingTime().then(setClosingTime)
   }, [])
+
+  // V4 Phase 2: Toggle Quick POS visibility
+  const handleQuickPosToggle = async (enabled) => {
+    hapticLight()
+    setShowQuickPosSetting(enabled)
+    await db.setShowQuickPos(enabled)
+  }
+
+  // V4 Phase 2: Helper Mode PIN setup
+  const handleHelperPinSave = async () => {
+    if (helperPinInput.length !== 4) return
+    hapticSuccess()
+    await db.setHelperPin(helperPinInput)
+    setHelperPinSheetOpen(false)
+    setHelperPinInput('')
+    alert('تم تفعيل وضع المساعد. سيُفعّل عند إغلاق التطبيق وإعادة فتحه.')
+  }
+
+  // V4 Phase 2: Enter Helper Mode immediately
+  const handleEnterHelperMode = () => {
+    hapticMedium()
+    enterHelperMode()
+  }
+
+  // V4 Phase 2: Save closing time
+  const handleClosingTimeChange = async (e) => {
+    hapticLight()
+    const val = e.target.value
+    setClosingTime(val)
+    await db.setSetting('closing_time', val)
+  }
 
   const handlePinToggle = async (enabled) => {
     hapticLight()
@@ -276,6 +319,56 @@ export default function SettingsPage() {
               checked={pinToggle}
               onChange={handlePinToggle}
             />
+          </div>
+        </section>
+
+        {/* V4 Phase 2: Operations (Quick POS + Helper Mode + Closing Time) */}
+        <section>
+          <h2 className="text-sm font-semibold text-text-secondary mb-2 px-1">التشغيل والأمان</h2>
+          <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
+            {/* Quick POS Toggle */}
+            <SettingsToggle
+              icon="tag"
+              iconBg="bg-primary-50 text-primary-600"
+              label="إظهار شاشة البيع السريع"
+              description="بيع منتجات بضغطة واحدة"
+              checked={showQuickPosSetting}
+              onChange={handleQuickPosToggle}
+            />
+            {/* Helper Mode PIN */}
+            <SettingsRow
+              icon="lock"
+              iconBg="bg-withdrawal-50 text-withdrawal-600"
+              label="تفعيل وضع المساعد"
+              description="وضع محدود للموظفين (بيع فقط)"
+              onClick={() => { hapticLight(); setHelperPinSheetOpen(true) }}
+            />
+            {helperModeEnabled && (
+              <SettingsRow
+                icon="info"
+                iconBg="bg-income-50 text-income-600"
+                label="الدخول لوضع المساعد الآن"
+                description="تفعيل الوضع المحدود فوراً"
+                onClick={handleEnterHelperMode}
+              />
+            )}
+            {/* Closing Time */}
+            <div className="w-full flex items-center gap-3 p-4 text-right">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-expense-50 text-expense-600">
+                <Icon name="clock" className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-text-primary text-sm">وقت إقفال اليومية</p>
+                <p className="text-xs text-text-tertiary mt-0.5">وقت تذكير بإقفال الصندوق</p>
+              </div>
+              <input
+                type="time"
+                value={closingTime}
+                onChange={handleClosingTimeChange}
+                className="bg-background rounded-xl px-3 py-2 text-sm outline-none border border-divider"
+                dir="ltr"
+              />
+            </div>
           </div>
         </section>
 
@@ -545,6 +638,53 @@ export default function SettingsPage() {
           >
             حفظ
           </button>
+        </div>
+      </BottomSheet>
+
+      {/* V4 Phase 2: Helper Mode PIN Setup Sheet */}
+      <BottomSheet open={helperPinSheetOpen} onClose={() => setHelperPinSheetOpen(false)} title="تفعيل وضع المساعد">
+        <div className="space-y-5 pb-4">
+          <div className="bg-withdrawal-50 rounded-xl p-3 flex items-start gap-2">
+            <Icon name="info" className="w-5 h-5 text-withdrawal-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm text-withdrawal-700 font-semibold">وضع المساعد</p>
+              <p className="text-xs text-withdrawal-600 mt-1">
+                عند تفعيله، يظهر التطبيق للموظفين بواجهة مبسطة (بيع وطلبات فقط) بدون إظهار الأرباح أو الديون أو التقارير.
+                للخروج من الوضع، يجب إدخال رمز PIN.
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-text-secondary mb-2">أدخل رمز PIN (4 أرقام)</label>
+            <input
+              type="tel"
+              inputMode="numeric"
+              maxLength={4}
+              value={helperPinInput}
+              onChange={(e) => setHelperPinInput(e.target.value.replace(/\D/g, '').slice(0, 4))}
+              placeholder="••••"
+              className="input-field text-center text-3xl font-bold tracking-[1em]"
+              dir="ltr"
+            />
+          </div>
+
+          {helperPinInput.length === 4 && (
+            <button
+              type="button"
+              onClick={handleHelperPinSave}
+              className="w-full btn-primary"
+            >
+              تفعيل وضع المساعد
+            </button>
+          )}
+
+          {helperModeEnabled && (
+            <div className="bg-income-50 rounded-xl p-3 text-center">
+              <p className="text-sm text-income-700 font-semibold">وضع المساعد مُفعّل</p>
+              <p className="text-xs text-income-600 mt-1">للدخول للوضع الآن، اضغط "الدخول لوضع المساعد الآن" بالأعلى</p>
+            </div>
+          )}
         </div>
       </BottomSheet>
     </div>
