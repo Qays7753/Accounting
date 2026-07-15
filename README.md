@@ -277,8 +277,9 @@ All 20 items from the Master Checklist have been verified:
 
 ## 🤖 Agent Swarm Development
 
-This project was built by a sequential swarm of 8 AI agents:
+This project was built by a sequential swarm of 8 AI agents (initial build), followed by a 6-agent Deep Engineering Audit:
 
+### Initial Build (Agents 1-8)
 1. **Agent 1 — Architect & DevOps**: Project setup, PWA config, Git
 2. **Agent 2 — DB Specialist**: Dexie.js schema, indexes, relationships
 3. **Agent 3 — UI/UX Engineer**: All components, pages, One UI design
@@ -288,7 +289,29 @@ This project was built by a sequential swarm of 8 AI agents:
 7. **Agent 7 — R&D Analyst**: Code review, bug fixes, R&D_REPORT.md
 8. **Agent 8 — QA & Reviewer**: Final verification, README
 
-See `TASKS.md` for detailed progress log and `R&D_REPORT.md` for findings.
+### Deep Engineering Audit (Agents 1-6)
+1. **Agent 1 — Code Architect & Performance Auditor**: Lazy-loaded routes, debounced search, memoized filters, fixed memory leaks in notification service
+2. **Agent 2 — Lead UI/UX Reviewer (Visuals)**: Semantic HTML, ARIA roles, RTL toggle direction fix, accessibility improvements
+3. **Agent 3 — Lead UI/UX Reviewer (Interaction)**: Fixed swipe-to-delete stale state bug, AmountInput sync, timezone bugs, timer cleanup
+4. **Agent 4 — Database & Accounting Logic Specialist**: Index-based pagination for 10k+ records, fixed cash balance logic (debts excluded)
+5. **Agent 5 — QA Tester**: Verified all success criteria, wrote QA_REPORT.md, fixed WhatsApp date formatting
+6. **Agent 6 — DevOps & Final Committer**: Final build, README update, GitHub push
+
+See `TASKS.md` for detailed progress log, `R&D_REPORT.md` for R&D findings, and `QA_REPORT.md` for QA test results.
+
+---
+
+## 📊 Performance Metrics
+
+| Metric | Value |
+|--------|-------|
+| Initial JS bundle (gzip) | ~98 KB |
+| Lazy-loaded pages (gzip) | 3-4 KB each |
+| Service Worker precache | 24 entries (398 KB) |
+| Build time | ~2.5s |
+| Pagination page size | 20 records |
+| Search debounce | 300ms |
+| Snackbar undo duration | 5000ms |
 
 ---
 
