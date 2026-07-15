@@ -126,6 +126,25 @@ class AccountingDatabase extends Dexie {
       settlements: '++id, debtTransactionId, paymentTransactionId, amount, createdAt',
     })
 
+    // Version 7 - V4 Phase 2: Operations, Security & Control
+    // New tables: quick_products (POS), daily_closures (Z-Report)
+    // New settings keys: helper_pin, show_quick_pos, closing_time, last_backup_reminder
+    this.version(7).stores({
+      transactions: '++id, type, [type+dateTimestamp], dateTimestamp, category, orderId, amount, createdAt, isRecurring, recurringParentId, debtStatus, linkedDebtId, edited, cost_of_goods',
+      orders: '++id, status, [status+scheduledTimestamp], scheduledTimestamp, customerName, customerId, phone, orderType, amount, is_paid, paymentTransactionId, createdAt',
+      customers: '++id, name, phone, archived, createdAt',
+      materials: '++id, name, unit_type, unit_cost, createdAt',
+      // V4 Phase 2: Quick POS products (id, name, price, linked_components_array)
+      quick_products: '++id, name, price, createdAt',
+      settings: '++id, &key',
+      meta: '++id, &key',
+      notifications: '++id, orderId, scheduledTime, sent, createdAt',
+      settlements: '++id, debtTransactionId, paymentTransactionId, amount, createdAt',
+      // V4 Phase 2: Daily Z-Report closures
+      // Fields: date, expected_cash, counted_cash, variance, variance_type ('shortage'|'surplus'|'balanced'), timestamp
+      daily_closures: '++id, date, timestamp, createdAt',
+    })
+
     this.open()
   }
 
@@ -1266,6 +1285,245 @@ class AccountingDatabase extends Dexie {
       // Negative = collected more than theoretical (prepayments)
       variance: realCashProfit - theoreticalProfit,
     }
+  }
+
+  // ========== V4 PHASE 2: QUICK POS ==========
+
+  /**
+   * Add a quick POS product.
+   * @param {Object} data - { name, price, linked_components (array of materialId) }
+   */
+  async addQuickProduct(data) {
+    const now = Date.now()
+    const product = {
+      name: data.name || '',
+      price: Number(data.price) || 0,
+      // Optional: linked BOM components for COGS calculation on sale
+      linked_components: data.linked_components || [],
+      createdAt: now,
+      updatedAt: now,
+    }
+    const id = await this.quick_products.add(product)
+    return { ...product, id }
+  }
+
+  /**
+   * Update a quick product.
+   */
+  async updateQuickProduct(id, updates) {
+    const updateData = { ...updates, updatedAt: Date.now() }
+    if (updates.price !== undefined) {
+      updateData.price = Number(updates.price) || 0
+    }
+    await this.quick_products.update(id, updateData)
+  }
+
+  /**
+   * Delete a quick product.
+   */
+  async deleteQuickProduct(id) {
+    await this.quick_products.delete(id)
+  }
+
+  /**
+   * Get all quick products.
+   */
+  async getQuickProducts() {
+    const items = await this.quick_products.toArray()
+    items.sort((a, b) => a.name.localeCompare(b.name, 'ar'))
+    return items
+  }
+
+  /**
+   * Quick POS Sale: Complete a sale with multiple products in one tap.
+   * Creates an income transaction with COGS from linked BOM components.
+   *
+   * @param {Array} cart - [{ product, qty }]
+   * @param {string} paymentType - 'cash' | 'credit'
+   * @returns {Object} - { transaction, totalAmount, totalCOGS }
+   *
+   * CRITICAL: BOM cost (COGS) is calculated from linked_components but
+   * ONLY the sale amount is recorded as income. COGS goes to capital jar
+   * via the Two Jars system, NOT as a separate expense.
+   */
+  async quickSale(cart, paymentType = 'cash') {
+    let totalAmount = 0
+    let totalCOGS = 0
+    const itemsSummary = []
+
+    for (const item of cart) {
+      const lineTotal = (item.product.price || 0) * (item.qty || 1)
+      totalAmount += lineTotal
+
+      // Calculate COGS from linked components (if any)
+      let lineCOGS = 0
+      if (item.product.linked_components && item.product.linked_components.length > 0) {
+        for (const comp of item.product.linked_components) {
+          // comp = { materialId, qty }
+          if (comp.materialId) {
+            const material = await this.materials.get(comp.materialId)
+            if (material) {
+              lineCOGS += (material.unit_cost || 0) * (comp.qty || 0) * (item.qty || 1)
+            }
+          }
+        }
+      }
+      totalCOGS += lineCOGS
+      itemsSummary.push(`${item.product.name} ×${item.qty}`)
+    }
+
+    if (paymentType === 'cash') {
+      // Cash sale: income with COGS for Two Jars split
+      const transaction = await this.addTransaction({
+        type: 'income',
+        amount: totalAmount,
+        description: `بيع سريع: ${itemsSummary.join('، ')}`,
+        category: 'مبيعات سريعة',
+        date: new Date(),
+        cost_of_goods: totalCOGS, // V4: enables Two Jars split
+      })
+      return { transaction, totalAmount, totalCOGS, paymentType: 'cash' }
+    } else {
+      // Credit sale: debt_given (customer owes us)
+      const transaction = await this.addTransaction({
+        type: 'debt_given',
+        amount: totalAmount,
+        description: `بيع سريع بالأجل: ${itemsSummary.join('، ')}`,
+        category: 'دين مستحقة لي',
+        date: new Date(),
+        debtStatus: 'unpaid',
+        debtAmountPaid: 0,
+      })
+      return { transaction, totalAmount, totalCOGS, paymentType: 'credit' }
+    }
+  }
+
+  // ========== V4 PHASE 2: DAILY Z-REPORT ==========
+
+  /**
+   * Get today's expected cash (from app records).
+   * = Opening cash + income - expenses - withdrawals
+   * This is what SHOULD be in the cash box.
+   */
+  async getExpectedCash() {
+    return await this.getCashBalance()
+  }
+
+  /**
+   * Save a daily Z-Report closure.
+   * @param {Object} data - { expected_cash, counted_cash }
+   * @returns {Object} - the saved closure record
+   */
+  async saveDailyClosure(data) {
+    const now = new Date()
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+    const expected = Number(data.expected_cash) || 0
+    const counted = Number(data.counted_cash) || 0
+    const variance = counted - expected
+
+    const closure = {
+      date: today,
+      expected_cash: expected,
+      counted_cash: counted,
+      variance: variance,
+      variance_type: variance > 0 ? 'surplus' : variance < 0 ? 'shortage' : 'balanced',
+      timestamp: now.getTime(),
+      createdAt: Date.now(),
+    }
+
+    const id = await this.daily_closures.add(closure)
+    return { ...closure, id }
+  }
+
+  /**
+   * Check if today's closure already exists.
+   */
+  async hasTodayClosure() {
+    const now = new Date()
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+    const existing = await this.daily_closures.where('date').equals(today).first()
+    return !!existing
+  }
+
+  /**
+   * Get the closing time setting (default: 20:00 / 8:00 PM).
+   */
+  async getClosingTime() {
+    return await this.getSetting('closing_time', '20:00')
+  }
+
+  /**
+   * Check if it's time to show the Z-Report reminder.
+   * Returns true if current time >= closing time AND no closure exists today.
+   */
+  async shouldShowZReportReminder() {
+    const closingTime = await this.getClosingTime()
+    const now = new Date()
+    const [closeHour, closeMin] = closingTime.split(':').map(Number)
+    const closingDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), closeHour, closeMin, 0, 0)
+
+    if (now < closingDate) return false // Not yet closing time
+
+    const alreadyClosed = await this.hasTodayClosure()
+    return !alreadyClosed
+  }
+
+  // ========== V4 PHASE 2: AUTO-BACKUP & WEEKLY REMINDER ==========
+
+  /**
+   * Check if weekly backup reminder should be shown.
+   * Returns true if 7+ days since last reminder.
+   */
+  async shouldShowBackupReminder() {
+    const lastReminder = await this.getMeta('last_backup_reminder', null)
+    if (!lastReminder) return true
+    const elapsed = Date.now() - lastReminder
+    return elapsed >= 7 * 24 * 60 * 60 * 1000 // 7 days
+  }
+
+  /**
+   * Mark that the backup reminder was shown (prevent re-showing for 7 days).
+   */
+  async markBackupReminderShown() {
+    await this.setMeta('last_backup_reminder', Date.now())
+  }
+
+  // ========== V4 PHASE 2: HELPER MODE (SECURITY) ==========
+
+  /**
+   * Get the helper mode PIN (4-digit string). Returns null if not set.
+   */
+  async getHelperPin() {
+    return await this.getSetting('helper_pin', null)
+  }
+
+  /**
+   * Set the helper mode PIN.
+   */
+  async setHelperPin(pin) {
+    await this.setSetting('helper_pin', pin)
+  }
+
+  /**
+   * Check if helper mode is enabled (PIN is set).
+   */
+  async isHelperModeEnabled() {
+    const pin = await this.getHelperPin()
+    return !!pin
+  }
+
+  /**
+   * Get the "show_quick_pos" setting (default: true).
+   */
+  async getShowQuickPos() {
+    return await this.getSetting('show_quick_pos', true)
+  }
+
+  /**
+   * Set the "show_quick_pos" setting.
+   */
+  async setShowQuickPos(show) {
+    await this.setSetting('show_quick_pos', show)
   }
 }
 
