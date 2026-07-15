@@ -358,17 +358,22 @@ class AccountingDatabase extends Dexie {
   /**
    * Calculate the "Two Jars" split: حق المحل (Capital) and حق التاجر (Profit).
    *
-   * CRITICAL BUSINESS RULES:
-   * - Income with cost_of_goods > 0:
-   *   * cost_of_goods → حق المحل (must be preserved to restock)
-   *   * (amount - cost_of_goods) → حق التاجر (safe to spend)
-   * - Income with cost_of_goods = 0 or null:
-   *   * 100% → حق المحل (CONSERVATIVE: protect capital when COGS unknown)
-   * - Expense: deducts from حق التاجر (Profit)
-   * - Personal Withdrawal: deducts from حق التاجر (Profit)
+   * V4.1 CRITICAL FIX: حق التاجر = Cash Received - COGS only.
+   * Credit sales (debt_given) do NOT add to profit jar until debt is settled.
+   *
+   * Business rules:
+   * - Cash income (type='income', no linkedDebtId):
+   *   * COGS → حق المحل (capital, preserve for restocking)
+   *   * (amount - COGS) → حق التاجر (profit, safe to spend)
+   *   * If COGS = 0: 100% → حق المحل (conservative, protect capital)
+   * - Debt settlement income (type='income', linkedDebtId set):
+   *   * 100% → حق التاجر (cash received from prior credit sale)
+   *   * COGS was already preserved when the original sale happened (in the order's BOM)
+   * - Expense: deducts from حق التاجر (operational costs)
+   * - Personal Withdrawal: deducts from حق التاجر (profit)
    * - Opening Balance (Cash): 100% → حق المحل (initial capital)
-   * - Debt settlements (income from debt repayment): 100% → حق التاجر (already earned)
-   * - Debts (debt_given/debt_taken): NOT counted in either jar (separate tracking)
+   * - debt_given (credit sale): NOT counted in either jar (no cash received yet)
+   * - debt_taken (supplier credit): NOT counted in either jar (no cash paid yet)
    *
    * @returns {Object} { capitalJar, profitJar, totalCash }
    */
@@ -378,16 +383,17 @@ class AccountingDatabase extends Dexie {
 
     await this.transactions.each((t) => {
       if (t.type === 'income') {
-        // Check if this is a debt settlement (linkedDebtId set)
         if (t.linkedDebtId) {
-          // Debt repayment = already earned money, goes to profit
+          // V4.1: Debt settlement = cash received from prior credit sale
+          // COGS was already handled when the order was completed
+          // This is pure cash → profit jar
           profitJar += t.amount
         } else if (t.cost_of_goods && t.cost_of_goods > 0) {
-          // Income with known COGS: split into two jars
+          // Cash sale with known COGS: split into two jars
           capitalJar += t.cost_of_goods
           profitJar += (t.amount - t.cost_of_goods)
         } else {
-          // Income without COGS: conservative — all goes to capital
+          // Cash sale without COGS: conservative — all goes to capital
           capitalJar += t.amount
         }
       } else if (t.type === 'expense') {
@@ -402,11 +408,9 @@ class AccountingDatabase extends Dexie {
           capitalJar += t.amount
         }
       }
-      // debt_given, debt_taken: NOT counted in jars (tracked separately)
+      // debt_given, debt_taken: NOT counted in jars (no cash exchanged yet)
     })
 
-    // Profit jar can go negative if expenses exceed profit
-    // Capital jar should never go negative (it's protected)
     const totalCash = capitalJar + profitJar
 
     return { capitalJar, profitJar, totalCash }
@@ -1401,9 +1405,10 @@ class AccountingDatabase extends Dexie {
   // ========== V4 PHASE 2: DAILY Z-REPORT ==========
 
   /**
-   * Get today's expected cash (from app records).
-   * = Opening cash + income - expenses - withdrawals
-   * This is what SHOULD be in the cash box.
+   * V4.1: Get expected cash for Z-Report.
+   * = Opening cash + Cash Sales (income) - Cash Expenses - Withdrawals
+   * EXCLUDES: debt_given (credit sales), debt_taken (supplier credit), debt settlements
+   * This is what SHOULD physically be in the cash box.
    */
   async getExpectedCash() {
     return await this.getCashBalance()
