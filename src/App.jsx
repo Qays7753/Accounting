@@ -13,6 +13,7 @@ const HomePage = lazy(() => import('./pages/HomePage.jsx'))
 const FinancePage = lazy(() => import('./pages/FinancePage.jsx'))
 const OrdersPage = lazy(() => import('./pages/OrdersPage.jsx'))
 const DebtsPage = lazy(() => import('./pages/DebtsPage.jsx'))
+const ReportsPage = lazy(() => import('./pages/ReportsPage.jsx'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'))
 
 // Lightweight fallback while a lazy chunk is loading
@@ -105,6 +106,7 @@ function App() {
           <Route path="/finance" element={<FinancePage />} />
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="/debts" element={<DebtsPage />} />
+          <Route path="/reports" element={<ReportsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
