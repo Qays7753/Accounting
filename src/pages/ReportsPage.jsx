@@ -148,7 +148,7 @@ export default function ReportsPage() {
     <div className="min-h-screen pb-32">
       {/* Header */}
       <header className="px-5 pt-12 pb-3 safe-area-top sticky top-0 bg-background z-20">
-        <h1 className="text-2xl font-bold mb-3">التقارير</h1>
+        <h1 className="text-[30px] font-extrabold text-ink -tracking-[.5px] mb-3">التقارير</h1>
 
         {/* Quick Presets */}
         <div className="flex gap-2 overflow-x-auto hide-scrollbar -mx-5 px-5 mb-3">
@@ -207,7 +207,7 @@ export default function ReportsPage() {
             <p className="text-sm text-income-50 mb-1">في هالفترة كسبت</p>
             <p className="text-3xl font-bold tabular-nums">{formatAmount(report.realCashProfit)}</p>
             <p className="text-xs text-income-50 mt-2">
-              {report.realCashProfit >= 0 ? 'ربح صافي 👍' : 'خسارة — راجع مصاريفك'}
+              {report.realCashProfit >= 0 ? 'ربح صافي' : 'خسارة — راجع مصاريفك'}
             </p>
           </div>
 

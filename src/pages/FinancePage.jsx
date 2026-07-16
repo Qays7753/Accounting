@@ -149,15 +149,6 @@ export default function FinancePage() {
       <header className="px-5 pt-12 pb-3 safe-area-top sticky top-0 bg-background z-20">
         <div className="flex items-center justify-between mb-3.5">
           <h1 className="text-[30px] font-extrabold text-ink -tracking-[.5px]">المالية</h1>
-          {/* V4.1: Quick links to Debts and Reports (since they're not in Bottom Nav) */}
-          <div className="flex gap-2">
-            <Link to="/debts" className="press w-11 h-11 rounded-full bg-withdrawal-50 grid place-items-center" aria-label="الديون">
-              <Icon name="bank" className="w-5 h-5 text-withdrawal-600" />
-            </Link>
-            <Link to="/reports" className="press w-11 h-11 rounded-full bg-primary-50 grid place-items-center" aria-label="التقارير">
-              <Icon name="document" className="w-5 h-5 text-primary-600" />
-            </Link>
-          </div>
         </div>
 
         {/* صافي هذا الشهر */}
@@ -216,6 +207,30 @@ export default function FinancePage() {
           })}
         </div>
       </header>
+
+      {/* Quick access — clearly labeled entries for Debts & Reports (not in bottom nav) */}
+      <div className="px-5 pt-4 grid grid-cols-2 gap-3">
+        <Link to="/debts" className="press bg-surface rounded-[20px] p-4 shadow-card flex items-center gap-3">
+          <div className="w-11 h-11 rounded-[13px] bg-withdraw-bg grid place-items-center flex-none">
+            <Icon name="bank" className="w-[22px] h-[22px] text-withdrawal" strokeWidth={2} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[15px] font-bold text-ink">الديون</div>
+            <div className="text-[11px] text-faint">لك وعليك</div>
+          </div>
+          <Icon name="chevronLeft" className="w-4 h-4 text-[#c1c6d7] flex-none" />
+        </Link>
+        <Link to="/reports" className="press bg-surface rounded-[20px] p-4 shadow-card flex items-center gap-3">
+          <div className="w-11 h-11 rounded-[13px] bg-primary-tint grid place-items-center flex-none">
+            <Icon name="document" className="w-[22px] h-[22px] text-primary" strokeWidth={2} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[15px] font-bold text-ink">التقارير</div>
+            <div className="text-[11px] text-faint">أرباحك وأداؤك</div>
+          </div>
+          <Icon name="chevronLeft" className="w-4 h-4 text-[#c1c6d7] flex-none" />
+        </Link>
+      </div>
 
       {/* Day-grouped ledger */}
       <div className="px-5 pt-4">
