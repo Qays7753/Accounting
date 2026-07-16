@@ -154,56 +154,65 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* V4 Phase 1: Two Jars Dashboard (حق المحل & حق التاجر) */}
+      {/* V5: Two Jars Dashboard (حق المحل & حق التاجر) — One UI Hero */}
       <section className="px-5 mb-4">
-        {/* Total Cash Summary */}
-        <div className="bg-gradient-to-br from-primary-500 to-primary-600 rounded-3xl p-5 shadow-md text-white mb-3">
-          <div className="flex items-center justify-between mb-1">
-            <p className="text-sm font-medium text-primary-50">إجمالي النقد المتاح</p>
-            <Icon name="wallet" className="w-5 h-5 text-primary-50" />
+        {/* Hero card — blue gradient */}
+        <div
+          className="rounded-hero p-[22px] text-white relative overflow-hidden shadow-hero"
+          style={{ background: 'linear-gradient(135deg, #0058be 0%, #0a6bd6 60%, #1478e8 100%)' }}
+        >
+          <div className="absolute -top-16 -left-8 w-44 h-44 rounded-full bg-white/10 blur-md" />
+          <div className="relative">
+            <div className="flex items-center justify-between">
+              <span className="text-[13px] text-white/80 font-semibold">إجمالي النقد المتاح</span>
+              <Icon name="wallet" className="w-5 h-5 text-white/90" />
+            </div>
+            {stats.loading ? (
+              <div className="h-10 w-40 bg-white/20 rounded-lg animate-pulse mt-2" />
+            ) : (
+              <div className="tnum text-[40px] font-extrabold -tracking-[1px] mt-1.5 leading-none">
+                {formatAmount(jars.totalCash)}
+              </div>
+            )}
           </div>
-          {stats.loading ? (
-            <div className="h-9 w-40 bg-white/20 rounded-lg animate-pulse" />
-          ) : (
-            <p className="text-3xl font-bold tabular-nums tracking-tight">
-              {formatAmount(jars.totalCash)}
-            </p>
-          )}
         </div>
 
-        {/* Two Jars Split */}
-        <div className="grid grid-cols-2 gap-3">
-          {/* Jar A: حق المحل (Capital) */}
-          <div className="bg-surface rounded-2xl p-4 shadow-card border-r-4 border-primary">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
-                <Icon name="wallet" className="w-4 h-4 text-primary-600" strokeWidth={2} />
+        {/* Two Jars — 2-col grid */}
+        <div className="grid grid-cols-2 gap-3 mt-3">
+          {/* Jar A: حق المحل (blue) */}
+          <div className="bg-surface rounded-card p-4 shadow-card">
+            <div className="flex items-center gap-2.5 mb-2.5">
+              <div className="w-[34px] h-[34px] rounded-[11px] bg-primary-tint grid place-items-center">
+                <Icon name="wallet" className="w-[19px] h-[19px] text-primary" strokeWidth={2} />
               </div>
-              <p className="text-xs font-bold text-primary-600">حق المحل</p>
+              <span className="text-[13px] font-bold text-primary">حق المحل</span>
             </div>
-            <p className="text-xl font-bold tabular-nums text-text-primary">
+            <div className="tnum text-[23px] font-extrabold text-ink leading-none">
               {formatAmount(jars.capitalJar)}
-            </p>
-            <p className="text-[10px] text-text-tertiary mt-1">رأس المال (للتعبئة)</p>
+            </div>
+            <div className="text-[11px] text-faint mt-1.5">رأس المال — للتعبئة</div>
           </div>
 
-          {/* Jar B: حق التاجر (Profit) */}
-          <div className="bg-surface rounded-2xl p-4 shadow-card border-r-4 border-income-500">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 rounded-lg bg-income-50 flex items-center justify-center">
-                <Icon name="trendingUp" className="w-4 h-4 text-income-600" strokeWidth={2} />
+          {/* Jar B: حق التاجر (green) */}
+          <div className="bg-surface rounded-card p-4 shadow-card">
+            <div className="flex items-center gap-2.5 mb-2.5">
+              <div className="w-[34px] h-[34px] rounded-[11px] bg-income-bg grid place-items-center">
+                <Icon name="trendingUp" className="w-[19px] h-[19px] text-income" strokeWidth={2} />
               </div>
-              <p className="text-xs font-bold text-income-600">حق التاجر</p>
+              <span className="text-[13px] font-bold text-income">حق التاجر</span>
             </div>
-            <p className={`text-xl font-bold tabular-nums ${jars.profitJar >= 0 ? 'text-income-600' : 'text-expense-600'}`}>
+            <div className={`tnum text-[23px] font-extrabold leading-none ${jars.profitJar >= 0 ? 'text-income' : 'text-expense'}`}>
               {formatAmount(jars.profitJar)}
-            </p>
-            <p className="text-[10px] text-text-tertiary mt-1">الأرباح (آمن للصرف)</p>
+            </div>
+            <div className="text-[11px] text-faint mt-1.5">الأرباح — آمن للصرف</div>
           </div>
         </div>
-        <p className="text-[10px] text-text-tertiary mt-2 text-center px-2">
-          لا تنسحب من "حق المحل" إلا لإعادة تعبئة البضاعة
-        </p>
+
+        {/* Helper line */}
+        <div className="flex items-center gap-1.5 justify-center mt-2.5">
+          <Icon name="info" className="w-[15px] h-[15px] text-faint" />
+          <span className="text-[11px] text-faint">لا تسحب من "حق المحل" إلا لإعادة تعبئة البضاعة</span>
+        </div>
       </section>
 
       {/* V4 Phase 2: Z-Report Reminder Card */}

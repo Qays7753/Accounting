@@ -4,14 +4,18 @@ import { hapticLight } from '../../utils/haptics.js'
 import { useHelperMode } from '../../context/HelperModeContext.jsx'
 import PinEntrySheet from '../sheets/PinEntrySheet.jsx'
 
-// V4.1: Reduced to 5 nav items (Reports accessible from Finance page, Debts from Finance too)
-const allNavItems = [
+// V5: 4 tabs only — Quick Sale merged into Home
+const navItems = [
   {
     to: '/',
     label: 'الرئيسية',
     icon: (active) => (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 2.5 : 1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+      <svg className="w-6 h-6" fill={active ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 0 : 1.8}>
+        {active ? (
+          <path d="M11.47 3.84a.75.75 0 011.06 0l8.69 8.69a.75.75 0 101.06-1.06l-8.689-8.69a2.25 2.25 0 00-3.182 0l-8.69 8.69a.75.75 0 001.061 1.06l8.69-8.69z" />
+        ) : (
+          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.5a.75.75 0 00.75.75h4.5a.75.75 0 00.75-.75V18a2.25 2.25 0 014.5 0v1.5a.75.75 0 00.75.75h4.5a.75.75 0 00.75-.75V9.75M8.25 21h8.25" />
+        )}
       </svg>
     ),
   },
@@ -19,17 +23,12 @@ const allNavItems = [
     to: '/finance',
     label: 'المالية',
     icon: (active) => (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 2.5 : 1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-      </svg>
-    ),
-  },
-  {
-    to: '/pos',
-    label: 'البيع',
-    icon: (active) => (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 2.5 : 1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+      <svg className="w-6 h-6" fill={active ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 0 : 1.8}>
+        {active ? (
+          <path fillRule="evenodd" d="M7.5 6v.75H5.513c-.96 0-1.764.724-1.865 1.679l-1.263 12A1.875 1.875 0 004.25 22.5h15.5a1.875 1.875 0 001.865-2.071l-1.263-12a1.875 1.875 0 00-1.865-1.679H16.5V6a4.5 4.5 0 00-9 0zM12 3a3 3 0 00-3 3v.75h6V6a3 3 0 00-3-3zm-3 8.25a3 3 0 106 0v-.75a.75.75 0 011.5 0v.75a4.5 4.5 0 11-9 0v-.75a.75.75 0 011.5 0v.75z" clipRule="evenodd" />
+        ) : (
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12a1.875 1.875 0 01-1.865 2.071H5.498a1.875 1.875 0 01-1.865-2.071l1.263-12c.066-.656.617-1.157 1.276-1.157h11.239c.659 0 1.21.501 1.276 1.157z" />
+        )}
       </svg>
     ),
   },
@@ -37,8 +36,12 @@ const allNavItems = [
     to: '/orders',
     label: 'الطلبات',
     icon: (active) => (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 2.5 : 1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+      <svg className="w-6 h-6" fill={active ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 0 : 1.8}>
+        {active ? (
+          <path fillRule="evenodd" d="M3 6.75A2.75 2.75 0 015.75 4h12.5A2.75 2.75 0 0121 6.75v10.5A2.75 2.75 0 0118.25 20H5.75A2.75 2.75 0 013 17.25V6.75zm3.5 1.5a.75.75 0 000 1.5h11a.75.75 0 000-1.5h-11zm0 4a.75.75 0 000 1.5h11a.75.75 0 000-1.5h-11zm0 4a.75.75 0 000 1.5h7a.75.75 0 000-1.5h-7z" clipRule="evenodd" />
+        ) : (
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+        )}
       </svg>
     ),
   },
@@ -46,28 +49,28 @@ const allNavItems = [
     to: '/settings',
     label: 'الإعدادات',
     icon: (active) => (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 2.5 : 1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      <svg className="w-6 h-6" fill={active ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 0 : 1.8}>
+        {active ? (
+          <path fillRule="evenodd" d="M11.078 2.25c-.917 0-1.699.663-1.85 1.567L9.05 4.889c-.02.12-.115.26-.297.348a7.493 7.493 0 00-.986.57c-.166.115-.334.126-.45.083L6.3 5.508a1.875 1.875 0 00-2.282.819l-.922 1.597a1.875 1.875 0 00.432 2.385l.84.692c.095.078.17.229.154.43a7.598 7.598 0 000 1.139c.015.2-.059.352-.153.43l-.841.692a1.875 1.875 0 00-.432 2.385l.922 1.597a1.875 1.875 0 002.282.818l1.019-.382c.115-.043.283-.031.45.082.312.214.641.405.985.57.182.088.277.228.297.35l.178 1.071c.151.904.933 1.567 1.85 1.567h1.844c.916 0 1.699-.663 1.85-1.567l.178-1.072c.02-.12.114-.26.297-.349.344-.165.673-.356.985-.57.167-.114.335-.125.45-.082l1.02.382a1.875 1.875 0 002.28-.819l.923-1.597a1.875 1.875 0 00-.432-2.385l-.84-.692c-.095-.078-.17-.229-.154-.43a7.614 7.614 0 000-1.139c-.016-.2.059-.352.153-.43l.84-.692c.708-.582.891-1.59.433-2.385l-.922-1.597a1.875 1.875 0 00-2.282-.818l-1.02.382c-.114.043-.282.031-.449-.083a7.49 7.49 0 00-.985-.57c-.183-.087-.277-.227-.297-.348l-.179-1.072a1.875 1.875 0 00-1.85-1.567h-1.843zM12 15.75a3.75 3.75 0 100-7.5 3.75 3.75 0 000 7.5z" clipRule="evenodd" />
+        ) : (
+          <>\
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />\
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />\
+          </>
+        )}
       </svg>
     ),
   },
 ]
 
-// V4 Phase 2: Helper Mode only shows POS and Orders
-const helperNavItems = allNavItems.filter(item => item.to === '/pos' || item.to === '/orders')
+// Helper Mode: only POS and Orders
+const helperNavItems = navItems.filter(item => item.to === '/orders')
 
 export default function BottomNav({ showQuickPos = true }) {
   const { isHelperMode, verifyPin } = useHelperMode()
   const [pinSheetOpen, setPinSheetOpen] = useState(false)
 
-  // Filter nav items based on settings and mode
-  let navItems = allNavItems
-  if (isHelperMode) {
-    navItems = helperNavItems
-  } else if (!showQuickPos) {
-    navItems = allNavItems.filter(item => item.to !== '/pos')
-  }
+  const items = isHelperMode ? helperNavItems : navItems
 
   const handleLockClick = () => {
     hapticLight()
@@ -76,56 +79,60 @@ export default function BottomNav({ showQuickPos = true }) {
 
   const handleVerify = async (pin) => {
     const correct = await verifyPin(pin)
-    if (correct) {
-      setPinSheetOpen(false)
-    }
+    if (correct) setPinSheetOpen(false)
     return correct
   }
 
   return (
     <>
-      <nav className="fixed bottom-0 inset-x-0 bg-surface border-t border-divider z-30 safe-area-bottom" aria-label="التنقل الرئيسي">
-        <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === '/'}
-              onClick={() => hapticLight()}
-              aria-label={item.label}
-              className={({ isActive }) =>
-                `flex flex-col items-center justify-center gap-1 px-2 py-2 rounded-xl transition-colors min-w-[48px] ${
-                  isActive ? 'tab-active' : 'tab-inactive'
-                }`
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  {item.icon(isActive)}
-                  <span className="text-[10px] font-medium">{item.label}</span>
-                </>
-              )}
-            </NavLink>
-          ))}
+      <nav className="flex-none bg-surface px-3 pt-2.5 pb-5 flex justify-around items-center shadow-nav z-20 safe-area-bottom" aria-label="التنقل الرئيسي">
+        {items.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.to === '/'}
+            onClick={() => hapticLight()}
+            aria-label={item.label}
+            className="flex flex-col items-center gap-1 w-16"
+          >
+            {({ isActive }) => (
+              <>
+                <div
+                  className="w-[52px] h-8 rounded-pill grid place-items-center transition-colors"
+                  style={{ background: isActive ? '#d8e2ff' : 'transparent' }}
+                >
+                  <span className={isActive ? 'text-primary' : 'text-faint'}>
+                    {item.icon(isActive)}
+                  </span>
+                </div>
+                <span
+                  className="text-[11px] font-semibold transition-colors"
+                  style={{ color: isActive ? '#0058be' : '#717786' }}
+                >
+                  {item.label}
+                </span>
+              </>
+            )}
+          </NavLink>
+        ))}
 
-          {/* V4 Phase 2: Lock icon (Helper Mode exit) */}
-          {isHelperMode && (
-            <button
-              type="button"
-              onClick={handleLockClick}
-              className="flex flex-col items-center justify-center gap-1 px-2 py-2 rounded-xl transition-colors min-w-[48px] text-expense-600"
-              aria-label="الخروج من وضع المساعد"
-            >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        {isHelperMode && (
+          <button
+            type="button"
+            onClick={handleLockClick}
+            className="flex flex-col items-center gap-1 w-16"
+            aria-label="الخروج من وضع المساعد"
+          >
+            <div className="w-[52px] h-8 rounded-pill grid place-items-center">
+              <svg className="w-6 h-6 text-expense" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
-              <span className="text-[10px] font-medium">خروج</span>
-            </button>
-          )}
-        </div>
+            </div>
+            <span className="text-[11px] font-semibold text-expense">خروج</span>
+          </button>
+        )}
       </nav>
 
-      {/* V4 Phase 2: PIN Entry Sheet for exiting Helper Mode */}
       <PinEntrySheet
         open={pinSheetOpen}
         onClose={() => setPinSheetOpen(false)}
