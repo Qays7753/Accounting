@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>الحسابات — Visual Reference Prototype (One UI)</title>
+<!-- NOTE FOR IMPLEMENTING AGENT: This is the visual ground-truth for the redesign.
+     Match colors, radii, spacing, typography and layout EXACTLY. UI text is Arabic (RTL).
+     Numbers are English digits with thousands separators, NO currency symbol anywhere. -->
+<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: { extend: {
+    colors: {
+      bg:        "#f7f9fc",   // app background
+      surface:   "#ffffff",   // cards
+      mute:      "#eceef1",    // chips / filled fields
+      ink:       "#191c1e",   // primary text
+      sub:       "#414755",   // secondary text
+      faint:     "#717786",   // hint text
+      primary:   "#0058be",   // Samsung blue — actions, active, "shop equity"
+      "primary-tint":  "#e7f0ff",
+      "primary-pill":  "#d8e2ff",
+      "income":    "#067647", "income-bg": "#e7f8ee",   // قبض / profit / safe
+      "expense":   "#c1272d", "expense-bg":"#fdecec",   // صرف / loss
+      "withdraw":  "#9a5b06", "withdraw-bg":"#fbf1e2",  // سحب شخصي
+      "amber":     "#c98a10", "amber-bg":  "#fff5e2",   // status: in-progress
+      "purple":    "#5644d0", "purple-bg": "#eeecfb",
+    },
+    fontFamily: { sans: ["Cairo","sans-serif"] },
+    borderRadius: { card: "24px", hero: "30px", sheet: "32px", pill: "9999px" },
+    boxShadow: {
+      card: "0 8px 22px -16px rgba(20,30,55,.35)",
+      hero: "0 18px 34px -14px rgba(0,88,190,.55)",
+      fab:  "0 14px 28px -8px rgba(0,88,190,.6)",
+      nav:  "0 -6px 24px -14px rgba(20,30,55,.3)",
+    },
+  }}
+}
+</script>
+<style>
+  body{ font-family:'Cairo',sans-serif; }
+  .ms{ font-family:'Material Symbols Rounded'; font-weight:normal; font-style:normal; line-height:1; letter-spacing:normal; text-transform:none; white-space:nowrap; direction:ltr; -webkit-font-smoothing:antialiased; user-select:none; }
+  .fill{ font-variation-settings:'FILL' 1; }
+  .tnum{ font-variant-numeric:tabular-nums; }
+  .scroll::-webkit-scrollbar{ width:0; height:0; }
+  .scroll{ scrollbar-width:none; }
+  @keyframes up{ from{transform:translateY(100%)} to{transform:translateY(0)} }
+  @keyframes fade{ from{opacity:0} to{opacity:1} }
+  .press{ transition:transform .12s ease; } .press:active{ transform:scale(.97); }
+  [hidden]{ display:none !important; }
+</style>
+</head>
+<body class="bg-[#e9edf3] min-h-screen flex items-center justify-center p-6 gap-10 flex-wrap">
+
+<!-- PHONE -->
+<div class="relative flex flex-col bg-bg overflow-hidden" style="width:390px; height:844px; border-radius:46px; box-shadow:0 40px 90px -20px rgba(20,30,55,.45), 0 0 0 11px #0c1220, 0 0 0 13px #2b3348;">
+
+  <!-- status bar -->
+  <div class="flex-none flex items-center justify-between h-[52px] px-7 pl-6 text-ink text-sm font-bold">
+    <span class="tnum">9:41</span>
+    <div class="flex items-center gap-2">
+      <span class="ms text-[17px]">signal_cellular_alt</span>
+      <span class="ms text-[17px]">wifi</span>
+      <span class="ms fill text-[19px]">battery_full</span>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="flex-1 overflow-y-auto overflow-x-hidden scroll">
+
+    <!-- ================= HOME ================= -->
+    <section data-screen="home" class="px-5 pt-1 pb-32">
+      <!-- header -->
+      <div class="flex items-center justify-between my-1 mb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-[46px] h-[46px] rounded-full bg-primary-pill grid place-items-center"><span class="ms fill text-[26px] text-primary">storefront</span></div>
+          <div>
+            <div class="text-[13px] text-faint font-medium">صباح الخير</div>
+            <div class="text-lg text-ink font-bold leading-tight">مؤسسة النور</div>
+          </div>
+        </div>
+        <button class="press w-11 h-11 rounded-full bg-mute grid place-items-center"><span class="ms text-[24px] text-sub">notifications</span></button>
+      </div>
+
+      <!-- JARS HERO -->
+      <div class="rounded-hero p-[22px] text-white relative overflow-hidden shadow-hero" style="background:linear-gradient(135deg,#0058be 0%,#0a6bd6 60%,#1478e8 100%)">
+        <div class="absolute -top-16 -left-8 w-44 h-44 rounded-full bg-white/10 blur-md"></div>
+        <div class="relative">
+          <div class="flex items-center justify-between">
+            <span class="text-[13px] text-white/80 font-semibold">إجمالي النقد المتاح</span>
+            <span class="ms text-[22px] text-white/90">account_balance_wallet</span>
+          </div>
+          <div class="tnum text-[40px] font-extrabold -tracking-[1px] mt-1.5 leading-none">12,450</div>
+          <div class="flex items-center gap-1.5 mt-2.5"><span class="ms text-[17px]" style="color:#6bfe9c">trending_up</span><span class="tnum text-[13px] font-semibold" style="color:#c6f6d5">+8.4% عن الشهر الماضي</span></div>
+        </div>
+      </div>
+
+      <!-- TWO JARS -->
+      <div class="grid grid-cols-2 gap-3 mt-3">
+        <div class="bg-surface rounded-card p-4 shadow-card">
+          <div class="flex items-center gap-2.5 mb-2.5"><div class="w-[34px] h-[34px] rounded-[11px] bg-primary-tint grid place-items-center"><span class="ms fill text-[19px] text-primary">inventory_2</span></div><span class="text-[13px] font-bold text-primary">حق المحل</span></div>
+          <div class="tnum text-[23px] font-extrabold text-ink leading-none">8,200</div>
+          <div class="text-[11px] text-faint mt-1.5">رأس المال — للتعبئة</div>
+        </div>
+        <div class="bg-surface rounded-card p-4 shadow-card">
+          <div class="flex items-center gap-2.5 mb-2.5"><div class="w-[34px] h-[34px] rounded-[11px] bg-income-bg grid place-items-center"><span class="ms fill text-[19px] text-income">savings</span></div><span class="text-[13px] font-bold text-income">حق التاجر</span></div>
+          <div class="tnum text-[23px] font-extrabold text-income leading-none">4,250</div>
+          <div class="text-[11px] text-faint mt-1.5">الأرباح — آمن للصرف</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-1.5 justify-center mt-2.5 text-[#8b93a3]"><span class="ms text-[15px]">info</span><span class="text-[11px]">لا تسحب من "حق المحل" إلا لإعادة تعبئة البضاعة</span></div>
+
+      <!-- QUICK ACTIONS (POS merged here) -->
+      <div class="grid grid-cols-4 gap-2 mt-5">
+        <button class="press flex flex-col items-center gap-1.5" onclick="openSheet('sale')"><div class="w-[58px] h-[58px] rounded-[20px] bg-primary grid place-items-center shadow-fab"><span class="ms text-[26px] text-white">point_of_sale</span></div><span class="text-[12px] text-sub font-semibold">بيع سريع</span></button>
+        <button class="press flex flex-col items-center gap-1.5" onclick="openSheet('add')"><div class="w-[58px] h-[58px] rounded-[20px] bg-surface grid place-items-center shadow-card"><span class="ms text-[26px] text-income">south_west</span></div><span class="text-[12px] text-sub font-semibold">قبض</span></button>
+        <button class="press flex flex-col items-center gap-1.5" onclick="openSheet('add')"><div class="w-[58px] h-[58px] rounded-[20px] bg-surface grid place-items-center shadow-card"><span class="ms text-[26px] text-expense">north_east</span></div><span class="text-[12px] text-sub font-semibold">صرف</span></button>
+        <button class="press flex flex-col items-center gap-1.5" onclick="openSheet('add')"><div class="w-[58px] h-[58px] rounded-[20px] bg-surface grid place-items-center shadow-card"><span class="ms text-[26px] text-withdraw">account_balance</span></div><span class="text-[12px] text-sub font-semibold">سحب شخصي</span></button>
+      </div>
+
+      <!-- TODAY -->
+      <div class="grid grid-cols-2 gap-3 mt-5">
+        <div class="bg-surface rounded-[22px] py-4 px-4 shadow-card"><div class="text-[12px] text-faint font-medium">قبض اليوم</div><div class="tnum text-[21px] font-extrabold text-income mt-1">1,750</div></div>
+        <div class="bg-surface rounded-[22px] py-4 px-4 shadow-card"><div class="text-[12px] text-faint font-medium">صرف اليوم</div><div class="tnum text-[21px] font-extrabold text-expense mt-1">430</div></div>
+      </div>
+
+      <!-- UPCOMING ORDERS -->
+      <div class="flex items-center justify-between mt-6 mb-3 px-0.5">
+        <span class="text-[17px] font-bold text-ink">الطلبات القادمة</span>
+        <button class="text-[13px] font-semibold text-primary" onclick="go('orders')">عرض الكل</button>
+      </div>
+      <div class="flex flex-col gap-2.5">
+        <div class="bg-surface rounded-[22px] p-4 flex items-center gap-3 shadow-card">
+          <div class="w-[46px] h-[46px] rounded-[14px] bg-amber-bg grid place-items-center flex-none"><span class="ms fill text-[23px] text-amber">plumbing</span></div>
+          <div class="flex-1 min-w-0"><div class="text-[15px] font-bold text-ink">أبو محمد</div><div class="text-[12px] text-faint mt-0.5">تمديد صحي · غداً 10:00 ص</div></div>
+          <div class="text-left"><div class="tnum text-[15px] font-bold text-ink">120</div><span class="inline-block mt-1 text-[10px] font-bold text-amber bg-amber-bg px-2 py-0.5 rounded-pill">قيد التنفيذ</span></div>
+        </div>
+        <div class="bg-surface rounded-[22px] p-4 flex items-center gap-3 shadow-card">
+          <div class="w-[46px] h-[46px] rounded-[14px] bg-primary-tint grid place-items-center flex-none"><span class="ms fill text-[23px] text-primary">electrical_services</span></div>
+          <div class="flex-1 min-w-0"><div class="text-[15px] font-bold text-ink">شركة الأفق</div><div class="text-[12px] text-faint mt-0.5">صيانة كهرباء · اليوم 2:00 م</div></div>
+          <div class="text-left"><div class="tnum text-[15px] font-bold text-ink">200</div><span class="inline-block mt-1 text-[10px] font-bold text-primary bg-primary-tint px-2 py-0.5 rounded-pill">جاهز</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= FINANCE ================= -->
+    <section data-screen="finance" hidden class="px-5 pt-1 pb-32">
+      <div class="flex items-center justify-between my-2 mb-4">
+        <h1 class="text-[30px] font-extrabold text-ink -tracking-[.5px] m-0">المالية</h1>
+        <button class="press w-11 h-11 rounded-full bg-mute grid place-items-center"><span class="ms text-[23px] text-sub">tune</span></button>
+      </div>
+      <div class="bg-surface rounded-card px-5 py-[18px] shadow-card flex items-center justify-between">
+        <div><div class="text-[12px] text-faint font-medium">صافي هذا الشهر</div><div class="tnum text-[28px] font-extrabold text-income mt-0.5">+9,250</div></div>
+        <div class="flex gap-[18px] text-center">
+          <div><div class="text-[11px] text-faint">قبض</div><div class="tnum text-[15px] font-bold text-income">12,400</div></div>
+          <div class="w-px bg-[#e6e8eb]"></div>
+          <div><div class="text-[11px] text-faint">صرف</div><div class="tnum text-[15px] font-bold text-expense">3,150</div></div>
+        </div>
+      </div>
+      <div class="flex items-center gap-2.5 bg-mute rounded-[18px] px-4 py-3 mt-3.5"><span class="ms text-[21px] text-faint">search</span><span class="text-sm text-[#8b93a3]">ابحث في المعاملات…</span></div>
+      <div class="relative grid grid-cols-4 bg-mute rounded-[16px] p-1 mt-3.5" id="fin-seg">
+        <div id="fin-thumb" class="absolute top-1 bottom-1 rounded-[12px] bg-primary shadow-sm transition-all duration-300 ease-out" style="right:4px;width:calc(25% - 8px)"></div>
+        <button class="fseg relative z-10 text-[13px] font-bold text-white py-2" data-i="0" onclick="finSeg(0)">الكل</button>
+        <button class="fseg relative z-10 text-[13px] font-semibold text-sub py-2" data-i="1" onclick="finSeg(1)">قبض</button>
+        <button class="fseg relative z-10 text-[13px] font-semibold text-sub py-2" data-i="2" onclick="finSeg(2)">صرف</button>
+        <button class="fseg relative z-10 text-[13px] font-semibold text-sub py-2" data-i="3" onclick="finSeg(3)">سحب</button>
+      </div>
+      <div class="flex items-center justify-between mt-5 mb-2.5 px-0.5"><span class="text-[13px] font-bold text-sub">اليوم</span><span class="tnum text-[12px] text-faint">الصافي +1,320</span></div>
+      <div class="flex flex-col gap-2.5">
+        <div class="bg-surface rounded-[20px] px-[15px] py-[13px] flex items-center gap-3 shadow-card"><div class="w-11 h-11 rounded-[13px] bg-income-bg grid place-items-center flex-none"><span class="ms text-[22px] text-income">south_west</span></div><div class="flex-1"><div class="text-[15px] font-bold text-ink">دفعة زبون — أبو أحمد</div><div class="text-[12px] text-faint">قبض · 9:30 ص</div></div><div class="tnum text-[16px] font-extrabold text-income">+1,750</div></div>
+        <div class="bg-surface rounded-[20px] px-[15px] py-[13px] flex items-center gap-3 shadow-card"><div class="w-11 h-11 rounded-[13px] bg-expense-bg grid place-items-center flex-none"><span class="ms text-[22px] text-expense">north_east</span></div><div class="flex-1"><div class="text-[15px] font-bold text-ink">شراء مواد — قساطل</div><div class="text-[12px] text-faint">صرف · 11:05 ص</div></div><div class="tnum text-[16px] font-extrabold text-expense">−430</div></div>
+      </div>
+      <div class="flex items-center justify-between mt-[18px] mb-2.5 px-0.5"><span class="text-[13px] font-bold text-sub">أمس</span><span class="tnum text-[12px] text-faint">الصافي +4,880</span></div>
+      <div class="flex flex-col gap-2.5">
+        <div class="bg-surface rounded-[20px] px-[15px] py-[13px] flex items-center gap-3 shadow-card"><div class="w-11 h-11 rounded-[13px] bg-income-bg grid place-items-center flex-none"><span class="ms text-[22px] text-income">south_west</span></div><div class="flex-1"><div class="text-[15px] font-bold text-ink">دفعة عميل — شركة الأفق</div><div class="text-[12px] text-faint">قبض · 2:15 م</div></div><div class="tnum text-[16px] font-extrabold text-income">+5,200</div></div>
+        <div class="bg-surface rounded-[20px] px-[15px] py-[13px] flex items-center gap-3 shadow-card"><div class="w-11 h-11 rounded-[13px] bg-withdraw-bg grid place-items-center flex-none"><span class="ms text-[22px] text-withdraw">account_balance</span></div><div class="flex-1"><div class="text-[15px] font-bold text-ink">سحب شخصي</div><div class="text-[12px] text-faint">سحب · 6:40 م</div></div><div class="tnum text-[16px] font-extrabold text-withdraw">−320</div></div>
+      </div>
+    </section>
+
+    <!-- ================= ORDERS ================= -->
+    <section data-screen="orders" hidden class="px-5 pt-1 pb-32">
+      <div class="flex items-center justify-between my-2 mb-4">
+        <h1 class="text-[30px] font-extrabold text-ink -tracking-[.5px] m-0">الطلبات</h1>
+        <button class="press w-11 h-11 rounded-full bg-mute grid place-items-center"><span class="ms text-[23px] text-sub">search</span></button>
+      </div>
+      <div class="flex bg-mute rounded-[18px] p-1 mb-3.5">
+        <button class="ord-tab flex-1 text-[14px] font-bold py-2.5 rounded-[14px] bg-surface text-primary shadow-sm" data-view="list" onclick="ordView('list')">قائمة</button>
+        <button class="ord-tab flex-1 text-[14px] font-semibold py-2.5 rounded-[14px] text-sub" data-view="cal" onclick="ordView('cal')">تقويم</button>
+      </div>
+
+      <div data-ordview="list">
+        <div class="relative mb-4">
+          <div class="flex gap-5 border-b border-[#e6e8eb] overflow-x-auto scroll" id="ord-seg">
+            <button class="oseg relative flex-none pb-2.5 flex items-center gap-1.5 text-[14px] font-bold text-ink" data-i="0" onclick="ordSeg(0)">الكل <span class="tnum text-[11px] font-bold text-primary bg-primary-tint px-1.5 py-px rounded-full">8</span></button>
+            <button class="oseg relative flex-none pb-2.5 flex items-center gap-1.5 text-[14px] font-semibold text-faint" data-i="1" onclick="ordSeg(1)">قيد التنفيذ <span class="tnum text-[11px] font-bold text-amber bg-amber-bg px-1.5 py-px rounded-full">3</span></button>
+            <button class="oseg relative flex-none pb-2.5 flex items-center gap-1.5 text-[14px] font-semibold text-faint" data-i="2" onclick="ordSeg(2)">جاهز <span class="tnum text-[11px] font-bold text-primary bg-primary-tint px-1.5 py-px rounded-full">2</span></button>
+            <button class="oseg relative flex-none pb-2.5 flex items-center gap-1.5 text-[14px] font-semibold text-faint" data-i="3" onclick="ordSeg(3)">مغلق <span class="tnum text-[11px] font-bold text-faint bg-mute px-1.5 py-px rounded-full">3</span></button>
+          </div>
+          <div id="ord-underline" class="absolute bottom-[-1.5px] h-[3px] bg-primary rounded-full transition-all duration-300 ease-out" style="left:0;width:36px"></div>
+        </div>
+        <div class="flex flex-col gap-2.5">
+          <div class="press cursor-pointer bg-surface rounded-[22px] p-4 shadow-card border-r-4 border-[#f5a623]" onclick="openSheet('order')">
+            <div class="flex items-center justify-between"><div class="text-[16px] font-bold text-ink">أبو محمد</div><span class="text-[11px] font-bold text-amber bg-amber-bg px-2.5 py-0.5 rounded-pill">قيد التنفيذ</span></div>
+            <div class="text-[13px] text-faint mt-1.5">تمديد صحي — 3 قطع</div>
+            <div class="flex items-center justify-between mt-3"><div class="flex items-center gap-1.5 text-faint"><span class="ms text-[17px]">schedule</span><span class="text-[12px]">غداً 10:00 ص</span></div><div class="tnum text-[16px] font-extrabold text-ink">120</div></div>
+          </div>
+          <div class="press cursor-pointer bg-surface rounded-[22px] p-4 shadow-card border-r-4 border-primary" onclick="openSheet('order')">
+            <div class="flex items-center justify-between"><div class="text-[16px] font-bold text-ink">شركة الأفق</div><span class="text-[11px] font-bold text-primary bg-primary-tint px-2.5 py-0.5 rounded-pill">جاهز</span></div>
+            <div class="text-[13px] text-faint mt-1.5">صيانة كهرباء — لوحة رئيسية</div>
+            <div class="flex items-center justify-between mt-3"><div class="flex items-center gap-1.5 text-faint"><span class="ms text-[17px]">schedule</span><span class="text-[12px]">اليوم 2:00 م</span></div><div class="tnum text-[16px] font-extrabold text-ink">200</div></div>
+          </div>
+          <div class="press cursor-pointer bg-surface rounded-[22px] p-4 shadow-card border-r-4 border-[#b0b6c3] opacity-90" onclick="openSheet('order')">
+            <div class="flex items-center justify-between"><div class="text-[16px] font-bold text-ink">محل الياسمين</div><span class="text-[11px] font-bold text-faint bg-mute px-2.5 py-0.5 rounded-pill">مغلق</span></div>
+            <div class="text-[13px] text-faint mt-1.5">تركيب سخان — تم التسليم</div>
+            <div class="flex items-center justify-between mt-3"><div class="flex items-center gap-1.5 text-faint"><span class="ms text-[17px]">check_circle</span><span class="text-[12px]">أمس · مدفوع</span></div><div class="tnum text-[16px] font-extrabold text-ink">85</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div data-ordview="cal" hidden>
+        <div class="bg-surface rounded-[26px] p-[18px] shadow-card">
+          <div class="flex items-center justify-between mb-4"><span class="ms text-[22px] text-sub">chevron_right</span><span class="text-[16px] font-bold text-ink">تموز 2026</span><span class="ms text-[22px] text-sub">chevron_left</span></div>
+          <div class="grid grid-cols-7 gap-1 text-center text-[11px] text-[#8b93a3] font-semibold mb-2"><span>أحد</span><span>إثن</span><span>ثلا</span><span>أرب</span><span>خمي</span><span>جمع</span><span>سبت</span></div>
+          <div class="tnum grid grid-cols-7 gap-1 text-center text-[13px] text-sub">
+            <span class="py-2 text-[#c1c6d7]">29</span><span class="py-2 text-[#c1c6d7]">30</span><span class="py-2">1</span><span class="py-2">2</span><span class="py-2">3</span><span class="py-2">4</span><span class="py-2">5</span>
+            <span class="py-2">6</span><span class="py-2 relative">7<i class="absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#f5a623]"></i></span><span class="py-2">8</span><span class="py-2">9</span><span class="py-2">10</span><span class="py-2">11</span><span class="py-2">12</span>
+            <span class="py-2">13</span><span class="py-2">14</span><span class="py-2 bg-primary text-white rounded-[12px] relative">15<i class="absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-white"></i></span><span class="py-2">16</span><span class="py-2 relative">17<i class="absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary"></i></span><span class="py-2">18</span><span class="py-2">19</span>
+            <span class="py-2">20</span><span class="py-2">21</span><span class="py-2">22</span><span class="py-2">23</span><span class="py-2">24</span><span class="py-2">25</span><span class="py-2">26</span>
+          </div>
+        </div>
+        <div class="bg-surface rounded-[22px] p-4 shadow-card border-r-4 border-primary mt-3">
+          <div class="text-[13px] text-faint mb-1.5">طلبات اليوم — 15 تموز</div>
+          <div class="flex items-center justify-between"><div class="text-[15px] font-bold text-ink">أبو خالد — تمديد غاز</div><span class="text-[11px] font-bold text-primary bg-primary-tint px-2.5 py-0.5 rounded-pill">جاهز</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SETTINGS ================= -->
+    <section data-screen="settings" hidden class="px-5 pt-1 pb-32">
+      <h1 class="text-[30px] font-extrabold text-ink -tracking-[.5px] mt-2.5 mb-4">الإعدادات</h1>
+      <div class="bg-surface rounded-[26px] p-[18px] flex items-center gap-3.5 shadow-card">
+        <div class="w-[58px] h-[58px] rounded-[20px] bg-primary-pill grid place-items-center"><span class="ms fill text-[32px] text-primary">storefront</span></div>
+        <div class="flex-1"><div class="text-[18px] font-extrabold text-ink">مؤسسة النور للصيانة</div><div class="text-[13px] text-faint mt-0.5">قيس محمود · صاحب النشاط</div></div>
+        <span class="ms text-[22px] text-[#c1c6d7]">chevron_left</span>
+      </div>
+
+      <div class="text-[12px] font-bold text-primary mt-5 mb-2 px-1.5">النشاط والأمان</div>
+      <div class="bg-surface rounded-[22px] overflow-hidden shadow-card">
+        <div class="flex items-center gap-3.5 px-4 py-[15px] border-b border-[#f0f2f5]"><div class="w-[38px] h-[38px] rounded-[12px] bg-primary-tint grid place-items-center"><span class="ms text-[20px] text-primary">badge</span></div><span class="flex-1 text-[15px] font-semibold text-ink">معلومات النشاط</span><span class="ms text-[20px] text-[#c1c6d7]">chevron_left</span></div>
+        <div class="flex items-center gap-3.5 px-4 py-[15px]"><div class="w-[38px] h-[38px] rounded-[12px] bg-income-bg grid place-items-center"><span class="ms text-[20px] text-income">lock</span></div><span class="flex-1 text-[15px] font-semibold text-ink">رمز الحماية ووضع المساعد</span><span class="ms text-[20px] text-[#c1c6d7]">chevron_left</span></div>
+      </div>
+
+      <div class="text-[12px] font-bold text-primary mt-5 mb-2 px-1.5">البيانات والتفضيلات</div>
+      <div class="bg-surface rounded-[22px] overflow-hidden shadow-card">
+        <div class="flex items-center gap-3.5 px-4 py-[15px] border-b border-[#f0f2f5]"><div class="w-[38px] h-[38px] rounded-[12px] bg-income-bg grid place-items-center"><span class="ms text-[20px] text-income">backup</span></div><div class="flex-1"><div class="text-[15px] font-semibold text-ink">نسخة احتياطية عبر واتساب</div><div class="text-[11px] text-expense mt-0.5">آخر نسخة قبل 8 أيام</div></div><span class="ms text-[20px] text-[#c1c6d7]">chevron_left</span></div>
+        <div class="flex items-center gap-3.5 px-4 py-[15px] border-b border-[#f0f2f5]"><div class="w-[38px] h-[38px] rounded-[12px] bg-purple-bg grid place-items-center"><span class="ms text-[20px] text-purple">chat</span></div><span class="flex-1 text-[15px] font-semibold text-ink">قالب رسالة واتساب</span><span class="ms text-[20px] text-[#c1c6d7]">chevron_left</span></div>
+        <div class="flex items-center gap-3.5 px-4 py-[15px]"><div class="w-[38px] h-[38px] rounded-[12px] bg-mute grid place-items-center"><span class="ms text-[20px] text-sub">notifications</span></div><span class="flex-1 text-[15px] font-semibold text-ink">الإشعارات والتذكيرات</span><span class="ms text-[20px] text-[#c1c6d7]">chevron_left</span></div>
+      </div>
+
+      <div class="bg-surface rounded-[22px] overflow-hidden shadow-card mt-5">
+        <div class="flex items-center gap-3.5 px-4 py-[15px]"><div class="w-[38px] h-[38px] rounded-[12px] bg-expense-bg grid place-items-center"><span class="ms text-[20px] text-expense">logout</span></div><span class="flex-1 text-[15px] font-bold text-expense">تسجيل الخروج</span></div>
+      </div>
+      <div class="text-center text-[11px] text-[#a3aab8] mt-4">الحسابات · الإصدار 1.0.0</div>
+    </section>
+
+  </div>
+
+  <!-- FAB -->
+  <button onclick="openSheet('add')" class="press absolute bottom-[96px] left-[22px] w-[60px] h-[60px] rounded-[22px] bg-primary grid place-items-center shadow-fab z-30"><span class="ms text-[30px] text-white">add</span></button>
+
+  <!-- BOTTOM NAV -->
+  <div class="flex-none bg-surface px-3 pt-2.5 pb-5 flex justify-around items-center shadow-nav z-20">
+    <button class="nav-btn flex flex-col items-center gap-1 w-16" data-nav="home" onclick="go('home')"><div class="nav-pill w-[52px] h-8 rounded-pill grid place-items-center"><span class="ms nav-ic text-[24px]">home</span></div><span class="nav-lb text-[11px] font-semibold">الرئيسية</span></button>
+    <button class="nav-btn flex flex-col items-center gap-1 w-16" data-nav="finance" onclick="go('finance')"><div class="nav-pill w-[52px] h-8 rounded-pill grid place-items-center"><span class="ms nav-ic text-[24px]">receipt_long</span></div><span class="nav-lb text-[11px] font-semibold">المالية</span></button>
+    <button class="nav-btn flex flex-col items-center gap-1 w-16" data-nav="orders" onclick="go('orders')"><div class="nav-pill w-[52px] h-8 rounded-pill grid place-items-center"><span class="ms nav-ic text-[24px]">list_alt</span></div><span class="nav-lb text-[11px] font-semibold">الطلبات</span></button>
+    <button class="nav-btn flex flex-col items-center gap-1 w-16" data-nav="settings" onclick="go('settings')"><div class="nav-pill w-[52px] h-8 rounded-pill grid place-items-center"><span class="ms nav-ic text-[24px]">settings</span></div><span class="nav-lb text-[11px] font-semibold">الإعدادات</span></button>
+  </div>
+
+  <!-- BOTTOM SHEET (draggable + expandable to full screen) -->
+  <div id="sheet" hidden class="absolute inset-0 z-50">
+    <div id="scrim" class="absolute inset-0 bg-[#0f1423]/40" onclick="closeSheet()"></div>
+    <div id="sheetCard" class="absolute inset-x-0 bottom-0 bg-surface rounded-t-sheet flex flex-col" style="height:0;transform:translateY(100%);box-shadow:0 -20px 50px -20px rgba(15,20,35,.4)">
+      <div id="sheetHandle" class="flex-none pt-3 pb-2 cursor-grab select-none" style="touch-action:none">
+        <div class="w-11 h-[5px] rounded-full bg-[#d8dadd] mx-auto"></div>
+        <div id="expandHint" class="text-center text-[10px] text-[#a3aab8] mt-1.5 transition-opacity">↑ اسحب للأعلى للتوسّع</div>
+      </div>
+      <div id="sheetBody" class="flex-1 overflow-y-auto scroll px-[22px] pb-8">
+      <!-- add options -->
+      <div data-sheet="add">
+        <h2 class="text-[19px] font-extrabold text-ink mb-4">إضافة جديدة</h2>
+        <div class="grid grid-cols-2 gap-3">
+          <button class="press flex flex-col items-start gap-3 bg-income-bg rounded-card p-4"><div class="w-12 h-12 rounded-[15px] bg-white grid place-items-center"><span class="ms text-[26px] text-income">south_west</span></div><div class="text-right"><div class="text-[16px] font-bold text-ink">قبض</div><div class="text-[12px] text-faint">استلام مبلغ</div></div></button>
+          <button class="press flex flex-col items-start gap-3 bg-expense-bg rounded-card p-4"><div class="w-12 h-12 rounded-[15px] bg-white grid place-items-center"><span class="ms text-[26px] text-expense">north_east</span></div><div class="text-right"><div class="text-[16px] font-bold text-ink">صرف</div><div class="text-[12px] text-faint">دفع مبلغ</div></div></button>
+          <button class="press flex flex-col items-start gap-3 bg-withdraw-bg rounded-card p-4"><div class="w-12 h-12 rounded-[15px] bg-white grid place-items-center"><span class="ms text-[26px] text-withdraw">account_balance</span></div><div class="text-right"><div class="text-[16px] font-bold text-ink">سحب شخصي</div><div class="text-[12px] text-faint">لا يؤثر على الربح</div></div></button>
+          <button class="press flex flex-col items-start gap-3 bg-primary-tint rounded-card p-4"><div class="w-12 h-12 rounded-[15px] bg-white grid place-items-center"><span class="ms text-[26px] text-primary">assignment</span></div><div class="text-right"><div class="text-[16px] font-bold text-ink">طلب جديد</div><div class="text-[12px] text-faint">إضافة طلب زبون</div></div></button>
+        </div>
+      </div>
+      <!-- quick sale -->
+      <div data-sheet="sale" hidden>
+        <h2 class="text-[19px] font-extrabold text-ink mb-1">بيع سريع</h2>
+        <p class="text-[13px] text-faint mb-4">أدخل مبلغ البيع ثم احفظ.</p>
+        <div class="bg-mute rounded-card py-6 text-center mb-4"><div class="text-[12px] text-faint mb-1">المبلغ</div><div class="tnum text-[40px] font-extrabold text-ink">0</div></div>
+        <div class="grid grid-cols-3 gap-2 mb-4">
+          <button class="press bg-mute rounded-[16px] py-3.5 text-[20px] font-bold text-ink tnum">1</button><button class="press bg-mute rounded-[16px] py-3.5 text-[20px] font-bold text-ink tnum">2</button><button class="press bg-mute rounded-[16px] py-3.5 text-[20px] font-bold text-ink tnum">3</button>
+          <button class="press bg-mute rounded-[16px] py-3.5 text-[20px] font-bold text-ink tnum">4</button><button class="press bg-mute rounded-[16px] py-3.5 text-[20px] font-bold text-ink tnum">5</button><button class="press bg-mute rounded-[16px] py-3.5 text-[20px] font-bold text-ink tnum">6</button>
+          <button class="press bg-mute rounded-[16px] py-3.5 text-[20px] font-bold text-ink tnum">7</button><button class="press bg-mute rounded-[16px] py-3.5 text-[20px] font-bold text-ink tnum">8</button><button class="press bg-mute rounded-[16px] py-3.5 text-[20px] font-bold text-ink tnum">9</button>
+          <button class="press bg-mute rounded-[16px] py-3.5 text-[20px] font-bold text-ink">.</button><button class="press bg-mute rounded-[16px] py-3.5 text-[20px] font-bold text-ink tnum">0</button><button class="press bg-mute rounded-[16px] py-3.5 grid place-items-center"><span class="ms text-[22px] text-sub">backspace</span></button>
+        </div>
+        <button class="press w-full bg-primary text-white text-[16px] font-bold rounded-pill py-3.5" onclick="closeSheet()">حفظ البيع</button>
+      </div>
+      <!-- order details (rich, expandable) -->
+      <div data-sheet="order" hidden>
+        <div class="flex items-start justify-between">
+          <div><div class="text-[22px] font-extrabold text-ink">أبو محمد</div><div class="text-[13px] text-faint mt-0.5">تمديد صحي — 3 قطع</div></div>
+          <span class="text-[12px] font-bold text-amber bg-amber-bg px-3 py-1 rounded-pill">قيد التنفيذ</span>
+        </div>
+        <div class="bg-mute rounded-card p-4 mt-4 flex items-center justify-between">
+          <div><div class="text-[12px] text-faint">قيمة الطلب</div><div class="tnum text-[26px] font-extrabold text-ink">120</div></div>
+          <div class="text-left"><div class="text-[12px] text-faint">المدفوع</div><div class="tnum text-[16px] font-bold text-income">0</div></div>
+        </div>
+        <div class="mt-4 flex flex-col gap-3">
+          <div class="flex items-center gap-3"><span class="ms text-[20px] text-faint">schedule</span><span class="text-[13px] text-faint w-16">الموعد</span><span class="text-[14px] font-semibold text-ink">غداً 10:00 ص</span></div>
+          <div class="flex items-center gap-3"><span class="ms text-[20px] text-faint">call</span><span class="text-[13px] text-faint w-16">الهاتف</span><span class="tnum text-[14px] font-semibold text-ink" dir="ltr">079 123 4567</span></div>
+          <div class="flex items-center gap-3"><span class="ms text-[20px] text-faint">location_on</span><span class="text-[13px] text-faint w-16">العنوان</span><span class="text-[14px] font-semibold text-ink">إربد — شارع الجامعة</span></div>
+          <div class="flex items-start gap-3"><span class="ms text-[20px] text-faint">sticky_note_2</span><span class="text-[13px] text-faint w-16">ملاحظات</span><span class="text-[14px] text-ink flex-1">تغيير قساطل الحمام وفحص تسرّب المطبخ</span></div>
+        </div>
+        <div class="text-[13px] font-bold text-sub mt-5 mb-3">مسار الطلب</div>
+        <div class="flex items-center justify-between">
+          <div class="flex flex-col items-center gap-1 flex-1"><div class="w-8 h-8 rounded-full bg-income grid place-items-center"><span class="ms text-[18px] text-white">check</span></div><span class="text-[10px] text-ink font-semibold">استلام</span></div>
+          <div class="h-[2px] flex-1 bg-income -mt-4"></div>
+          <div class="flex flex-col items-center gap-1 flex-1"><div class="w-8 h-8 rounded-full bg-amber grid place-items-center ring-4 ring-amber-bg"><span class="ms text-[18px] text-white">build</span></div><span class="text-[10px] text-ink font-bold">قيد التنفيذ</span></div>
+          <div class="h-[2px] flex-1 bg-[#e6e8eb] -mt-4"></div>
+          <div class="flex flex-col items-center gap-1 flex-1"><div class="w-8 h-8 rounded-full bg-mute grid place-items-center"><span class="ms text-[18px] text-faint">inventory</span></div><span class="text-[10px] text-faint">جاهز</span></div>
+          <div class="h-[2px] flex-1 bg-[#e6e8eb] -mt-4"></div>
+          <div class="flex flex-col items-center gap-1 flex-1"><div class="w-8 h-8 rounded-full bg-mute grid place-items-center"><span class="ms text-[18px] text-faint">check_circle</span></div><span class="text-[10px] text-faint">مغلق</span></div>
+        </div>
+        <div class="text-[13px] font-bold text-sub mt-6 mb-3">النشاط</div>
+        <div class="flex flex-col gap-3">
+          <div class="flex gap-3"><div class="w-2 h-2 rounded-full bg-primary mt-1.5"></div><div><div class="text-[13px] text-ink font-semibold">تم تحديد الموعد</div><div class="text-[11px] text-faint">اليوم 9:10 ص</div></div></div>
+          <div class="flex gap-3"><div class="w-2 h-2 rounded-full bg-[#c1c6d7] mt-1.5"></div><div><div class="text-[13px] text-ink font-semibold">تم إنشاء الطلب</div><div class="text-[11px] text-faint">أمس 4:20 م</div></div></div>
+        </div>
+        <div class="flex flex-col gap-2.5 mt-6">
+          <button class="press w-full bg-primary text-white text-[15px] font-bold rounded-pill py-3.5">تحديث الحالة إلى «جاهز»</button>
+          <div class="grid grid-cols-2 gap-2.5">
+            <button class="press flex items-center justify-center gap-2 bg-income-bg text-income text-[14px] font-bold rounded-pill py-3"><span class="ms text-[19px]">share</span> واتساب</button>
+            <button class="press flex items-center justify-center gap-2 bg-mute text-sub text-[14px] font-bold rounded-pill py-3"><span class="ms text-[19px]">edit</span> تعديل</button>
+          </div>
+          <button class="press w-full text-expense text-[14px] font-bold py-2">حذف الطلب</button>
+        </div>
+      </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- hint -->
+<div class="text-[#5b6577] text-sm max-w-[240px] leading-relaxed hidden md:block">
+  <div class="font-bold text-ink mb-1">Interactive reference</div>
+  اضغط تبويبات الأسفل للتنقل، زر + أو "بيع سريع" لفتح الشيتات، ومبدّل قائمة/تقويم داخل الطلبات.
+</div>
+
+<script>
+  const PH = 844; // phone content height reference
+  let ordIdx = 0;
+  function go(screen){
+    document.querySelectorAll('[data-screen]').forEach(s=> s.hidden = s.dataset.screen!==screen);
+    document.querySelectorAll('.nav-btn').forEach(b=>{
+      const on = b.dataset.nav===screen;
+      b.querySelector('.nav-pill').style.background = on ? '#d8e2ff' : 'transparent';
+      b.querySelector('.nav-ic').style.color = on ? '#0058be' : '#717786';
+      b.querySelector('.nav-ic').classList.toggle('fill', on);
+      b.querySelector('.nav-lb').style.color = on ? '#0058be' : '#717786';
+    });
+    document.querySelector('.flex-1').scrollTop = 0;
+    if(screen==='orders') requestAnimationFrame(()=> ordSeg(ordIdx));
+  }
+  function ordView(v){
+    document.querySelectorAll('[data-ordview]').forEach(el=> el.hidden = el.dataset.ordview!==v);
+    document.querySelectorAll('.ord-tab').forEach(t=>{
+      const on = t.dataset.view===v;
+      t.classList.toggle('bg-surface', on); t.classList.toggle('text-primary', on); t.classList.toggle('shadow-sm', on); t.classList.toggle('font-bold', on);
+      t.classList.toggle('text-sub', !on); t.classList.toggle('font-semibold', !on);
+    });
+    if(v==='list') requestAnimationFrame(()=> ordSeg(ordIdx));
+  }
+  // finance segmented (sliding thumb)
+  function finSeg(i){
+    document.getElementById('fin-thumb').style.right = 'calc('+(i*25)+'% + 4px)';
+    document.querySelectorAll('.fseg').forEach((b,idx)=>{ const on=idx===i;
+      b.classList.toggle('text-white',on); b.classList.toggle('font-bold',on);
+      b.classList.toggle('text-sub',!on); b.classList.toggle('font-semibold',!on);
+    });
+  }
+  // orders tabs (sliding underline)
+  function ordSeg(i){
+    ordIdx = i;
+    const btns = document.querySelectorAll('.oseg'); const b = btns[i]; if(!b) return;
+    const u = document.getElementById('ord-underline');
+    u.style.left = b.offsetLeft+'px'; u.style.width = b.offsetWidth+'px';
+    btns.forEach((x,idx)=>{ const on=idx===i;
+      x.classList.toggle('text-ink',on); x.classList.toggle('font-bold',on);
+      x.classList.toggle('text-faint',!on); x.classList.toggle('font-semibold',!on);
+    });
+  }
+  // ---- draggable / expandable bottom sheet ----
+  const sheet=document.getElementById('sheet'), card=document.getElementById('sheetCard'), body=document.getElementById('sheetBody'), handle=document.getElementById('sheetHandle'), hint=document.getElementById('expandHint');
+  let collapsedH=0;
+  function openSheet(kind){
+    document.querySelectorAll('[data-sheet]').forEach(s=> s.hidden = s.dataset.sheet!==kind);
+    sheet.hidden=false; card.classList.remove('expanded');
+    card.style.transition='none'; card.style.transform='translateY(100%)'; card.style.height='auto';
+    requestAnimationFrame(()=>{
+      const natural = body.scrollHeight + handle.offsetHeight + 8;
+      collapsedH = Math.min(natural, Math.round(PH*0.84));
+      card.style.height = collapsedH+'px'; hint.style.opacity='1';
+      requestAnimationFrame(()=>{
+        card.style.transition='transform .34s cubic-bezier(.16,1,.3,1), height .32s cubic-bezier(.16,1,.3,1)';
+        card.style.transform='translateY(0)';
+      });
+    });
+  }
+  function closeSheet(){ card.style.transform='translateY(100%)'; setTimeout(()=>{ sheet.hidden=true; }, 300); }
+  function expand(on){ card.classList.toggle('expanded',on); card.style.height=(on?Math.round(PH*0.94):collapsedH)+'px'; hint.style.opacity= on?'0':'1'; }
+  let sy=0, drag=false, moved=0;
+  handle.addEventListener('pointerdown', e=>{ drag=true; sy=e.clientY; moved=0; card.style.transition='none'; handle.setPointerCapture(e.pointerId); });
+  handle.addEventListener('pointermove', e=>{ if(!drag) return; moved=e.clientY-sy;
+    if(moved<0 && !card.classList.contains('expanded')) card.style.transform='translateY('+Math.max(moved,-44)+'px)';
+    else if(moved>0) card.style.transform='translateY('+moved+'px)';
+  });
+  handle.addEventListener('pointerup', ()=>{ if(!drag) return; drag=false;
+    card.style.transition='transform .3s cubic-bezier(.16,1,.3,1), height .32s cubic-bezier(.16,1,.3,1)'; card.style.transform='translateY(0)';
+    if(moved < -50) expand(true);
+    else if(moved > 130){ if(card.classList.contains('expanded')) expand(false); else closeSheet(); }
+  });
+  finSeg(0); go('home');
+</script>
+</body>
+</html>
