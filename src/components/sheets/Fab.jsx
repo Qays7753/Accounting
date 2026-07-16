@@ -22,10 +22,10 @@ export default function Fab({ onAction }) {
   }
 
   const actions = [
-    { id: 'income', label: 'قبض', desc: 'استلام مبلغ', icon: 'arrowDown', color: 'text-income', bg: 'bg-income-bg' },
-    { id: 'expense', label: 'صرف', desc: 'دفع مبلغ', icon: 'arrowUp', color: 'text-expense', bg: 'bg-expense-bg' },
-    { id: 'withdrawal', label: 'سحب شخصي', desc: 'لا يؤثر على الربح', icon: 'userMinus', color: 'text-withdrawal', bg: 'bg-withdraw-bg' },
-    { id: 'order', label: 'طلب جديد', desc: 'إضافة طلب زبون', icon: 'plus', color: 'text-primary', bg: 'bg-primary-tint' },
+    { id: 'income', label: 'قبض', desc: 'استلام مبلغ', icon: 'arrowDownLeft', color: 'text-income', bg: 'bg-income-bg' },
+    { id: 'expense', label: 'صرف', desc: 'دفع مبلغ', icon: 'arrowUpRight', color: 'text-expense', bg: 'bg-expense-bg' },
+    { id: 'withdrawal', label: 'سحب شخصي', desc: 'لا يؤثر على الربح', icon: 'bank', color: 'text-withdrawal', bg: 'bg-withdraw-bg' },
+    { id: 'order', label: 'طلب جديد', desc: 'إضافة طلب زبون', icon: 'clipboard', color: 'text-primary', bg: 'bg-primary-tint' },
   ]
 
   return (

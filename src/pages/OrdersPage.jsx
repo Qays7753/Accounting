@@ -1,5 +1,6 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react'
 import { useOrders, useDebounce, useInfiniteScroll } from '../hooks/useDatabase.js'
+import { db } from '../db'
 import { formatAmount } from '../utils/format.js'
 import { getRelativeTime } from '../utils/date.js'
 import EmptyState from '../components/ui/EmptyState.jsx'
@@ -10,16 +11,17 @@ import OrderDetailSheet from '../components/sheets/OrderDetailSheet.jsx'
 import { hapticLight } from '../utils/haptics.js'
 
 const STATUS_CONFIG = {
-  in_progress: { label: 'قيد التنفيذ', color: 'bg-status-progress', text: 'text-status-progress', badge: 'badge-progress', dot: 'bg-status-progress' },
-  ready: { label: 'جاهز', color: 'bg-primary', text: 'text-primary-600', badge: 'badge-ready', dot: 'bg-primary' },
-  closed: { label: 'مغلق', color: 'bg-status-closed', text: 'text-text-secondary', badge: 'badge-closed', dot: 'bg-status-closed' },
+  in_progress: { label: 'قيد التنفيذ', color: 'bg-status-progress', text: 'text-status-progress', badge: 'badge-progress', dot: 'bg-status-progress', bar: 'border-[#f5a623]' },
+  ready: { label: 'جاهز', color: 'bg-primary', text: 'text-primary-600', badge: 'badge-ready', dot: 'bg-primary', bar: 'border-primary' },
+  closed: { label: 'مغلق', color: 'bg-status-closed', text: 'text-text-secondary', badge: 'badge-closed', dot: 'bg-status-closed', bar: 'border-[#b0b6c3]' },
 }
 
+// V5: Underline tabs + status-colored count badges
 const FILTER_TABS = [
-  { id: 'all', label: 'الكل' },
-  { id: 'in_progress', label: 'قيد التنفيذ' },
-  { id: 'ready', label: 'جاهز' },
-  { id: 'closed', label: 'مغلق' },
+  { id: 'all', label: 'الكل', badge: 'text-primary bg-primary-tint' },
+  { id: 'in_progress', label: 'قيد التنفيذ', badge: 'text-amber bg-amber-bg' },
+  { id: 'ready', label: 'جاهز', badge: 'text-primary bg-primary-tint' },
+  { id: 'closed', label: 'مغلق', badge: 'text-faint bg-mute' },
 ]
 
 export default function OrdersPage() {
@@ -29,9 +31,40 @@ export default function OrdersPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [editOrder, setEditOrder] = useState(null)
   const [detailOrder, setDetailOrder] = useState(null)
+  const [counts, setCounts] = useState({ all: 0, in_progress: 0, ready: 0, closed: 0 })
+  const [dataVersion, setDataVersion] = useState(0)
 
   // Debounce search to prevent query thrash
   const debouncedSearch = useDebounce(search, 300)
+
+  // V5: Per-status counts for the underline-tab badges (global, independent of the active filter)
+  useEffect(() => {
+    let cancelled = false
+    Promise.all([
+      db.orders.count(),
+      db.orders.where('status').equals('in_progress').count(),
+      db.orders.where('status').equals('ready').count(),
+      db.orders.where('status').equals('closed').count(),
+    ])
+      .then(([all, in_progress, ready, closed]) => {
+        if (!cancelled) setCounts({ all, in_progress, ready, closed })
+      })
+      .catch((e) => console.error('Failed to load order counts:', e))
+    return () => { cancelled = true }
+  }, [dataVersion])
+
+  // V5: Sliding underline indicator over the active tab
+  const tabRefs = useRef([])
+  const [underline, setUnderline] = useState({ right: 0, width: 0 })
+  const activeTabIndex = FILTER_TABS.findIndex((t) => t.id === statusFilter)
+  useLayoutEffect(() => {
+    const el = tabRefs.current[activeTabIndex]
+    const container = el?.parentElement
+    if (el && container) {
+      const right = container.getBoundingClientRect().right - el.getBoundingClientRect().right
+      setUnderline({ right, width: el.offsetWidth })
+    }
+  }, [activeTabIndex, view, counts])
 
   const {
     items,
@@ -72,6 +105,7 @@ export default function OrdersPage() {
 
   const handleSaved = () => {
     refresh()
+    setDataVersion((v) => v + 1)
     setFormOpen(false)
     setEditOrder(null)
   }
@@ -91,12 +125,12 @@ export default function OrdersPage() {
           </button>
         </div>
 
-        {/* View Tabs (List vs Calendar) */}
-        <div className="bg-surface rounded-2xl p-1 mb-3 flex shadow-card">
+        {/* View Tabs (List vs Calendar) — One UI segmented track */}
+        <div className="bg-mute rounded-[18px] p-1 mb-3.5 flex">
           <button
             onClick={() => handleViewChange('list')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-              view === 'list' ? 'bg-primary text-white' : 'text-text-secondary'
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[14px] text-sm transition-all ${
+              view === 'list' ? 'bg-surface text-primary font-bold shadow-sm' : 'text-sub font-semibold'
             }`}
           >
             <Icon name="list" className="w-4 h-4" />
@@ -104,8 +138,8 @@ export default function OrdersPage() {
           </button>
           <button
             onClick={() => handleViewChange('calendar')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-              view === 'calendar' ? 'bg-primary text-white' : 'text-text-secondary'
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[14px] text-sm transition-all ${
+              view === 'calendar' ? 'bg-surface text-primary font-bold shadow-sm' : 'text-sub font-semibold'
             }`}
           >
             <Icon name="calendar" className="w-4 h-4" />
@@ -130,21 +164,32 @@ export default function OrdersPage() {
               />
             </div>
 
-            {/* Status Filter chips */}
-            <div className="flex gap-2 overflow-x-auto hide-scrollbar -mx-5 px-5">
-              {FILTER_TABS.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => handleStatusFilterChange(tab.id)}
-                  className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all active:scale-95 ${
-                    statusFilter === tab.id
-                      ? 'bg-primary text-white'
-                      : 'bg-surface text-text-secondary shadow-card'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
+            {/* V5: Status Filter — underline tabs with sliding indicator + count badges */}
+            <div className="relative">
+              <div className="flex gap-5 border-b border-[#e6e8eb] overflow-x-auto hide-scrollbar">
+                {FILTER_TABS.map((tab, i) => {
+                  const on = statusFilter === tab.id
+                  return (
+                    <button
+                      key={tab.id}
+                      ref={(el) => (tabRefs.current[i] = el)}
+                      onClick={() => handleStatusFilterChange(tab.id)}
+                      className={`relative flex-none pb-2.5 flex items-center gap-1.5 text-[14px] whitespace-nowrap transition-colors ${
+                        on ? 'text-ink font-bold' : 'text-faint font-semibold'
+                      }`}
+                    >
+                      {tab.label}
+                      <span className={`tnum text-[11px] font-bold px-1.5 py-px rounded-full ${tab.badge}`}>
+                        {counts[tab.id]}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+              <div
+                className="absolute bottom-[-1.5px] h-[3px] bg-primary rounded-full transition-all duration-300 ease-out"
+                style={{ right: underline.right, width: underline.width }}
+              />
             </div>
           </>
         )}
@@ -222,7 +267,7 @@ export default function OrdersPage() {
           setDetailOrder(null)
           handleEdit(order)
         }}
-        onUpdated={refresh}
+        onUpdated={() => { refresh(); setDataVersion((v) => v + 1) }}
       />
     </div>
   )
@@ -241,7 +286,7 @@ function OrderCard({ order, onClick }) {
   return (
     <div
       onClick={onClick}
-      className="w-full bg-surface rounded-2xl p-4 shadow-card active:scale-[0.98] transition-transform text-right cursor-pointer"
+      className={`w-full bg-surface rounded-2xl p-4 shadow-card border-r-4 ${c.bar} active:scale-[0.98] transition-transform text-right cursor-pointer ${order.status === 'closed' ? 'opacity-90' : ''}`}
     >
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-3 flex-1 min-w-0">

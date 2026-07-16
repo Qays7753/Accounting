@@ -12,7 +12,7 @@ const navItems = [
     icon: (active) => (
       <svg className="w-6 h-6" fill={active ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 0 : 1.8}>
         {active ? (
-          <path d="M11.47 3.84a.75.75 0 011.06 0l8.69 8.69a.75.75 0 101.06-1.06l-8.689-8.69a2.25 2.25 0 00-3.182 0l-8.69 8.69a.75.75 0 001.061 1.06l8.69-8.69z" />
+          <path d="M11.47 3.84a.75.75 0 011.06 0l8.69 8.69a.75.75 0 101.06-1.06l-8.689-8.69a2.25 2.25 0 00-3.182 0l-8.69 8.69a.75.75 0 001.061 1.06l8.69-8.69zM12 5.432l8.159 8.159c.03.03.058.06.086.091v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 01-.75-.75v-4.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21a.75.75 0 01-.75.75H5.625a1.875 1.875 0 01-1.875-1.875v-6.198a2.29 2.29 0 00.086-.091L12 5.432z" />
         ) : (
           <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.5a.75.75 0 00.75.75h4.5a.75.75 0 00.75-.75V18a2.25 2.25 0 014.5 0v1.5a.75.75 0 00.75.75h4.5a.75.75 0 00.75-.75V9.75M8.25 21h8.25" />
         )}
@@ -85,7 +85,7 @@ export default function BottomNav({ showQuickPos = true }) {
 
   return (
     <>
-      <nav className="flex-none bg-surface px-3 pt-2.5 pb-5 flex justify-around items-center shadow-nav z-20 safe-area-bottom" aria-label="التنقل الرئيسي">
+      <nav className="fixed bottom-0 inset-x-0 bg-surface px-3 pt-2.5 pb-5 flex justify-around items-center shadow-nav z-40 safe-area-bottom" aria-label="التنقل الرئيسي">
         {items.map((item) => (
           <NavLink
             key={item.to}

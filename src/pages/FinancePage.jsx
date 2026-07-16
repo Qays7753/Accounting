@@ -1,8 +1,8 @@
 import { useState, useCallback, useMemo } from 'react'
-import { useTransactions, useDebounce, useInfiniteScroll } from '../hooks/useDatabase.js'
+import { useTransactions, useDebounce, useInfiniteScroll, useDashboardStats } from '../hooks/useDatabase.js'
 import { db } from '../db'
 import { formatAmount } from '../utils/format.js'
-import { getRelativeTime } from '../utils/date.js'
+import { getRelativeTime, formatArabicDate, isToday } from '../utils/date.js'
 import EmptyState from '../components/ui/EmptyState.jsx'
 import BottomSheet from '../components/ui/BottomSheet.jsx'
 import Snackbar from '../components/ui/Snackbar.jsx'
@@ -11,16 +11,30 @@ import TransactionFormSheet from '../components/sheets/TransactionFormSheet.jsx'
 import { hapticLight, hapticSuccess, hapticMedium } from '../utils/haptics.js'
 import { Link } from 'react-router-dom'
 
-const FILTERS = [
-  { id: 'today', label: 'اليوم' },
-  { id: 'week', label: 'هذا الأسبوع' },
-  { id: 'month', label: 'هذا الشهر' },
+// V5: Type segmented control (One UI sliding thumb) — filters the ledger by kind
+const TYPE_SEGMENTS = [
   { id: 'all', label: 'الكل' },
+  { id: 'income', label: 'قبض' },
+  { id: 'expense', label: 'صرف' },
+  { id: 'withdrawal', label: 'سحب' },
 ]
+
+// Group a day's transactions under a relative label (اليوم / أمس / date)
+function getDayInfo(date) {
+  const d = new Date(date)
+  const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
+  if (isToday(d)) return { key, label: 'اليوم' }
+  const y = new Date()
+  y.setDate(y.getDate() - 1)
+  if (d.getFullYear() === y.getFullYear() && d.getMonth() === y.getMonth() && d.getDate() === y.getDate()) {
+    return { key, label: 'أمس' }
+  }
+  return { key, label: formatArabicDate(d) }
+}
 
 export default function FinancePage() {
   const [search, setSearch] = useState('')
-  const [filter, setFilter] = useState('today')
+  const [typeFilter, setTypeFilter] = useState('all')
   const [snackbar, setSnackbar] = useState(null) // { message, actionLabel, onAction }
   const [editTransaction, setEditTransaction] = useState(null) // V2: transaction being edited
   const [editSheetOpen, setEditSheetOpen] = useState(false)
@@ -28,30 +42,10 @@ export default function FinancePage() {
   // Debounce search to prevent query thrash on every keystroke
   const debouncedSearch = useDebounce(search, 300)
 
-  // Memoize date range so it only recomputes when filter changes (not every render)
-  const dateRange = useMemo(() => {
-    const now = new Date()
-    if (filter === 'today') {
-      return {
-        startDate: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0),
-        endDate: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999),
-      }
-    }
-    if (filter === 'week') {
-      const start = new Date(now)
-      start.setDate(now.getDate() - now.getDay())
-      start.setHours(0, 0, 0, 0)
-      return { startDate: start, endDate: now }
-    }
-    if (filter === 'month') {
-      return {
-        startDate: new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0),
-        endDate: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999),
-      }
-    }
-    return { startDate: null, endDate: null }
-  }, [filter])
+  // V5: Monthly net for the "صافي هذا الشهر" card (net = income − expense; withdrawal excluded)
+  const stats = useDashboardStats()
 
+  // Load the full ledger (all dates) so it can be grouped by day; type filtering is applied below.
   const {
     items,
     total,
@@ -62,8 +56,8 @@ export default function FinancePage() {
     refresh,
   } = useTransactions({
     search: debouncedSearch,
-    startDate: dateRange.startDate,
-    endDate: dateRange.endDate,
+    startDate: null,
+    endDate: null,
     page: 1,
     pageSize: 20,
   })
@@ -115,127 +109,158 @@ export default function FinancePage() {
     setSearch(e.target.value)
   }
 
-  const handleFilterChange = (newFilter) => {
+  const handleTypeChange = (newType) => {
     hapticLight()
-    setFilter(newFilter)
+    setTypeFilter(newType)
   }
 
-  // Totals for current filter (memoized to prevent recompute on every render)
-  // Note: opening_balance excluded from period totals (it's a one-time setup entry)
-  const totals = useMemo(() => {
-    return items.reduce(
-      (acc, t) => {
-        if (t.type === 'income') acc.income += t.amount
-        else if (t.type === 'expense') acc.expense += t.amount
-        else if (t.type === 'withdrawal') acc.withdrawal += t.amount
-        return acc
-      },
-      { income: 0, expense: 0, withdrawal: 0 }
-    )
-  }, [items])
+  // Apply the type segmented filter (client-side over the loaded ledger)
+  const filteredItems = useMemo(() => {
+    if (typeFilter === 'all') return items
+    if (typeFilter === 'income') return items.filter((t) => t.type === 'income' || t.type === 'opening_balance')
+    return items.filter((t) => t.type === typeFilter)
+  }, [items, typeFilter])
+
+  // Group the (filtered) ledger by day, keeping the DB's desc order; each group carries its net.
+  const dayGroups = useMemo(() => {
+    const groups = []
+    const byKey = new Map()
+    for (const t of filteredItems) {
+      const { key, label } = getDayInfo(t.date)
+      let g = byKey.get(key)
+      if (!g) {
+        g = { key, label, items: [], net: 0 }
+        byKey.set(key, g)
+        groups.push(g)
+      }
+      g.items.push(t)
+      if (t.type === 'income') g.net += t.amount
+      else if (t.type === 'expense') g.net -= t.amount
+    }
+    return groups
+  }, [filteredItems])
+
+  const monthNet = stats.monthIncome - stats.monthExpense
+  const activeIndex = TYPE_SEGMENTS.findIndex((s) => s.id === typeFilter)
 
   return (
     <div className="min-h-screen pb-32">
       {/* Header */}
       <header className="px-5 pt-12 pb-3 safe-area-top sticky top-0 bg-background z-20">
-        <div className="flex items-center justify-between mb-3">
-          <h1 className="text-2xl font-bold">السجل المالي</h1>
+        <div className="flex items-center justify-between mb-3.5">
+          <h1 className="text-[30px] font-extrabold text-ink -tracking-[.5px]">المالية</h1>
           {/* V4.1: Quick links to Debts and Reports (since they're not in Bottom Nav) */}
           <div className="flex gap-2">
-            <Link to="/debts" className="w-10 h-10 rounded-full bg-withdrawal-50 flex items-center justify-center active:scale-95 transition-transform" aria-label="الديون">
-              <Icon name="wallet" className="w-5 h-5 text-withdrawal-600" />
+            <Link to="/debts" className="press w-11 h-11 rounded-full bg-withdrawal-50 grid place-items-center" aria-label="الديون">
+              <Icon name="bank" className="w-5 h-5 text-withdrawal-600" />
             </Link>
-            <Link to="/reports" className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center active:scale-95 transition-transform" aria-label="التقارير">
+            <Link to="/reports" className="press w-11 h-11 rounded-full bg-primary-50 grid place-items-center" aria-label="التقارير">
               <Icon name="document" className="w-5 h-5 text-primary-600" />
             </Link>
           </div>
         </div>
 
+        {/* صافي هذا الشهر */}
+        <div className="bg-surface rounded-card px-5 py-[18px] shadow-card flex items-center justify-between mb-3.5">
+          <div>
+            <div className="text-[12px] text-faint font-medium">صافي هذا الشهر</div>
+            <div className={`tnum text-[28px] font-extrabold mt-0.5 ${monthNet >= 0 ? 'text-income' : 'text-expense'}`}>
+              {monthNet >= 0 ? '+' : '−'}{formatAmount(Math.abs(monthNet))}
+            </div>
+          </div>
+          <div className="flex gap-[18px] text-center">
+            <div>
+              <div className="text-[11px] text-faint">قبض</div>
+              <div className="tnum text-[15px] font-bold text-income">{formatAmount(stats.monthIncome)}</div>
+            </div>
+            <div className="w-px bg-[#e6e8eb]" />
+            <div>
+              <div className="text-[11px] text-faint">صرف</div>
+              <div className="tnum text-[15px] font-bold text-expense">{formatAmount(stats.monthExpense)}</div>
+            </div>
+          </div>
+        </div>
+
         {/* Search */}
-        <div className="relative mb-3">
-          <div className="absolute right-3 top-1/2 -translate-y-1/2">
-            <Icon name="search" className="w-5 h-5 text-text-tertiary" />
+        <div className="relative mb-3.5">
+          <div className="absolute right-4 top-1/2 -translate-y-1/2">
+            <Icon name="search" className="w-[21px] h-[21px] text-faint" />
           </div>
           <input
             type="search"
             value={search}
             onChange={handleSearchChange}
-            placeholder="ابحث في المعاملات..."
-            className="w-full bg-surface rounded-2xl pr-11 pl-4 py-3 text-sm outline-none border border-transparent focus:border-primary transition-colors"
+            placeholder="ابحث في المعاملات…"
+            className="w-full bg-mute rounded-[18px] pr-12 pl-4 py-3 text-sm outline-none border-2 border-transparent focus:border-primary transition-colors"
             dir="rtl"
           />
         </div>
 
-        {/* Filter chips */}
-        <div className="flex gap-2 overflow-x-auto hide-scrollbar -mx-5 px-5">
-          {FILTERS.map((f) => (
-            <button
-              key={f.id}
-              onClick={() => handleFilterChange(f.id)}
-              className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all active:scale-95 ${
-                filter === f.id
-                  ? 'bg-primary text-white'
-                  : 'bg-surface text-text-secondary shadow-card'
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
+        {/* V5: Segmented control — sliding blue thumb (RTL) */}
+        <div className="relative grid grid-cols-4 bg-mute rounded-[16px] p-1">
+          <div
+            className="absolute top-1 bottom-1 rounded-[12px] bg-primary shadow-sm transition-all duration-300 ease-out"
+            style={{ right: `calc(${activeIndex * 25}% + 4px)`, width: 'calc(25% - 8px)' }}
+          />
+          {TYPE_SEGMENTS.map((seg) => {
+            const on = seg.id === typeFilter
+            return (
+              <button
+                key={seg.id}
+                onClick={() => handleTypeChange(seg.id)}
+                className={`relative z-10 text-[13px] py-2 transition-colors ${on ? 'text-white font-bold' : 'text-sub font-semibold'}`}
+              >
+                {seg.label}
+              </button>
+            )
+          })}
         </div>
       </header>
 
-      {/* Summary */}
-      {items.length > 0 && (
-        <div className="px-5 mb-3">
-          <div className="bg-surface rounded-2xl p-4 shadow-card">
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div>
-                <p className="text-xs text-text-secondary mb-1">قبض</p>
-                <p className="text-sm font-bold text-income-600 tabular-nums">{formatAmount(totals.income)}</p>
-              </div>
-              <div className="border-r border-l border-divider">
-                <p className="text-xs text-text-secondary mb-1">صرف</p>
-                <p className="text-sm font-bold text-expense-600 tabular-nums">{formatAmount(totals.expense)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-text-secondary mb-1">سحب شخصي</p>
-                <p className="text-sm font-bold text-withdrawal-600 tabular-nums">{formatAmount(totals.withdrawal)}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Transaction List */}
-      <div className="px-5 space-y-2">
+      {/* Day-grouped ledger */}
+      <div className="px-5 pt-4">
         {loading ? (
           // Skeleton
-          Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="bg-surface rounded-2xl p-4 shadow-card">
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl bg-gray-200 animate-pulse" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 w-3/4 bg-gray-200 rounded animate-pulse" />
-                  <div className="h-3 w-1/2 bg-gray-100 rounded animate-pulse" />
+          <div className="space-y-2.5">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="bg-surface rounded-2xl p-4 shadow-card">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-xl bg-gray-200 animate-pulse" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-3/4 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-3 w-1/2 bg-gray-100 rounded animate-pulse" />
+                  </div>
+                  <div className="h-5 w-16 bg-gray-200 rounded animate-pulse" />
                 </div>
-                <div className="h-5 w-16 bg-gray-200 rounded animate-pulse" />
               </div>
-            </div>
-          ))
-        ) : items.length === 0 ? (
+            ))}
+          </div>
+        ) : filteredItems.length === 0 ? (
           <EmptyState
             icon="receipt"
             title="لا توجد معاملات"
             description={search ? 'لم يتم العثور على نتائج. جرب بحثاً آخر.' : 'بداية نظيفة! اضغط (+) لتسجيل أول معاملة'}
           />
         ) : (
-          items.map((transaction) => (
-            <TransactionCard
-              key={transaction.id}
-              transaction={transaction}
-              onDelete={handleDelete}
-              onEdit={handleEdit}
-            />
+          dayGroups.map((group) => (
+            <div key={group.key} className="mb-1.5">
+              <div className="flex items-center justify-between mt-2 mb-2.5 px-0.5">
+                <span className="text-[13px] font-bold text-sub">{group.label}</span>
+                <span className="tnum text-[12px] text-faint">
+                  الصافي {group.net >= 0 ? '+' : '−'}{formatAmount(Math.abs(group.net))}
+                </span>
+              </div>
+              <div className="flex flex-col gap-2.5">
+                {group.items.map((transaction) => (
+                  <TransactionCard
+                    key={transaction.id}
+                    transaction={transaction}
+                    onDelete={handleDelete}
+                    onEdit={handleEdit}
+                  />
+                ))}
+              </div>
+            </div>
           ))
         )}
 
@@ -249,7 +274,7 @@ export default function FinancePage() {
         )}
 
         {/* End message */}
-        {!hasMore && items.length > 0 && (
+        {!hasMore && filteredItems.length > 0 && (
           <p className="text-center text-xs text-text-tertiary py-4">
             تم عرض جميع المعاملات ({total})
           </p>
@@ -289,9 +314,9 @@ function TransactionCard({ transaction, onDelete, onEdit }) {
   const [actionSheetOpen, setActionSheetOpen] = useState(false)
 
   const config = {
-    income: { icon: 'arrowDown', color: 'income', bg: 'bg-income-50', text: 'text-income-600', label: 'قبض' },
-    expense: { icon: 'arrowUp', color: 'expense', bg: 'bg-expense-50', text: 'text-expense-600', label: 'صرف' },
-    withdrawal: { icon: 'userMinus', color: 'withdrawal', bg: 'bg-withdrawal-50', text: 'text-withdrawal-600', label: 'سحب شخصي' },
+    income: { icon: 'arrowDownLeft', color: 'income', bg: 'bg-income-50', text: 'text-income-600', label: 'قبض' },
+    expense: { icon: 'arrowUpRight', color: 'expense', bg: 'bg-expense-50', text: 'text-expense-600', label: 'صرف' },
+    withdrawal: { icon: 'bank', color: 'withdrawal', bg: 'bg-withdrawal-50', text: 'text-withdrawal-600', label: 'سحب شخصي' },
     opening_balance: { icon: 'wallet', color: 'income', bg: 'bg-income-50', text: 'text-income-600', label: 'رصيد افتتاحي' },
     debt_given: { icon: 'arrowDown', color: 'income', bg: 'bg-income-50', text: 'text-income-600', label: 'دين مستحق لي' },
     debt_taken: { icon: 'arrowUp', color: 'expense', bg: 'bg-expense-50', text: 'text-expense-600', label: 'دين مستحق علي' },

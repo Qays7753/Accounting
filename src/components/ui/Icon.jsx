@@ -164,6 +164,50 @@ export default function Icon({ name, className = 'w-6 h-6', strokeWidth = 1.8, o
     back: (
       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
     ),
+    // Storefront (business logo)
+    storefront: (
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 10l1-5.5a1 1 0 011-.5h12a1 1 0 011 .5L21 10M4 10v9a1 1 0 001 1h14a1 1 0 001-1v-9M4 10h16M9.5 20v-5.5a1 1 0 011-1h3a1 1 0 011 1V20" />
+    ),
+    // Inventory / box (حق المحل — capital)
+    inventory: (
+      <path strokeLinecap="round" strokeLinejoin="round" d="M20 7L12 3 4 7m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+    ),
+    // Savings / money (حق التاجر — profit)
+    savings: (
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 8.5A1.5 1.5 0 014.5 7h15A1.5 1.5 0 0121 8.5v7A1.5 1.5 0 0119.5 17h-15A1.5 1.5 0 013 15.5v-7zM12 15a3 3 0 100-6 3 3 0 000 6z" />
+    ),
+    // Account balance wallet (hero)
+    accountBalanceWallet: (
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 7a2 2 0 012-2h11a2 2 0 012 2v1h1a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2V7zm0 1h13m2 3.5h-3a1.5 1.5 0 000 3h3" />
+    ),
+    // Bank / account_balance (سحب شخصي)
+    bank: (
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M4 21V10m4 11V10m8 11V10m4 11V10M3 10l9-6 9 6M3 10h18" />
+    ),
+    // Point of sale / calculator (بيع سريع)
+    pos: (
+      <path strokeLinecap="round" strokeLinejoin="round" d="M7 3h10a1 1 0 011 1v16a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1zM9 7h6M9 11h.01M12 11h.01M15 11h.01M9 15h.01M12 15h.01M15 15h.01" />
+    ),
+    // Location pin
+    location: (
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0zM19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+    ),
+    // Sticky note
+    note: (
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v9l-6 6H5a1 1 0 01-1-1V5zM14 20v-5a1 1 0 011-1h5" />
+    ),
+    // Arrow down-left / south_west (قبض — money in)
+    arrowDownLeft: (
+      <path strokeLinecap="round" strokeLinejoin="round" d="M17 7L7 17m0 0h8m-8 0V9" />
+    ),
+    // Arrow up-right / north_east (صرف — money out)
+    arrowUpRight: (
+      <path strokeLinecap="round" strokeLinejoin="round" d="M7 17L17 7m0 0H9m8 0v8" />
+    ),
+    // Build / wrench (order type)
+    build: (
+      <path strokeLinecap="round" strokeLinejoin="round" d="M14.5 6a3.5 3.5 0 00-4.6 4.3l-6 6a1.5 1.5 0 002.1 2.1l6-6A3.5 3.5 0 0018 8.5l-2 2-2.5-.5L13 7.5l1.5-1.5z" />
+    ),
   }
 
   return (

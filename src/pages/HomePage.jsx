@@ -135,22 +135,30 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen pb-32">
-      {/* Header */}
+      {/* Header — compact One UI (avatar + greeting leading, notifications action) */}
       <header className="px-5 pt-12 pb-4 safe-area-top">
         <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-text-secondary">{getGreeting()}</p>
-            <h1 className="text-2xl font-bold mt-0.5">{businessName || 'أهلاً بك'}</h1>
-            <p className="text-xs text-text-tertiary mt-1">{formatArabicDate(new Date())}</p>
-          </div>
-          {/* V2: Show logo if uploaded, otherwise default wallet icon */}
-          {logo ? (
-            <img src={logo} alt="شعار" className="w-11 h-11 rounded-full object-cover" />
-          ) : (
-            <div className="w-11 h-11 rounded-full bg-primary-50 flex items-center justify-center">
-              <Icon name="wallet" className="w-6 h-6 text-primary-600" />
+          <div className="flex items-center gap-3 min-w-0">
+            {logo ? (
+              <img src={logo} alt="شعار" className="w-[46px] h-[46px] rounded-full object-cover flex-none" />
+            ) : (
+              <div className="w-[46px] h-[46px] rounded-full bg-primary-pill grid place-items-center flex-none">
+                <Icon name="storefront" className="w-[26px] h-[26px] text-primary" strokeWidth={2} />
+              </div>
+            )}
+            <div className="min-w-0">
+              <p className="text-[13px] text-faint font-medium">{getGreeting()}</p>
+              <h1 className="text-lg font-bold text-ink leading-tight truncate">{businessName || 'أهلاً بك'}</h1>
+              <p className="text-[11px] text-faint mt-0.5">{formatArabicDate(new Date())}</p>
             </div>
-          )}
+          </div>
+          <button
+            type="button"
+            className="press w-11 h-11 rounded-full bg-mute grid place-items-center flex-none"
+            aria-label="الإشعارات"
+          >
+            <Icon name="bell" className="w-6 h-6 text-sub" />
+          </button>
         </div>
       </header>
 
@@ -165,7 +173,7 @@ export default function HomePage() {
           <div className="relative">
             <div className="flex items-center justify-between">
               <span className="text-[13px] text-white/80 font-semibold">إجمالي النقد المتاح</span>
-              <Icon name="wallet" className="w-5 h-5 text-white/90" />
+              <Icon name="accountBalanceWallet" className="w-[22px] h-[22px] text-white/90" />
             </div>
             {stats.loading ? (
               <div className="h-10 w-40 bg-white/20 rounded-lg animate-pulse mt-2" />
@@ -183,7 +191,7 @@ export default function HomePage() {
           <div className="bg-surface rounded-card p-4 shadow-card">
             <div className="flex items-center gap-2.5 mb-2.5">
               <div className="w-[34px] h-[34px] rounded-[11px] bg-primary-tint grid place-items-center">
-                <Icon name="wallet" className="w-[19px] h-[19px] text-primary" strokeWidth={2} />
+                <Icon name="inventory" className="w-[19px] h-[19px] text-primary" strokeWidth={2} />
               </div>
               <span className="text-[13px] font-bold text-primary">حق المحل</span>
             </div>
@@ -197,7 +205,7 @@ export default function HomePage() {
           <div className="bg-surface rounded-card p-4 shadow-card">
             <div className="flex items-center gap-2.5 mb-2.5">
               <div className="w-[34px] h-[34px] rounded-[11px] bg-income-bg grid place-items-center">
-                <Icon name="trendingUp" className="w-[19px] h-[19px] text-income" strokeWidth={2} />
+                <Icon name="savings" className="w-[19px] h-[19px] text-income" strokeWidth={2} />
               </div>
               <span className="text-[13px] font-bold text-income">حق التاجر</span>
             </div>
@@ -212,6 +220,171 @@ export default function HomePage() {
         <div className="flex items-center gap-1.5 justify-center mt-2.5">
           <Icon name="info" className="w-[15px] h-[15px] text-faint" />
           <span className="text-[11px] text-faint">لا تسحب من "حق المحل" إلا لإعادة تعبئة البضاعة</span>
+        </div>
+
+        {/* Quick actions (POS merged here) */}
+        <div className="grid grid-cols-4 gap-2 mt-5">
+          <Link
+            to="/pos"
+            onClick={() => hapticLight()}
+            className="press flex flex-col items-center gap-1.5"
+          >
+            <div className="w-[58px] h-[58px] rounded-[20px] bg-primary grid place-items-center shadow-fab">
+              <Icon name="pos" className="w-[26px] h-[26px] text-white" strokeWidth={2} />
+            </div>
+            <span className="text-[12px] text-sub font-semibold">بيع سريع</span>
+          </Link>
+          <button
+            type="button"
+            onClick={() => { hapticLight(); setSheetOpen('income') }}
+            className="press flex flex-col items-center gap-1.5"
+          >
+            <div className="w-[58px] h-[58px] rounded-[20px] bg-surface grid place-items-center shadow-card">
+              <Icon name="arrowDownLeft" className="w-[26px] h-[26px] text-income" strokeWidth={2} />
+            </div>
+            <span className="text-[12px] text-sub font-semibold">قبض</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { hapticLight(); setSheetOpen('expense') }}
+            className="press flex flex-col items-center gap-1.5"
+          >
+            <div className="w-[58px] h-[58px] rounded-[20px] bg-surface grid place-items-center shadow-card">
+              <Icon name="arrowUpRight" className="w-[26px] h-[26px] text-expense" strokeWidth={2} />
+            </div>
+            <span className="text-[12px] text-sub font-semibold">صرف</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { hapticLight(); setSheetOpen('withdrawal') }}
+            className="press flex flex-col items-center gap-1.5"
+          >
+            <div className="w-[58px] h-[58px] rounded-[20px] bg-surface grid place-items-center shadow-card">
+              <Icon name="bank" className="w-[26px] h-[26px] text-withdrawal" strokeWidth={2} />
+            </div>
+            <span className="text-[12px] text-sub font-semibold">سحب شخصي</span>
+          </button>
+        </div>
+      </section>
+
+      {/* Today's Income & Expenses */}
+      <section className="px-5 mb-6">
+        <div className="grid grid-cols-2 gap-3">
+          {/* Today's Income */}
+          <Link
+            to="/finance"
+            className="bg-surface rounded-2xl p-4 shadow-card active:scale-[0.98] transition-transform"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="w-9 h-9 rounded-xl bg-income-50 flex items-center justify-center">
+                <Icon name="arrowDownLeft" className="w-5 h-5 text-income-600" strokeWidth={2} />
+              </div>
+            </div>
+            <p className="text-xs text-text-secondary mb-1">قبض اليوم</p>
+            {stats.loading ? (
+              <div className="h-6 w-20 bg-gray-200 rounded animate-pulse" />
+            ) : (
+              <p className="text-lg font-bold text-income-600 tabular-nums">
+                {formatAmount(stats.todayIncome)}
+              </p>
+            )}
+          </Link>
+
+          {/* Today's Expenses */}
+          <Link
+            to="/finance"
+            className="bg-surface rounded-2xl p-4 shadow-card active:scale-[0.98] transition-transform"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="w-9 h-9 rounded-xl bg-expense-50 flex items-center justify-center">
+                <Icon name="arrowUpRight" className="w-5 h-5 text-expense-600" strokeWidth={2} />
+              </div>
+            </div>
+            <p className="text-xs text-text-secondary mb-1">صرف اليوم</p>
+            {stats.loading ? (
+              <div className="h-6 w-20 bg-gray-200 rounded animate-pulse" />
+            ) : (
+              <p className="text-lg font-bold text-expense-600 tabular-nums">
+                {formatAmount(stats.todayExpense)}
+              </p>
+            )}
+          </Link>
+        </div>
+      </section>
+
+      {/* Upcoming Orders */}
+      <section className="px-5 mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-bold text-text-primary">الطلبات القادمة</h2>
+          <Link to="/orders" className="text-sm text-primary-600 font-medium">
+            عرض الكل
+          </Link>
+        </div>
+
+        {!stats.loading && stats.upcomingOrders.length === 0 ? (
+          <div className="bg-surface rounded-2xl p-5 shadow-card">
+            <EmptyState
+              icon="clipboard"
+              title="لا توجد طلبات قادمة"
+              description="أضف طلباتك القادمة لتتبعها هنا"
+            />
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {stats.upcomingOrders.slice(0, 3).map((order) => (
+              <Link
+                key={order.id}
+                to={`/orders?id=${order.id}`}
+                className="block bg-surface rounded-2xl p-4 shadow-card active:scale-[0.98] transition-transform"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-text-primary truncate">
+                      {order.customerName || 'زبون'}
+                    </p>
+                    <p className="text-xs text-text-secondary mt-0.5">{order.orderType}</p>
+                    <p className="text-xs text-text-tertiary mt-1">{getRelativeTime(order.scheduledDate)}</p>
+                  </div>
+                  <div className="text-left">
+                    {order.amount > 0 && (
+                      <p className="font-bold text-text-primary tabular-nums">
+                        {formatAmount(order.amount)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* This Month Summary */}
+      <section className="px-5 mb-6">
+        <div className="bg-surface rounded-2xl p-5 shadow-card">
+          <h2 className="text-base font-bold text-text-primary mb-4">ملخص هذا الشهر</h2>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="text-center">
+              <p className="text-xs text-text-secondary mb-1">القبض</p>
+              <p className="text-base font-bold text-income-600 tabular-nums">
+                {formatAmount(stats.monthIncome)}
+              </p>
+            </div>
+            <div className="text-center border-r border-l border-divider">
+              <p className="text-xs text-text-secondary mb-1">الصرف</p>
+              <p className="text-base font-bold text-expense-600 tabular-nums">
+                {formatAmount(stats.monthExpense)}
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-text-secondary mb-1">صافي الربح</p>
+              <p className={`text-base font-bold tabular-nums ${
+                stats.monthIncome - stats.monthExpense >= 0 ? 'text-income-600' : 'text-expense-600'
+              }`}>
+                {formatAmount(stats.monthIncome - stats.monthExpense)}
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -312,127 +485,6 @@ export default function HomePage() {
           </div>
         </section>
       )}
-
-      {/* Today's Income & Expenses */}
-      <section className="px-5 mb-6">
-        <div className="grid grid-cols-2 gap-3">
-          {/* Today's Income */}
-          <Link
-            to="/finance"
-            className="bg-surface rounded-2xl p-4 shadow-card active:scale-[0.98] transition-transform"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <div className="w-9 h-9 rounded-xl bg-income-50 flex items-center justify-center">
-                <Icon name="arrowDown" className="w-5 h-5 text-income-600" strokeWidth={2} />
-              </div>
-            </div>
-            <p className="text-xs text-text-secondary mb-1">قبض اليوم</p>
-            {stats.loading ? (
-              <div className="h-6 w-20 bg-gray-200 rounded animate-pulse" />
-            ) : (
-              <p className="text-lg font-bold text-income-600 tabular-nums">
-                {formatAmount(stats.todayIncome)}
-              </p>
-            )}
-          </Link>
-
-          {/* Today's Expenses */}
-          <Link
-            to="/finance"
-            className="bg-surface rounded-2xl p-4 shadow-card active:scale-[0.98] transition-transform"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <div className="w-9 h-9 rounded-xl bg-expense-50 flex items-center justify-center">
-                <Icon name="arrowUp" className="w-5 h-5 text-expense-600" strokeWidth={2} />
-              </div>
-            </div>
-            <p className="text-xs text-text-secondary mb-1">صرف اليوم</p>
-            {stats.loading ? (
-              <div className="h-6 w-20 bg-gray-200 rounded animate-pulse" />
-            ) : (
-              <p className="text-lg font-bold text-expense-600 tabular-nums">
-                {formatAmount(stats.todayExpense)}
-              </p>
-            )}
-          </Link>
-        </div>
-      </section>
-
-      {/* This Month Summary */}
-      <section className="px-5 mb-6">
-        <div className="bg-surface rounded-2xl p-5 shadow-card">
-          <h2 className="text-base font-bold text-text-primary mb-4">ملخص هذا الشهر</h2>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="text-center">
-              <p className="text-xs text-text-secondary mb-1">القبض</p>
-              <p className="text-base font-bold text-income-600 tabular-nums">
-                {formatAmount(stats.monthIncome)}
-              </p>
-            </div>
-            <div className="text-center border-r border-l border-divider">
-              <p className="text-xs text-text-secondary mb-1">الصرف</p>
-              <p className="text-base font-bold text-expense-600 tabular-nums">
-                {formatAmount(stats.monthExpense)}
-              </p>
-            </div>
-            <div className="text-center">
-              <p className="text-xs text-text-secondary mb-1">صافي الربح</p>
-              <p className={`text-base font-bold tabular-nums ${
-                stats.monthIncome - stats.monthExpense >= 0 ? 'text-income-600' : 'text-expense-600'
-              }`}>
-                {formatAmount(stats.monthIncome - stats.monthExpense)}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Upcoming Orders */}
-      <section className="px-5 mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-bold text-text-primary">الطلبات القادمة</h2>
-          <Link to="/orders" className="text-sm text-primary-600 font-medium">
-            عرض الكل
-          </Link>
-        </div>
-
-        {!stats.loading && stats.upcomingOrders.length === 0 ? (
-          <div className="bg-surface rounded-2xl p-5 shadow-card">
-            <EmptyState
-              icon="clipboard"
-              title="لا توجد طلبات قادمة"
-              description="أضف طلباتك القادمة لتتبعها هنا"
-            />
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {stats.upcomingOrders.slice(0, 3).map((order) => (
-              <Link
-                key={order.id}
-                to={`/orders?id=${order.id}`}
-                className="block bg-surface rounded-2xl p-4 shadow-card active:scale-[0.98] transition-transform"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-text-primary truncate">
-                      {order.customerName || 'زبون'}
-                    </p>
-                    <p className="text-xs text-text-secondary mt-0.5">{order.orderType}</p>
-                    <p className="text-xs text-text-tertiary mt-1">{getRelativeTime(order.scheduledDate)}</p>
-                  </div>
-                  <div className="text-left">
-                    {order.amount > 0 && (
-                      <p className="font-bold text-text-primary tabular-nums">
-                        {formatAmount(order.amount)}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
 
       {/* FAB */}
       <Fab onAction={handleFabAction} />

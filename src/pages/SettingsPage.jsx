@@ -229,7 +229,7 @@ export default function SettingsPage() {
     <div className="min-h-screen pb-32">
       {/* Header */}
       <header className="px-5 pt-12 pb-3 safe-area-top">
-        <h1 className="text-2xl font-bold">الإعدادات</h1>
+        <h1 className="text-[30px] font-extrabold text-ink -tracking-[.5px]">الإعدادات</h1>
       </header>
 
       <div className="px-5 space-y-4">
@@ -252,7 +252,7 @@ export default function SettingsPage() {
 
         {/* Data Management */}
         <section>
-          <h2 className="text-sm font-semibold text-text-secondary mb-2 px-1">إدارة البيانات</h2>
+          <h2 className="text-[12px] font-bold text-primary mb-2 px-1.5">إدارة البيانات</h2>
           <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
             <SettingsRow
               icon="download"
@@ -273,7 +273,7 @@ export default function SettingsPage() {
 
         {/* WhatsApp */}
         <section>
-          <h2 className="text-sm font-semibold text-text-secondary mb-2 px-1">واتساب</h2>
+          <h2 className="text-[12px] font-bold text-primary mb-2 px-1.5">واتساب</h2>
           <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
             <SettingsRow
               icon="whatsapp"
@@ -287,7 +287,7 @@ export default function SettingsPage() {
 
         {/* V4 Phase 3: Report Display Mode */}
         <section>
-          <h2 className="text-sm font-semibold text-text-secondary mb-2 px-1">عرض التقارير</h2>
+          <h2 className="text-[12px] font-bold text-primary mb-2 px-1.5">عرض التقارير</h2>
           <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
             <div className="w-full p-4">
               <div className="flex items-center gap-3 mb-3">
@@ -325,7 +325,7 @@ export default function SettingsPage() {
 
         {/* V2: Appearance (Theme + Branding) */}
         <section>
-          <h2 className="text-sm font-semibold text-text-secondary mb-2 px-1">المظهر</h2>
+          <h2 className="text-[12px] font-bold text-primary mb-2 px-1.5">المظهر</h2>
           <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
             <SettingsRow
               icon="info"
@@ -352,7 +352,7 @@ export default function SettingsPage() {
 
         {/* Security */}
         <section>
-          <h2 className="text-sm font-semibold text-text-secondary mb-2 px-1">الأمان</h2>
+          <h2 className="text-[12px] font-bold text-primary mb-2 px-1.5">الأمان</h2>
           <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
             <SettingsToggle
               icon="lock"
@@ -367,7 +367,7 @@ export default function SettingsPage() {
 
         {/* V4 Phase 2: Operations (Quick POS + Helper Mode + Closing Time) */}
         <section>
-          <h2 className="text-sm font-semibold text-text-secondary mb-2 px-1">التشغيل والأمان</h2>
+          <h2 className="text-[12px] font-bold text-primary mb-2 px-1.5">التشغيل والأمان</h2>
           <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
             {/* Quick POS Toggle */}
             <SettingsToggle
@@ -417,7 +417,7 @@ export default function SettingsPage() {
 
         {/* App Info */}
         <section>
-          <h2 className="text-sm font-semibold text-text-secondary mb-2 px-1">التطبيق</h2>
+          <h2 className="text-[12px] font-bold text-primary mb-2 px-1.5">التطبيق</h2>
           <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
             <SettingsRow
               icon="bell"
