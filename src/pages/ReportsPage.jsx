@@ -32,6 +32,9 @@ export default function ReportsPage() {
   const [topDebtors, setTopDebtors] = useState([])
   const [dailyBreakdown, setDailyBreakdown] = useState([])
 
+  // V5: active period preset (drives the sliding segmented control)
+  const [activePreset, setActivePreset] = useState('month')
+
   const loadReport = useCallback(async () => {
     setLoading(true)
     try {
@@ -94,6 +97,7 @@ export default function ReportsPage() {
   // Quick date range presets
   const setPreset = (preset) => {
     hapticSuccess()
+    setActivePreset(preset)
     const today = new Date()
     let start, end
     switch (preset) {
@@ -127,11 +131,14 @@ export default function ReportsPage() {
 
   const presets = [
     { id: 'today', label: 'اليوم' },
-    { id: 'week', label: 'هذا الأسبوع' },
-    { id: 'month', label: 'هذا الشهر' },
-    { id: 'lastMonth', label: 'الشهر الماضي' },
-    { id: 'year', label: 'هذه السنة' },
+    { id: 'week', label: 'الأسبوع' },
+    { id: 'month', label: 'الشهر' },
+    { id: 'lastMonth', label: 'الماضي' },
+    { id: 'year', label: 'السنة' },
   ]
+
+  // V5: sliding thumb behind the active preset (5 equal segments, RTL)
+  const activePresetIndex = Math.max(0, presets.findIndex((p) => p.id === activePreset))
 
   const varianceColor = report
     ? (report.variance > 0 ? 'text-withdrawal-600'
@@ -150,18 +157,27 @@ export default function ReportsPage() {
       <header className="px-5 pt-12 pb-3 safe-area-top sticky top-0 bg-background z-20">
         <h1 className="text-[30px] font-extrabold text-ink -tracking-[.5px] mb-3">التقارير</h1>
 
-        {/* Quick Presets */}
-        <div className="flex gap-2 overflow-x-auto hide-scrollbar -mx-5 px-5 mb-3">
-          {presets.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => setPreset(p.id)}
-              className="px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap bg-surface text-text-secondary shadow-card active:scale-95 transition-transform"
-            >
-              {p.label}
-            </button>
-          ))}
+        {/* V5: Period segmented control — connected track + sliding blue thumb */}
+        <div className="relative grid grid-cols-5 bg-mute rounded-[16px] p-1 mb-3">
+          <div
+            className="absolute top-1 bottom-1 rounded-[12px] bg-primary shadow-sm transition-all duration-300 ease-out"
+            style={{ right: `calc(${activePresetIndex * 20}% + 4px)`, width: 'calc(20% - 8px)' }}
+          />
+          {presets.map((p) => {
+            const on = p.id === activePreset
+            return (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setPreset(p.id)}
+                className={`relative z-10 py-2 text-[13px] transition-colors ${
+                  on ? 'text-white font-bold' : 'text-sub font-semibold'
+                }`}
+              >
+                {p.label}
+              </button>
+            )
+          })}
         </div>
 
         {/* Custom Date Range */}
