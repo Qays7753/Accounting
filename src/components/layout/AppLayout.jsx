@@ -1,4 +1,5 @@
 import BottomNav from './BottomNav.jsx'
+import UpdatePrompt from '../common/UpdatePrompt.jsx'
 
 export default function AppLayout({ children, showQuickPos = true }) {
   return (
@@ -6,6 +7,7 @@ export default function AppLayout({ children, showQuickPos = true }) {
       <main className="pb-28" role="main">
         {children}
       </main>
+      <UpdatePrompt />
       <BottomNav showQuickPos={showQuickPos} />
     </div>
   )
