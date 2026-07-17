@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useDashboardStats } from '../hooks/useDatabase.js'
+import { useCountUp } from '../hooks/useCountUp.js'
 import { db } from '../db'
 import { formatAmount, parseNumber, formatLiveInput } from '../utils/format.js'
 import { getGreeting, formatArabicDate, getRelativeTime } from '../utils/date.js'
@@ -35,6 +36,11 @@ export default function HomePage() {
   const [showOpeningBalanceCard, setShowOpeningBalanceCard] = useState(false)
   const [openingBalanceSheetOpen, setOpeningBalanceSheetOpen] = useState(false)
   const [openingCash, setOpeningCash] = useState(0)
+
+  // V5: Animated count-up for financial numbers
+  const animatedTotal = useCountUp(jars.totalCash)
+  const animatedCapital = useCountUp(jars.capitalJar)
+  const animatedProfit = useCountUp(jars.profitJar)
 
   useEffect(() => {
     db.getLogo().then(setLogo)
@@ -162,108 +168,55 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* V5: Two Jars Dashboard (حق المحل & حق التاجر) — One UI Hero */}
-      <section className="px-5 mb-4">
-        {/* Hero card — blue gradient */}
+      {/* V5 SOP: Two Jars Dashboard */}
+      <section className="px-4 mb-3">
         <div
-          className="rounded-hero p-[22px] text-white relative overflow-hidden shadow-hero"
-          style={{ background: 'linear-gradient(135deg, #0058be 0%, #0a6bd6 60%, #1478e8 100%)' }}
+          className="rounded-16 p-4 text-white relative overflow-hidden"
+          style={{ background: '#023852', boxShadow: '0 8px 24px -18px rgba(2,56,82,.35)', border: '1px solid #E4EAEE' }}
         >
-          <div className="absolute -top-16 -left-8 w-44 h-44 rounded-full bg-white/10 blur-md" />
-          <div className="relative">
-            <div className="flex items-center justify-between">
-              <span className="text-[13px] text-white/80 font-semibold">إجمالي النقد المتاح</span>
-              <Icon name="accountBalanceWallet" className="w-[22px] h-[22px] text-white/90" />
-            </div>
-            {stats.loading ? (
-              <div className="h-10 w-40 bg-white/20 rounded-lg animate-pulse mt-2" />
-            ) : (
-              <div className="tnum text-[40px] font-extrabold -tracking-[1px] mt-1.5 leading-none">
-                {formatAmount(jars.totalCash)}
-              </div>
-            )}
+          <div className="flex items-center justify-between">
+            <span className="text-[13px] font-medium" style={{ color: '#9FDBC5' }}>إجمالي النقد المتاح</span>
+            <Icon name="wallet" className="w-5 h-5" strokeWidth={1.5} />
           </div>
+          {stats.loading ? (
+            <div className="h-8 w-40 bg-white/20 rounded-lg animate-pulse mt-2" />
+          ) : (
+            <div className="num text-[28px] font-semibold mt-1 leading-none">
+              {formatAmount(animatedTotal)}
+            </div>
+          )}
         </div>
-
-        {/* Two Jars — 2-col grid */}
         <div className="grid grid-cols-2 gap-3 mt-3">
-          {/* Jar A: حق المحل (blue) */}
-          <div className="bg-surface rounded-card p-4 shadow-card">
-            <div className="flex items-center gap-2.5 mb-2.5">
-              <div className="w-[34px] h-[34px] rounded-[11px] bg-primary-tint grid place-items-center">
-                <Icon name="inventory" className="w-[19px] h-[19px] text-primary" strokeWidth={2} />
+          <div className="card">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-[34px] h-[34px] rounded-12 grid place-items-center" style={{ background: '#E3F5F5' }}>
+                <Icon name="wallet" className="w-5 h-5" strokeWidth={1.5} />
               </div>
-              <span className="text-[13px] font-bold text-primary">حق المحل</span>
+              <span className="text-[13px] font-semibold" style={{ color: '#023852' }}>حق المحل</span>
             </div>
-            <div className="tnum text-[23px] font-extrabold text-ink leading-none">
-              {formatAmount(jars.capitalJar)}
+            <div className="num text-[24px] font-semibold text-ink leading-none">
+              {formatAmount(animatedCapital)}
             </div>
-            <div className="text-[11px] text-faint mt-1.5">رأس المال — للتعبئة</div>
+            <div className="text-[12px] mt-1" style={{ color: '#647680' }}>رأس المال</div>
           </div>
-
-          {/* Jar B: حق التاجر (green) */}
-          <div className="bg-surface rounded-card p-4 shadow-card">
-            <div className="flex items-center gap-2.5 mb-2.5">
-              <div className="w-[34px] h-[34px] rounded-[11px] bg-income-bg grid place-items-center">
-                <Icon name="savings" className="w-[19px] h-[19px] text-income" strokeWidth={2} />
+          <div className="card">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-[34px] h-[34px] rounded-12 grid place-items-center" style={{ background: '#E1F3EB' }}>
+                <Icon name="trendingUp" className="w-5 h-5" strokeWidth={1.5} />
               </div>
-              <span className="text-[13px] font-bold text-income">حق التاجر</span>
+              <span className="text-[13px] font-semibold" style={{ color: '#0E8A5F' }}>حق التاجر</span>
             </div>
-            <div className={`tnum text-[23px] font-extrabold leading-none ${jars.profitJar >= 0 ? 'text-income' : 'text-expense'}`}>
-              {formatAmount(jars.profitJar)}
+            <div className="num text-[24px] font-semibold leading-none"
+              style={{ color: animatedProfit >= 0 ? '#0E8A5F' : '#C0272B' }}
+            >
+              {formatAmount(animatedProfit)}
             </div>
-            <div className="text-[11px] text-faint mt-1.5">الأرباح — آمن للصرف</div>
+            <div className="text-[12px] mt-1" style={{ color: '#647680' }}>الأرباح</div>
           </div>
         </div>
-
-        {/* Helper line */}
-        <div className="flex items-center gap-1.5 justify-center mt-2.5">
-          <Icon name="info" className="w-[15px] h-[15px] text-faint" />
-          <span className="text-[11px] text-faint">لا تسحب من "حق المحل" إلا لإعادة تعبئة البضاعة</span>
-        </div>
-
-        {/* Quick actions (POS merged here) */}
-        <div className="grid grid-cols-4 gap-2 mt-5">
-          <Link
-            to="/pos"
-            onClick={() => hapticLight()}
-            className="press flex flex-col items-center gap-1.5"
-          >
-            <div className="w-[58px] h-[58px] rounded-[20px] bg-primary grid place-items-center shadow-fab">
-              <Icon name="pos" className="w-[26px] h-[26px] text-white" strokeWidth={2} />
-            </div>
-            <span className="text-[12px] text-sub font-semibold">بيع سريع</span>
-          </Link>
-          <button
-            type="button"
-            onClick={() => { hapticLight(); setSheetOpen('income') }}
-            className="press flex flex-col items-center gap-1.5"
-          >
-            <div className="w-[58px] h-[58px] rounded-[20px] bg-surface grid place-items-center shadow-card">
-              <Icon name="arrowDownLeft" className="w-[26px] h-[26px] text-income" strokeWidth={2} />
-            </div>
-            <span className="text-[12px] text-sub font-semibold">قبض</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => { hapticLight(); setSheetOpen('expense') }}
-            className="press flex flex-col items-center gap-1.5"
-          >
-            <div className="w-[58px] h-[58px] rounded-[20px] bg-surface grid place-items-center shadow-card">
-              <Icon name="arrowUpRight" className="w-[26px] h-[26px] text-expense" strokeWidth={2} />
-            </div>
-            <span className="text-[12px] text-sub font-semibold">صرف</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => { hapticLight(); setSheetOpen('withdrawal') }}
-            className="press flex flex-col items-center gap-1.5"
-          >
-            <div className="w-[58px] h-[58px] rounded-[20px] bg-surface grid place-items-center shadow-card">
-              <Icon name="bank" className="w-[26px] h-[26px] text-withdrawal" strokeWidth={2} />
-            </div>
-            <span className="text-[12px] text-sub font-semibold">سحب شخصي</span>
-          </button>
+        <div className="flex items-center gap-1.5 justify-center mt-2">
+          <Icon name="info" className="w-4 h-4" strokeWidth={1.5} />
+          <span className="text-[12px]" style={{ color: '#647680' }}>لا تسحب من حق المحل إلا لإعادة تعبئة البضاعة</span>
         </div>
       </section>
 

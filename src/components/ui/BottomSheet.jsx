@@ -89,7 +89,7 @@ export default function BottomSheet({ open, onClose, title, children, maxHeight 
     <>
       <div
         className={`fixed inset-0 z-40 transition-opacity duration-200 ${open ? 'opacity-100' : 'opacity-0'}`}
-        style={{ background: 'rgba(15,20,35,0.42)' }}
+        style={{ background: 'rgba(2,56,82,0.4)' }}
         onClick={() => { hapticMedium(); onClose?.() }}
       />
 
@@ -100,7 +100,7 @@ export default function BottomSheet({ open, onClose, title, children, maxHeight 
           maxHeight: expanded ? maxHeight : maxCollapsedHeight,
           height: sheetHeight,
           transition: 'transform .34s cubic-bezier(.16,1,.3,1), height .32s cubic-bezier(.16,1,.3,1)',
-          boxShadow: '0 -20px 50px -20px rgba(15,20,35,.4)',
+          boxShadow: '0 16px 40px -24px rgba(2,56,82,.45)',
           paddingBottom: 'env(safe-area-inset-bottom)',
         }}
       >
@@ -113,7 +113,7 @@ export default function BottomSheet({ open, onClose, title, children, maxHeight 
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
         >
-          <div className="w-11 h-[5px] rounded-full bg-[#d8dadd] mx-auto" />
+          <div className="w-9 h-[5px] rounded-full mx-auto" style={{ background: '#CBD5DB' }} />
           {!expanded && (
             <div className="text-center text-[10px] text-placeholder mt-1.5 transition-opacity">
               ↑ اسحب للأعلى للتوسّع
@@ -128,7 +128,7 @@ export default function BottomSheet({ open, onClose, title, children, maxHeight 
             <button
               type="button"
               onClick={() => { hapticMedium(); onClose?.() }}
-              className="press w-9 h-9 rounded-full bg-mute grid place-items-center"
+              className="press w-11 h-11 rounded-12 grid place-items-center" style={{ background: '#F4F7F9' }}
               aria-label="إغلاق"
             >
               <Icon name="close" className="w-5 h-5 text-sub" />

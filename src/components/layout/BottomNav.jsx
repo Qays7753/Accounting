@@ -85,7 +85,7 @@ export default function BottomNav({ showQuickPos = true }) {
 
   return (
     <>
-      <nav className="fixed bottom-0 inset-x-0 bg-surface px-3 pt-2.5 pb-5 flex justify-around items-center shadow-nav z-40 safe-area-bottom" aria-label="التنقل الرئيسي">
+      <nav className="fixed bottom-0 inset-x-0 bg-surface px-3 pt-2 pb-4 flex justify-around items-center z-40 safe-area-bottom" style={{ borderTop: '1px solid #E4EAEE', minHeight: '64px' }} aria-label="التنقل الرئيسي">
         {items.map((item) => (
           <NavLink
             key={item.to}
@@ -99,15 +99,15 @@ export default function BottomNav({ showQuickPos = true }) {
               <>
                 <div
                   className="w-[52px] h-8 rounded-pill grid place-items-center transition-colors"
-                  style={{ background: isActive ? '#d8e2ff' : 'transparent' }}
+                  style={{ background: isActive ? '#E3F5F5' : 'transparent' }}
                 >
-                  <span className={isActive ? 'text-primary' : 'text-faint'}>
+                  <span style={{ color: isActive ? '#079FA0' : '#93A4AE' }}>
                     {item.icon(isActive)}
                   </span>
                 </div>
                 <span
                   className="text-[11px] font-semibold transition-colors"
-                  style={{ color: isActive ? '#0058be' : '#717786' }}
+                  style={{ color: isActive ? '#079FA0' : '#93A4AE' }}
                 >
                   {item.label}
                 </span>

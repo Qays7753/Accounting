@@ -33,11 +33,11 @@ export default function Fab({ onAction }) {
       <button
         type="button"
         onClick={handleOpen}
-        className="press fixed bottom-[96px] left-[22px] w-[60px] h-[60px] rounded-[22px] bg-primary grid place-items-center shadow-fab z-30"
-        style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+        className="press fixed bottom-[80px] left-4 w-[56px] h-[56px] rounded-12 grid place-items-center z-30"
+        style={{ background: '#023852', boxShadow: '0 8px 20px -8px rgba(2,56,82,.4)', marginBottom: 'env(safe-area-inset-bottom)' }}
         aria-label="إضافة"
       >
-        <Icon name="plus" className="w-7 h-7 text-white" strokeWidth={2.5} />
+        <Icon name="plus" className="w-6 h-6 text-white" strokeWidth={1.5} />
       </button>
 
       <BottomSheet open={open} onClose={() => setOpen(false)} title="إضافة جديدة">
