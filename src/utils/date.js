@@ -1,5 +1,7 @@
 /**
- * Arabic date/time utilities
+ * Date/time utilities — SOP compliant
+ * Dates: DD/MM/YYYY (numeric, no month names)
+ * Time: HH:MM (24-hour)
  */
 
 const ARABIC_MONTHS = [
@@ -11,33 +13,32 @@ const ARABIC_DAYS = [
   'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'
 ]
 
+/** SOP §0.3: DD/MM/YYYY numeric format */
 export function formatArabicDate(date) {
   const d = new Date(date)
-  const day = d.getDate()
-  const month = ARABIC_MONTHS[d.getMonth()]
+  const day = String(d.getDate()).padStart(2, '0')
+  const month = String(d.getMonth() + 1).padStart(2, '0')
   const year = d.getFullYear()
-  return `${day} ${month} ${year}`
+  return `${day}/${month}/${year}`
 }
 
+/** SOP §0.3: DD/MM/YYYY HH:MM (24-hour) */
 export function formatArabicDateTime(date) {
   const d = new Date(date)
-  const day = d.getDate()
-  const month = ARABIC_MONTHS[d.getMonth()]
+  const day = String(d.getDate()).padStart(2, '0')
+  const month = String(d.getMonth() + 1).padStart(2, '0')
   const year = d.getFullYear()
-  let hours = d.getHours()
-  const minutes = d.getMinutes().toString().padStart(2, '0')
-  const period = hours >= 12 ? 'م' : 'ص'
-  hours = hours % 12 || 12
-  return `${day} ${month} ${year} - ${hours}:${minutes} ${period}`
+  const hours = String(d.getHours()).padStart(2, '0')
+  const minutes = String(d.getMinutes()).padStart(2, '0')
+  return `${day}/${month}/${year} ${hours}:${minutes}`
 }
 
+/** SOP §0.3: HH:MM 24-hour format */
 export function formatTime(date) {
   const d = new Date(date)
-  let hours = d.getHours()
-  const minutes = d.getMinutes().toString().padStart(2, '0')
-  const period = hours >= 12 ? 'م' : 'ص'
-  hours = hours % 12 || 12
-  return `${hours}:${minutes} ${period}`
+  const hours = String(d.getHours()).padStart(2, '0')
+  const minutes = String(d.getMinutes()).padStart(2, '0')
+  return `${hours}:${minutes}`
 }
 
 export function getGreeting() {
