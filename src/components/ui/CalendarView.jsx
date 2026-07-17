@@ -90,11 +90,11 @@ export default function CalendarView({ onOrderClick }) {
   return (
     <div className="px-5">
       {/* Calendar Header */}
-      <div className="bg-surface rounded-2xl p-4 shadow-card mb-4">
+      <div className="bg-surface rounded-16 p-4  mb-4">
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={handlePrevMonth}
-            className="w-9 h-9 rounded-full bg-background flex items-center justify-center active:scale-95 transition-transform"
+            className="w-11 h-11 rounded-full bg-background flex items-center justify-center active:scale-95 transition-transform"
             aria-label="الشهر السابق"
           >
             <Icon name="chevronRight" className="w-5 h-5 text-text-secondary" />
@@ -104,7 +104,7 @@ export default function CalendarView({ onOrderClick }) {
           </h2>
           <button
             onClick={handleNextMonth}
-            className="w-9 h-9 rounded-full bg-background flex items-center justify-center active:scale-95 transition-transform"
+            className="w-11 h-11 rounded-full bg-background flex items-center justify-center active:scale-95 transition-transform"
             aria-label="الشهر التالي"
           >
             <Icon name="chevronLeft" className="w-5 h-5 text-text-secondary" />
@@ -151,7 +151,7 @@ export default function CalendarView({ onOrderClick }) {
                       <div
                         key={i}
                         className={`w-1.5 h-1.5 rounded-full ${
-                          selected ? 'bg-white' : STATUS_CONFIG[status]?.color || 'bg-gray-400'
+                          selected ? 'bg-white' : STATUS_CONFIG[status]?.color || '#93A4AE'
                         }`}
                       />
                     ))}
@@ -178,7 +178,7 @@ export default function CalendarView({ onOrderClick }) {
               ))}
             </div>
           ) : (
-            <div className="bg-surface rounded-2xl p-4 shadow-card">
+            <div className="bg-surface rounded-16 p-4 ">
               <p className="text-sm text-text-secondary text-center">لا توجد طلبات في هذا اليوم</p>
             </div>
           )}
@@ -186,7 +186,7 @@ export default function CalendarView({ onOrderClick }) {
       )}
 
       {!selectedDate && (
-        <div className="bg-surface rounded-2xl p-4 shadow-card">
+        <div className="bg-surface rounded-16 p-4 ">
           <p className="text-sm text-text-secondary text-center">
             اختر يوماً لعرض الطلبات
           </p>
@@ -201,7 +201,7 @@ function OrderCalendarCard({ order, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="w-full bg-surface rounded-2xl p-4 shadow-card active:scale-[0.98] transition-transform text-right"
+      className="w-full bg-surface rounded-16 p-4  active:scale-[0.98] transition-transform text-right"
     >
       <div className="flex items-center justify-between mb-2">
         <p className="font-bold text-text-primary text-sm">{order.customerName || 'زبون'}</p>

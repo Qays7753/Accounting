@@ -23,8 +23,8 @@ const STATUS_OPTIONS = [
 const PAYMENT_CONFIG = {
   cash: { label: 'مدفوع نقداً', badge: 'bg-income-50 text-income-600', icon: 'checkCircle' },
   credit: { label: 'بيع بالأجل', badge: 'bg-withdrawal-50 text-withdrawal-600', icon: 'userMinus' },
-  done: { label: 'تتبع فقط', badge: 'bg-gray-100 text-text-secondary', icon: 'check' },
-  null: { label: 'غير مكتمل', badge: 'bg-gray-100 text-text-tertiary', icon: 'clock' },
+  done: { label: 'تتبع فقط', badge: '#F4F7F9 text-text-secondary', icon: 'check' },
+  null: { label: 'غير مكتمل', badge: '#F4F7F9 text-text-tertiary', icon: 'clock' },
 }
 
 export default function OrderDetailSheet({ order, open, onClose, onEdit, onUpdated }) {
@@ -103,7 +103,7 @@ export default function OrderDetailSheet({ order, open, onClose, onEdit, onUpdat
           {/* Customer */}
           <div className="flex items-center gap-3">
             <div className="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center">
-              <Icon name="user" className="w-7 h-7 text-primary-600" />
+              <Icon name="user" className="w-6 h-6 text-primary-600" />
             </div>
             <div className="flex-1">
               <p className="font-bold text-text-primary text-lg">{order.customerName || 'زبون'}</p>

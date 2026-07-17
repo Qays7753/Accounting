@@ -11,7 +11,7 @@ export default function EmptyState({ icon = 'document', title, description, acti
         style={{ background: '#F4F7F9' }}
         aria-hidden="true"
       >
-        <Icon name={icon} className="w-8 h-8" strokeWidth={1.5} />
+        <Icon name={icon} className="w-6 h-6" strokeWidth={1.5} />
         <span className="sr-only">{title}</span>
       </div>
       <h3 className="text-[15px] font-semibold text-ink mb-1">{title}</h3>

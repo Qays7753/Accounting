@@ -146,13 +146,13 @@ export default function FinancePage() {
   return (
     <div className="min-h-screen pb-32">
       {/* Header */}
-      <header className="px-5 pt-12 pb-3 safe-area-top sticky top-0 bg-background z-20">
+      <header className="px-4 pt-8 pb-3 safe-area-top sticky top-0 bg-background z-20">
         <div className="flex items-center justify-between mb-3.5">
           <h1 className="text-[30px] font-extrabold text-ink -tracking-[.5px]">المالية</h1>
         </div>
 
         {/* صافي هذا الشهر */}
-        <div className="bg-surface rounded-card px-5 py-[18px] shadow-card flex items-center justify-between mb-3.5">
+        <div className="bg-surface rounded-card px-4 py-[18px] shadow-card flex items-center justify-between mb-3.5">
           <div>
             <div className="text-[12px] text-faint font-medium">صافي هذا الشهر</div>
             <div className={`tnum text-[28px] font-extrabold mt-0.5 ${monthNet >= 0 ? 'text-income' : 'text-expense'}`}>
@@ -209,7 +209,7 @@ export default function FinancePage() {
       </header>
 
       {/* Quick access — clearly labeled entries for Debts & Reports (not in bottom nav) */}
-      <div className="px-5 pt-4 grid grid-cols-2 gap-3">
+      <div className="px-4 pt-4 grid grid-cols-2 gap-3">
         <Link to="/debts" className="press bg-surface rounded-[20px] p-4 shadow-card flex items-center gap-3">
           <div className="w-11 h-11 rounded-[13px] bg-withdraw-bg grid place-items-center flex-none">
             <Icon name="bank" className="w-[22px] h-[22px] text-withdrawal" strokeWidth={2} />
@@ -233,7 +233,7 @@ export default function FinancePage() {
       </div>
 
       {/* Day-grouped ledger */}
-      <div className="px-5 pt-4">
+      <div className="px-4 pt-4">
         {loading ? (
           // Skeleton
           <div className="space-y-2.5">

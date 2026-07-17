@@ -226,7 +226,7 @@ export default function OrderFormSheet({ open, onClose, editData = null, onSaved
         <AmountInput value={amount} onChange={setAmount} label="المبلغ" />
 
         {/* V3: BOM Cost & Profit Calculator */}
-        <div className="bg-background rounded-2xl p-4">
+        <div className="bg-background rounded-16 p-4">
           <button
             type="button"
             onClick={() => { hapticLight(); setShowBOM(!showBOM) }}

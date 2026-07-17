@@ -32,7 +32,7 @@ export default function BackupReminderBanner({ reminder, onDismiss, onBackupNow 
       }`}
     >
       <div className="bg-withdrawal-50 border-b border-withdrawal-200 mx-3 mt-2 rounded-2xl p-3 shadow-md flex items-start gap-3">
-        <div className="w-9 h-9 rounded-xl bg-withdrawal-100 flex items-center justify-center flex-shrink-0">
+        <div className="w-11 h-11 rounded-xl bg-withdrawal-100 flex items-center justify-center flex-shrink-0">
           <Icon name="bell" className="w-5 h-5 text-withdrawal-600" />
         </div>
         <div className="flex-1 min-w-0">
@@ -55,7 +55,7 @@ export default function BackupReminderBanner({ reminder, onDismiss, onBackupNow 
         </div>
         <button
           onClick={handleDismiss}
-          className="w-7 h-7 rounded-full flex items-center justify-center active:scale-95 transition-transform flex-shrink-0"
+          className="w-11 h-11 rounded-full flex items-center justify-center active:scale-95 transition-transform flex-shrink-0"
           aria-label="إغلاق"
         >
           <Icon name="close" className="w-4 h-4 text-withdrawal-600" />

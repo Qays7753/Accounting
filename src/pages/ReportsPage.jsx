@@ -154,7 +154,7 @@ export default function ReportsPage() {
   return (
     <div className="min-h-screen pb-32">
       {/* Header */}
-      <header className="px-5 pt-12 pb-3 safe-area-top sticky top-0 bg-background z-20">
+      <header className="px-4 pt-8 pb-3 safe-area-top sticky top-0 bg-background z-20">
         <h1 className="text-[30px] font-extrabold text-ink -tracking-[.5px] mb-3">التقارير</h1>
 
         {/* V5: Period segmented control — connected track + sliding blue thumb */}
@@ -217,9 +217,9 @@ export default function ReportsPage() {
         />
       ) : reportMode === 'simple' ? (
         /* V4 Phase 3: Simple Mode — Conversational cards + CSS bar charts */
-        <div className="px-5 space-y-4">
+        <div className="px-4 space-y-4">
           {/* Card 1: Today's earnings */}
-          <div className="bg-gradient-to-br from-income-400 to-income-500 rounded-2xl p-5 text-white shadow-md">
+          <div className="bg-primary text-white rounded-16 p-4">
             <p className="text-sm text-income-50 mb-1">في هالفترة كسبت</p>
             <p className="text-3xl font-bold tabular-nums">{formatAmount(report.realCashProfit)}</p>
             <p className="text-xs text-income-50 mt-2">
@@ -329,7 +329,7 @@ export default function ReportsPage() {
         </div>
       ) : (
         /* V4 Phase 3: Pro Mode — Existing detailed report */
-        <div className="px-5 space-y-4">
+        <div className="px-4 space-y-4">
           {/* Period Summary */}
           <div className="bg-surface rounded-2xl p-4 shadow-card">
             <p className="text-xs text-text-tertiary mb-1">الفترة</p>

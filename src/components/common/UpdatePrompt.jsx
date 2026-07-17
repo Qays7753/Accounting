@@ -48,7 +48,7 @@ export default function UpdatePrompt() {
         <button
           type="button"
           onClick={() => setShow(false)}
-          className="press flex-none w-8 h-8 rounded-full grid place-items-center text-white/60"
+          className="press flex-none w-11 h-11 rounded-full grid place-items-center text-white/60"
           aria-label="لاحقاً"
         >
           <Icon name="close" className="w-4 h-4" />

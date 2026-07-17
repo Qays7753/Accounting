@@ -184,7 +184,7 @@ export default function TransactionFormSheet({ open, onClose, type = 'income', e
 
         {/* V4 Phase 1: Cost of Goods (COGS) — only for income */}
         {type === 'income' && (
-          <div className="bg-background rounded-2xl p-4">
+          <div className="bg-background rounded-16 p-4">
             <button
               type="button"
               onClick={() => { setShowCOGS(!showCOGS) }}
@@ -335,7 +335,7 @@ export default function TransactionFormSheet({ open, onClose, type = 'income', e
         <button
           onClick={handleSave}
           disabled={saving || !amount}
-          className={`w-full ${currentConfig.submitColor} text-white font-bold rounded-2xl py-4 active:scale-[0.98] transition-transform disabled:opacity-50 disabled:active:scale-100`}
+          className={`w-full ${currentConfig.submitColor} text-white font-bold rounded-16 py-4 active:scale-[0.98] transition-transform disabled:opacity-50 disabled:active:scale-100`}
         >
           {saving ? 'جار الحفظ...' : editData ? 'تحديث' : 'حفظ'}
         </button>
@@ -350,7 +350,7 @@ export default function TransactionFormSheet({ open, onClose, type = 'income', e
             <button
               type="button"
               onClick={() => handleShareReceipt(savedTransaction)}
-              className="w-full bg-income-50 text-income-600 font-semibold rounded-2xl py-3.5 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+              className="w-full bg-income-50 text-income-600 font-semibold rounded-16 py-3.5 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
             >
               <Icon name="whatsapp" className="w-5 h-5" />
               مشاركة إيصال واتساب
@@ -361,7 +361,7 @@ export default function TransactionFormSheet({ open, onClose, type = 'income', e
                 setSavedTransaction(null)
                 onClose?.()
               }}
-              className="w-full bg-background text-txt-secondary font-semibold rounded-2xl py-3.5 active:scale-[0.98] transition-transform"
+              className="w-full bg-background text-txt-secondary font-semibold rounded-16 py-3.5 active:scale-[0.98] transition-transform"
             >
               تم
             </button>
@@ -379,7 +379,7 @@ export default function TransactionFormSheet({ open, onClose, type = 'income', e
       <div className="space-y-5 pb-4">
         <div className="flex justify-center">
           <div className="w-16 h-16 rounded-full bg-expense-50 flex items-center justify-center">
-            <Icon name="info" className="w-8 h-8 text-expense-600" strokeWidth={2} />
+            <Icon name="info" className="w-6 h-6 text-expense-600" strokeWidth={2} />
           </div>
         </div>
 
@@ -393,7 +393,7 @@ export default function TransactionFormSheet({ open, onClose, type = 'income', e
           </p>
         </div>
 
-        <div className="bg-background rounded-2xl p-4 space-y-1.5">
+        <div className="bg-background rounded-16 p-4 space-y-1.5">
           <div className="flex justify-between text-sm">
             <span className="text-text-secondary">رصيد حق التاجر:</span>
             <span className="font-bold tabular-nums text-income-600">{formatAmount(profitJarBalance)}</span>
@@ -414,14 +414,14 @@ export default function TransactionFormSheet({ open, onClose, type = 'income', e
           <button
             type="button"
             onClick={() => setCapitalWarning(false)}
-            className="bg-background text-text-secondary font-semibold rounded-2xl py-3.5 active:scale-[0.98] transition-transform"
+            className="bg-background text-text-secondary font-semibold rounded-16 py-3.5 active:scale-[0.98] transition-transform"
           >
             إلغاء
           </button>
           <button
             type="button"
             onClick={() => handleSave(true)}
-            className="bg-expense-500 text-white font-bold rounded-2xl py-3.5 active:scale-[0.98] transition-transform"
+            className="bg-expense-500 text-white font-bold rounded-16 py-3.5 active:scale-[0.98] transition-transform"
           >
             متابعة
           </button>

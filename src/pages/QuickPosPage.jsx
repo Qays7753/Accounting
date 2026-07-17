@@ -125,7 +125,7 @@ export default function QuickPosPage() {
   return (
     <div className="min-h-screen pb-40">
       {/* Header */}
-      <header className="px-5 pt-12 pb-3 safe-area-top sticky top-0 bg-background z-20">
+      <header className="px-4 pt-8 pb-3 safe-area-top sticky top-0 bg-background z-20">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">البيع السريع</h1>
           <button
@@ -140,7 +140,7 @@ export default function QuickPosPage() {
       </header>
 
       {/* Products Grid */}
-      <div className="px-5 mb-4">
+      <div className="px-4 mb-4">
         {loading ? (
           <div className="grid grid-cols-2 gap-3">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -183,7 +183,7 @@ export default function QuickPosPage() {
 
       {/* Mini Cart (Fixed at bottom) */}
       {cart.length > 0 && (
-        <div className="fixed bottom-16 inset-x-0 max-w-lg mx-auto px-5 z-30">
+        <div className="fixed bottom-16 inset-x-0 max-w-lg mx-auto px-4 z-30">
           <div className="bg-surface rounded-2xl shadow-xl p-4 animate-slide-up">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">

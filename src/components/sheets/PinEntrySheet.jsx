@@ -47,7 +47,7 @@ export default function PinEntrySheet({ open, onClose, onVerify }) {
       <div className="space-y-6 pb-4">
         <div className="flex justify-center">
           <div className="w-16 h-16 rounded-full bg-primary-50 flex items-center justify-center">
-            <Icon name="lock" className="w-8 h-8 text-primary-600" strokeWidth={2} />
+            <Icon name="lock" className="w-6 h-6 text-primary-600" strokeWidth={2} />
           </div>
         </div>
 
@@ -61,7 +61,7 @@ export default function PinEntrySheet({ open, onClose, onVerify }) {
             <div
               key={i}
               className={`w-4 h-4 rounded-full transition-colors ${
-                error ? 'bg-expense-500' : pin.length > i ? 'bg-primary' : 'bg-gray-200'
+                error ? 'bg-expense-500' : pin.length > i ? 'bg-primary' : '#E4EAEE'
               }`}
             />
           ))}
@@ -80,7 +80,7 @@ export default function PinEntrySheet({ open, onClose, onVerify }) {
               key={digit}
               type="button"
               onClick={() => handleDigit(String(digit))}
-              className="aspect-square rounded-2xl bg-background text-xl font-bold text-text-primary active:scale-95 transition-transform"
+              className="aspect-square rounded-16 bg-background text-xl font-bold text-text-primary active:scale-95 transition-transform"
             >
               {digit}
             </button>
@@ -89,14 +89,14 @@ export default function PinEntrySheet({ open, onClose, onVerify }) {
           <button
             type="button"
             onClick={() => handleDigit('0')}
-            className="aspect-square rounded-2xl bg-background text-xl font-bold text-text-primary active:scale-95 transition-transform"
+            className="aspect-square rounded-16 bg-background text-xl font-bold text-text-primary active:scale-95 transition-transform"
           >
             0
           </button>
           <button
             type="button"
             onClick={handleDelete}
-            className="aspect-square rounded-2xl bg-background flex items-center justify-center active:scale-95 transition-transform"
+            className="aspect-square rounded-16 bg-background flex items-center justify-center active:scale-95 transition-transform"
             aria-label="حذف"
           >
             <Icon name="close" className="w-5 h-5 text-text-secondary" />

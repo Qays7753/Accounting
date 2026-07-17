@@ -102,7 +102,7 @@ export default function DebtsPage() {
   return (
     <div className="min-h-screen pb-32">
       {/* Header */}
-      <header className="px-5 pt-12 pb-3 safe-area-top sticky top-0 bg-background z-20">
+      <header className="px-4 pt-8 pb-3 safe-area-top sticky top-0 bg-background z-20">
         <div className="flex items-center justify-between">
           <h1 className="text-[30px] font-extrabold text-ink -tracking-[.5px]">الديون</h1>
           <button
@@ -117,9 +117,9 @@ export default function DebtsPage() {
       </header>
 
       {/* V4 Phase 1: Summary Cards with new labels */}
-      <div className="px-5 mb-4">
+      <div className="px-4 mb-4">
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-gradient-to-br from-income-400 to-income-500 rounded-2xl p-5 text-white shadow-md">
+          <div className="bg-primary text-white rounded-16 p-4">
             <p className="text-sm font-medium text-income-50 mb-1">إجمالي لهم عندي</p>
             {loading ? (
               <div className="h-8 w-24 bg-white/20 rounded animate-pulse" />
@@ -128,7 +128,7 @@ export default function DebtsPage() {
             )}
             <p className="text-xs text-income-50 mt-1">من {receivables.length} شخص</p>
           </div>
-          <div className="bg-gradient-to-br from-expense-400 to-expense-500 rounded-2xl p-5 text-white shadow-md">
+          <div className="bg-expense text-white rounded-16 p-4">
             <p className="text-sm font-medium text-expense-50 mb-1">إجمالي عندي لهم</p>
             {loading ? (
               <div className="h-8 w-24 bg-white/20 rounded animate-pulse" />
@@ -141,7 +141,7 @@ export default function DebtsPage() {
       </div>
 
       {/* V4 Phase 1: Tab System (لهم عندي / عندي لهم) */}
-      <div className="px-5 mb-4">
+      <div className="px-4 mb-4">
         <div className="bg-surface rounded-2xl p-1 flex shadow-card">
           <button
             type="button"
@@ -167,7 +167,7 @@ export default function DebtsPage() {
       </div>
 
       {/* Quick Add Button (context-aware) */}
-      <div className="px-5 mb-4">
+      <div className="px-4 mb-4">
         <button
           type="button"
           onClick={() => handleAddDebt(activeTab === 'receivables' ? 'debt_given' : 'debt_taken')}
@@ -192,7 +192,7 @@ export default function DebtsPage() {
       </div>
 
       {/* V4 Phase 1: Tabbed Debt List */}
-      <section className="px-5 mb-6">
+      <section className="px-4 mb-6">
         {activeTab === 'receivables' ? (
           <>
             <h2 className="text-sm font-bold text-txt-secondary mb-3 px-1">
@@ -202,8 +202,8 @@ export default function DebtsPage() {
               <div className="space-y-2">
                 {Array.from({ length: 2 }).map((_, i) => (
                   <div key={i} className="bg-surface rounded-2xl p-4 shadow-card">
-                    <div className="h-4 w-1/2 bg-gray-200 rounded animate-pulse mb-2" />
-                    <div className="h-3 w-1/3 bg-gray-100 rounded animate-pulse" />
+                    <div className="h-4 w-1/2 #E4EAEE rounded animate-pulse mb-2" />
+                    <div className="h-3 w-1/3 #F4F7F9 rounded animate-pulse" />
                   </div>
                 ))}
               </div>
@@ -237,8 +237,8 @@ export default function DebtsPage() {
               <div className="space-y-2">
                 {Array.from({ length: 1 }).map((_, i) => (
                   <div key={i} className="bg-surface rounded-2xl p-4 shadow-card">
-                    <div className="h-4 w-1/2 bg-gray-200 rounded animate-pulse mb-2" />
-                    <div className="h-3 w-1/3 bg-gray-100 rounded animate-pulse" />
+                    <div className="h-4 w-1/2 #E4EAEE rounded animate-pulse mb-2" />
+                    <div className="h-3 w-1/3 #F4F7F9 rounded animate-pulse" />
                   </div>
                 ))}
               </div>

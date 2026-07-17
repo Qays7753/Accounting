@@ -228,7 +228,7 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen pb-32">
       {/* Header */}
-      <header className="px-5 pt-12 pb-3 safe-area-top">
+      <header className="px-5 pt-8 pb-3 safe-area-top">
         <h1 className="text-[30px] font-extrabold text-ink -tracking-[.5px]">الإعدادات</h1>
       </header>
 

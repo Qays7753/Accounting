@@ -113,12 +113,12 @@ export default function OrdersPage() {
   return (
     <div className="min-h-screen pb-32">
       {/* Header */}
-      <header className="px-5 pt-12 pb-3 safe-area-top sticky top-0 bg-background z-20">
+      <header className="px-4 pt-8 pb-3 safe-area-top sticky top-0 bg-background z-20">
         <div className="flex items-center justify-between mb-3">
           <h1 className="text-2xl font-bold">الطلبات</h1>
           <button
             onClick={handleNewOrder}
-            className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shadow-fab active:scale-95 transition-transform"
+            className="w-10 h-10 rounded-full bg-primary flex items-center justify-center  active:scale-95 transition-transform"
             aria-label="طلب جديد"
           >
             <Icon name="plus" className="w-5 h-5 text-white" strokeWidth={2.5} />
@@ -197,15 +197,15 @@ export default function OrdersPage() {
 
       {/* Content */}
       {view === 'list' ? (
-        <div className="px-5 space-y-2">
+        <div className="px-4 space-y-2">
           {loading ? (
             Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="bg-surface rounded-2xl p-4 shadow-card">
+              <div key={i} className="bg-surface rounded-2xl p-4 ">
                 <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-xl bg-gray-200 animate-pulse" />
+                  <div className="w-11 h-11 rounded-xl #E4EAEE animate-pulse" />
                   <div className="flex-1 space-y-2">
-                    <div className="h-4 w-3/4 bg-gray-200 rounded animate-pulse" />
-                    <div className="h-3 w-1/2 bg-gray-100 rounded animate-pulse" />
+                    <div className="h-4 w-3/4 #E4EAEE rounded animate-pulse" />
+                    <div className="h-3 w-1/2 #F4F7F9 rounded animate-pulse" />
                   </div>
                 </div>
               </div>
@@ -277,7 +277,7 @@ export default function OrdersPage() {
 const PAYMENT_BADGE = {
   cash: { label: 'مدفوع', class: 'bg-income-50 text-income-600' },
   credit: { label: 'أجل', class: 'bg-withdrawal-50 text-withdrawal-600' },
-  done: { label: 'تتبع', class: 'bg-gray-100 text-text-secondary' },
+  done: { label: 'تتبع', class: '#F4F7F9 text-text-secondary' },
 }
 
 function OrderCard({ order, onClick }) {
@@ -286,7 +286,7 @@ function OrderCard({ order, onClick }) {
   return (
     <div
       onClick={onClick}
-      className={`w-full bg-surface rounded-2xl p-4 shadow-card border-r-4 ${c.bar} active:scale-[0.98] transition-transform text-right cursor-pointer ${order.status === 'closed' ? 'opacity-90' : ''}`}
+      className={`w-full bg-surface rounded-2xl p-4  border-r-4 ${c.bar} active:scale-[0.98] transition-transform text-right cursor-pointer ${order.status === 'closed' ? 'opacity-90' : ''}`}
     >
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-3 flex-1 min-w-0">
