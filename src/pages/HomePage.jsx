@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useDashboardStats } from '../hooks/useDatabase.js'
 import { useCountUp } from '../hooks/useCountUp.js'
 import { useTerms } from '../context/TermsContext.jsx'
+import { useSettings2 } from '../context/SettingsContext.jsx'
 import { db } from '../db'
 import { formatAmount, parseNumber, formatLiveInput } from '../utils/format.js'
 import { getGreeting, formatArabicDate, getRelativeTime } from '../utils/date.js'
@@ -19,9 +20,8 @@ import { exportBackup } from '../utils/backup.js'
 export default function HomePage() {
   const stats = useDashboardStats()
   const t = useTerms()
+  const { logo, businessName, monthlySummary, hideAmounts } = useSettings2()
   const [sheetOpen, setSheetOpen] = useState(null)
-  const [logo, setLogo] = useState(null)
-  const [businessName, setBusinessName] = useState(null)
   const [jars, setJars] = useState({ capitalJar: 0, profitJar: 0, totalCash: 0 })
 
   // V4 Phase 2: Z-Report
@@ -44,9 +44,10 @@ export default function HomePage() {
   const animatedCapital = useCountUp(jars.capitalJar)
   const animatedProfit = useCountUp(jars.profitJar)
 
+  // Mask helper for hideAmounts security setting
+  const maskAmount = (val) => hideAmounts ? '••••' : formatAmount(val)
+
   useEffect(() => {
-    db.getLogo().then(setLogo)
-    db.getBusinessName().then(setBusinessName)
     db.getTwoJars().then(setJars)
 
     // V4 Phase 2: Check if Z-Report reminder should show
@@ -183,7 +184,7 @@ export default function HomePage() {
             <div className="h-8 w-40 bg-white/20 rounded-lg animate-pulse mt-2" />
           ) : (
             <div className="num text-[28px] font-semibold mt-1 leading-none">
-              {formatAmount(animatedTotal)}
+              {maskAmount(animatedTotal)}
             </div>
           )}
         </div>
@@ -196,7 +197,7 @@ export default function HomePage() {
               <span className="text-[13px] font-semibold text-primary-700">{t.shop_equity}</span>
             </div>
             <div className="num text-[24px] font-semibold text-ink leading-none">
-              {formatAmount(animatedCapital)}
+              {maskAmount(animatedCapital)}
             </div>
             <div className="text-[12px] mt-1 text-ink-secondary">{t.shop_equity_desc}</div>
           </div>
@@ -208,7 +209,7 @@ export default function HomePage() {
               <span className="text-[13px] font-semibold text-income-700">{t.merchant_equity}</span>
             </div>
             <div className="num text-[24px] font-semibold leading-none text-income-600">
-              {formatAmount(animatedProfit)}
+              {maskAmount(animatedProfit)}
             </div>
             <div className="text-[12px] mt-1 text-ink-secondary">{t.merchant_equity_desc}</div>
           </div>
@@ -237,7 +238,7 @@ export default function HomePage() {
               <div className="h-6 w-20 bg-divider rounded animate-pulse" />
             ) : (
               <p className="text-lg font-bold text-income-600 tabular-nums">
-                {formatAmount(stats.todayIncome)}
+                {maskAmount(stats.todayIncome)}
               </p>
             )}
           </Link>
@@ -257,7 +258,7 @@ export default function HomePage() {
               <div className="h-6 w-20 bg-divider rounded animate-pulse" />
             ) : (
               <p className="text-lg font-bold text-expense-600 tabular-nums">
-                {formatAmount(stats.todayExpense)}
+                {maskAmount(stats.todayExpense)}
               </p>
             )}
           </Link>
@@ -311,7 +312,8 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* This Month Summary */}
+      {/* This Month Summary — gated by monthlySummary setting */}
+      {monthlySummary && (
       <section className="px-5 mb-6">
         <div className="bg-surface rounded-2xl p-5 shadow-card">
           <h2 className="text-base font-bold text-text-primary mb-4">{t.net_this_month}</h2>
@@ -319,13 +321,13 @@ export default function HomePage() {
             <div className="text-center">
               <p className="text-xs text-text-secondary mb-1">{t.total_income}</p>
               <p className="text-base font-bold text-income-600 tabular-nums num">
-                {formatAmount(stats.monthIncome)}
+                {maskAmount(stats.monthIncome)}
               </p>
             </div>
             <div className="text-center border-r border-l border-divider">
               <p className="text-xs text-text-secondary mb-1">{t.total_expense}</p>
               <p className="text-base font-bold text-expense-600 tabular-nums num">
-                {formatAmount(stats.monthExpense)}
+                {maskAmount(stats.monthExpense)}
               </p>
             </div>
             <div className="text-center">
@@ -333,12 +335,13 @@ export default function HomePage() {
               <p className={`text-base font-bold tabular-nums num ${
                 stats.monthIncome - stats.monthExpense >= 0 ? 'text-income-600' : 'text-expense-600'
               }`}>
-                {formatAmount(stats.monthIncome - stats.monthExpense)}
+                {maskAmount(stats.monthIncome - stats.monthExpense)}
               </p>
             </div>
           </div>
         </div>
       </section>
+      )}
 
       {/* V4 Phase 2: Z-Report Reminder Card */}
       {showZReportCard && (

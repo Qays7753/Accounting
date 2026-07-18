@@ -7,6 +7,7 @@ import BackupReminderBanner from './components/common/BackupReminderBanner.jsx'
 import { checkBackupReminder } from './utils/backup.js'
 import { HelperModeProvider, useHelperMode } from './context/HelperModeContext.jsx'
 import { TermsProvider } from './context/TermsContext.jsx'
+import { SettingsProvider } from './context/SettingsContext.jsx'
 
 // Lazy-load route components for faster initial load.
 const HomePage = lazy(() => import('./pages/HomePage.jsx'))
@@ -62,7 +63,6 @@ function AppRoutes() {
 function App() {
   const [isFirstLaunch, setIsFirstLaunch] = useState(null)
   const [backupReminder, setBackupReminder] = useState(null)
-  const [showQuickPos, setShowQuickPos] = useState(true)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -85,10 +85,6 @@ function App() {
 
           const reminder = await checkBackupReminder()
           if (!cancelled) setBackupReminder(reminder)
-
-          // V4 Phase 2: Load Quick POS visibility setting
-          const posVisible = await db.getShowQuickPos()
-          if (!cancelled) setShowQuickPos(posVisible)
         }
       } catch (e) {
         console.error('Failed to check first launch:', e)
@@ -119,7 +115,7 @@ function App() {
   }
 
   return (
-    <AppLayout showQuickPos={showQuickPos}>
+    <AppLayout>
       {backupReminder && (
         <BackupReminderBanner
           reminder={backupReminder}
@@ -138,9 +134,11 @@ function App() {
 export default function AppWithHelperMode() {
   return (
     <HelperModeProvider>
-      <TermsProvider>
-        <App />
-      </TermsProvider>
+      <SettingsProvider>
+        <TermsProvider>
+          <App />
+        </TermsProvider>
+      </SettingsProvider>
     </HelperModeProvider>
   )
 }

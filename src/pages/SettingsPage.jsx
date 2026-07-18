@@ -3,12 +3,13 @@ import { db } from '../db'
 import { useSettings } from '../hooks/useDatabase.js'
 import Icon from '../components/ui/Icon.jsx'
 import BottomSheet from '../components/ui/BottomSheet.jsx'
-import { hapticLight, hapticMedium, hapticSuccess } from '../utils/haptics.js'
+import { hapticLight, hapticMedium, hapticSuccess, hapticError } from '../utils/haptics.js'
 import { getWhatsAppTemplate, setWhatsAppTemplate, WHATSAPP_PLACEHOLDERS } from '../utils/whatsapp.js'
 import { exportBackup, importBackup, checkBackupReminder, markBackupDone } from '../utils/backup.js'
-import { requestNotificationPermission, sendTestNotification } from '../utils/notifications.js'
+import { requestNotificationPermission, sendTestNotification, initNotificationService, teardownNotificationService } from '../utils/notifications.js'
 import { useHelperMode } from '../context/HelperModeContext.jsx'
 import { useTerms, useTermsMode } from '../context/TermsContext.jsx'
+import { useSettings2 } from '../context/SettingsContext.jsx'
 
 export default function SettingsPage() {
   const { settings, update, refresh } = useSettings()
@@ -18,26 +19,34 @@ export default function SettingsPage() {
   const [installOpen, setInstallOpen] = useState(false)
   const [backupReminder, setBackupReminder] = useState(null)
 
-  // V2: Theme & Branding state
+  // V2: Branding sheet state (the actual logo/name now live in SettingsContext)
   const [brandingSheetOpen, setBrandingSheetOpen] = useState(false)
-  const [logoPreview, setLogoPreview] = useState(null)
+  const [logoPreview, setLogoPreview] = useState(null)  // local preview before save
   const [businessNameInput, setBusinessNameInput] = useState('')
   const fileInputRef = useRef(null)
 
-  // V4 Phase 2: Quick POS, Helper Mode, Closing Time
-  const [showQuickPosSetting, setShowQuickPosSetting] = useState(true)
+  // V4 Phase 2: Helper Mode PIN entry sheet
   const [helperPinSheetOpen, setHelperPinSheetOpen] = useState(false)
   const [helperPinInput, setHelperPinInput] = useState('')
-  const [closingTime, setClosingTime] = useState('20:00')
   const { isHelperMode, enterHelperMode, helperModeEnabled } = useHelperMode()
 
-  // V6: Professional settings — security, display, fiscal, notifications
-  const [autoLock, setAutoLock] = useState('off')           // 'off' | '30s' | '1m' | '5m'
-  const [hideAmounts, setHideAmounts] = useState(false)
-  const [fontSize, setFontSize] = useState('normal')        // 'normal' | 'large'
-  const [listDensity, setListDensity] = useState('comfortable') // 'comfortable' | 'compact'
-  const [fiscalYearStart, setFiscalYearStart] = useState(1) // month 1-12
-  const [monthlySummary, setMonthlySummary] = useState(true)
+  // V6: Live UI settings from SettingsContext (propagate to whole app instantly)
+  const {
+    showQuickPos, setShowQuickPos,
+    logo, setLogo,
+    businessName, setBusinessName,
+    fontSize, setFontSize,
+    listDensity, setListDensity,
+    hideAmounts, setHideAmounts,
+    autoLock, setAutoLock,
+    monthlySummary, setMonthlySummary,
+    notificationsEnabled, setNotificationsEnabled,
+  } = useSettings2()
+
+  // Local copy of closing time (not in SettingsContext yet — used only by Z-Report reminder)
+  const [closingTime, setClosingTime] = useState('20:00')
+  // Local copy of fiscal year start (not yet consumed by reports)
+  const [fiscalYearStart, setFiscalYearStart] = useState(1)
 
   // V4 Phase 3: Report Mode (uses TermsContext for live switching)
   const [reportMode, setReportModeCtx] = useTermsMode()
@@ -50,46 +59,53 @@ export default function SettingsPage() {
     checkBackupReminder().then(setBackupReminder)
   }, [])
 
-  // V2: Load branding on mount
+  // Load closing time + fiscal year (the two settings still not in SettingsContext)
   useEffect(() => {
-    db.getLogo().then(setLogoPreview)
-    db.getBusinessName().then(name => setBusinessNameInput(name || ''))
-    // V4 Phase 2: Load Quick POS + closing time settings
-    db.getShowQuickPos().then(setShowQuickPosSetting)
     db.getClosingTime().then(setClosingTime)
-    // V6: Load professional settings
-    db.getSetting('auto_lock', 'off').then(setAutoLock)
-    db.getSetting('hide_amounts', false).then(setHideAmounts)
-    db.getSetting('font_size', 'normal').then(setFontSize)
-    db.getSetting('list_density', 'comfortable').then(setListDensity)
     db.getSetting('fiscal_year_start', 1).then(v => setFiscalYearStart(Number(v) || 1))
-    db.getSetting('monthly_summary', true).then(v => setMonthlySummary(v !== false))
   }, [])
 
-  // V4 Phase 2: Toggle Quick POS visibility
+  // Sync local logo preview + business name input with context values
+  useEffect(() => {
+    setLogoPreview(logo)
+  }, [logo])
+  useEffect(() => {
+    setBusinessNameInput(businessName || '')
+  }, [businessName])
+
+  // Quick POS visibility (now via context — propagates to BottomNav instantly)
   const handleQuickPosToggle = async (enabled) => {
     hapticLight()
-    setShowQuickPosSetting(enabled)
-    await db.setShowQuickPos(enabled)
+    await setShowQuickPos(enabled)
   }
 
-  // V4 Phase 2: Helper Mode PIN setup
+  // Helper Mode: ONE unified flow.
+  // - If PIN not yet set: open the PIN entry sheet to set it.
+  // - If PIN already set: enter helper mode immediately.
+  // - If already in helper mode: this row is hidden (replaced by lock button in nav).
+  const handleHelperModeClick = () => {
+    hapticLight()
+    if (helperModeEnabled) {
+      // PIN already configured → enter helper mode now
+      enterHelperMode()
+    } else {
+      // First time: open PIN entry sheet
+      setHelperPinSheetOpen(true)
+    }
+  }
+
+  // Save helper PIN and enter helper mode immediately
   const handleHelperPinSave = async () => {
     if (helperPinInput.length !== 4) return
     hapticSuccess()
     await db.setHelperPin(helperPinInput)
     setHelperPinSheetOpen(false)
     setHelperPinInput('')
-    alert('تم تفعيل وضع المساعد. سيُفعّل عند إغلاق التطبيق وإعادة فتحه.')
-  }
-
-  // V4 Phase 2: Enter Helper Mode immediately
-  const handleEnterHelperMode = () => {
-    hapticMedium()
+    // Enter helper mode immediately (no more misleading 'restart' alert)
     enterHelperMode()
   }
 
-  // V4 Phase 2: Save closing time
+  // Save closing time
   const handleClosingTimeChange = async (e) => {
     hapticLight()
     const val = e.target.value
@@ -97,26 +113,22 @@ export default function SettingsPage() {
     await db.setSetting('closing_time', val)
   }
 
-  // V6: Professional settings handlers
+  // V6: All handlers now delegate to SettingsContext (instant UI propagation)
   const handleAutoLockChange = async (val) => {
     hapticLight()
-    setAutoLock(val)
-    await db.setSetting('auto_lock', val)
+    await setAutoLock(val)
   }
   const handleHideAmountsToggle = async (enabled) => {
     hapticLight()
-    setHideAmounts(enabled)
-    await db.setSetting('hide_amounts', enabled)
+    await setHideAmounts(enabled)
   }
   const handleFontSizeChange = async (val) => {
     hapticLight()
-    setFontSize(val)
-    await db.setSetting('font_size', val)
+    await setFontSize(val)
   }
   const handleListDensityChange = async (val) => {
     hapticLight()
-    setListDensity(val)
-    await db.setSetting('list_density', val)
+    await setListDensity(val)
   }
   const handleFiscalYearStartChange = async (e) => {
     hapticLight()
@@ -126,8 +138,27 @@ export default function SettingsPage() {
   }
   const handleMonthlySummaryToggle = async (enabled) => {
     hapticLight()
-    setMonthlySummary(enabled)
-    await db.setSetting('monthly_summary', enabled)
+    await setMonthlySummary(enabled)
+  }
+
+  // Notifications toggle: real on/off + start/stop notification service
+  const handleNotificationsToggle = async (enabled) => {
+    hapticLight()
+    if (enabled) {
+      const granted = await requestNotificationPermission()
+      if (granted) {
+        await setNotificationsEnabled(true)
+        initNotificationService()  // start scheduling reminders
+        hapticSuccess()
+        await sendTestNotification()
+      } else {
+        hapticError()
+      }
+    } else {
+      await setNotificationsEnabled(false)
+      teardownNotificationService()  // stop scheduling
+      hapticSuccess()
+    }
   }
 
   const handleBackup = async () => {
@@ -208,15 +239,10 @@ export default function SettingsPage() {
 
   const handleSaveBranding = async () => {
     hapticSuccess()
-    if (logoPreview) {
-      await db.setLogo(logoPreview)
-    } else {
-      await db.setSetting('logo_base64', null)
-    }
-    await db.setBusinessName(businessNameInput.trim())
+    // Persist via context — HomePage will re-render automatically (no reload)
+    await setLogo(logoPreview)
+    await setBusinessName(businessNameInput.trim())
     setBrandingSheetOpen(false)
-    // Reload to reflect changes in header
-    window.location.reload()
   }
 
   return (
@@ -467,32 +493,23 @@ export default function SettingsPage() {
         <section>
           <h2 className="text-[12px] font-bold text-primary mb-2 px-1.5">{t.operations_security}</h2>
           <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
-            {/* Quick POS Toggle */}
+            {/* Quick POS Toggle — now propagates to BottomNav instantly via SettingsContext */}
             <SettingsToggle
               icon="tag"
               iconBg="bg-primary-50 text-primary-600"
               label={t.show_quick_pos}
               description={t.show_quick_pos_desc}
-              checked={showQuickPosSetting}
+              checked={showQuickPos}
               onChange={handleQuickPosToggle}
             />
-            {/* Helper Mode PIN */}
+            {/* Helper Mode — ONE unified row */}
             <SettingsRow
               icon="lock"
               iconBg="bg-withdrawal-50 text-withdrawal-600"
-              label={t.helper_mode}
+              label={helperModeEnabled ? t.enter_helper_mode : t.helper_mode}
               description={t.helper_mode_desc}
-              onClick={() => { hapticLight(); setHelperPinSheetOpen(true) }}
+              onClick={handleHelperModeClick}
             />
-            {helperModeEnabled && (
-              <SettingsRow
-                icon="info"
-                iconBg="bg-income-50 text-income-600"
-                label={t.enter_helper_mode}
-                description={t.enter_helper_mode_desc}
-                onClick={handleEnterHelperMode}
-              />
-            )}
             {/* Closing Time */}
             <div className="w-full flex items-center gap-3 p-4 text-right">
               <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-expense-50 text-expense-600">
@@ -506,7 +523,7 @@ export default function SettingsPage() {
                 type="time"
                 value={closingTime}
                 onChange={handleClosingTimeChange}
-                className="bg-background rounded-xl px-3 py-2 text-sm outline-none border border-divider"
+                className="bg-background rounded-xl px-3 py-2 text-sm outline-none border border-divider text-text-primary"
                 dir="ltr"
               />
             </div>
@@ -517,22 +534,16 @@ export default function SettingsPage() {
         <section>
           <h2 className="text-[12px] font-bold text-primary mb-2 px-1.5">{t.app_section}</h2>
           <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
-            <SettingsRow
+            {/* Notifications — real toggle now */}
+            <SettingsToggle
               icon="bell"
               iconBg="bg-withdrawal-50 text-withdrawal-600"
               label={t.notifications}
               description={t.notifications_desc}
-              onClick={async () => {
-                hapticMedium()
-                const granted = await requestNotificationPermission()
-                if (granted) {
-                  await update('notifications_enabled', true)
-                  hapticSuccess()
-                  await sendTestNotification()
-                }
-              }}
+              checked={notificationsEnabled}
+              onChange={handleNotificationsToggle}
             />
-            {/* V6: Monthly summary toggle */}
+            {/* V6: Monthly summary toggle — now consumed by HomePage */}
             <SettingsToggle
               icon="document"
               iconBg="bg-income-50 text-income-600"
@@ -718,21 +729,20 @@ export default function SettingsPage() {
       </BottomSheet>
 
       {/* V4 Phase 2: Helper Mode PIN Setup Sheet */}
-      <BottomSheet open={helperPinSheetOpen} onClose={() => setHelperPinSheetOpen(false)} title="تفعيل وضع المساعد">
+      <BottomSheet open={helperPinSheetOpen} onClose={() => setHelperPinSheetOpen(false)} title={t.helper_mode}>
         <div className="space-y-5 pb-4">
           <div className="bg-withdrawal-50 rounded-xl p-3 flex items-start gap-2">
             <Icon name="info" className="w-5 h-5 text-withdrawal-600 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm text-withdrawal-700 font-semibold">وضع المساعد</p>
+              <p className="text-sm text-withdrawal-700 font-semibold">{t.helper_mode}</p>
               <p className="text-xs text-withdrawal-600 mt-1">
-                عند تفعيله، يظهر التطبيق للموظفين بواجهة مبسطة (بيع وطلبات فقط) بدون إظهار الأرباح أو الديون أو التقارير.
-                للخروج من الوضع، يجب إدخال رمز PIN.
+                {t.helper_mode_desc}
               </p>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-text-secondary mb-2">أدخل رمز PIN (4 أرقام)</label>
+            <label className="block text-sm font-semibold text-text-secondary mb-2">{t.helper_mode_pin_label}</label>
             <input
               type="tel"
               inputMode="numeric"
@@ -751,14 +761,14 @@ export default function SettingsPage() {
               onClick={handleHelperPinSave}
               className="w-full btn-primary"
             >
-              تفعيل وضع المساعد
+              {t.helper_mode_activate}
             </button>
           )}
 
           {helperModeEnabled && (
             <div className="bg-income-50 rounded-xl p-3 text-center">
-              <p className="text-sm text-income-700 font-semibold">وضع المساعد مُفعّل</p>
-              <p className="text-xs text-income-600 mt-1">للدخول للوضع الآن، اضغط "الدخول لوضع المساعد الآن" بالأعلى</p>
+              <p className="text-sm text-income-700 font-semibold">{t.helper_mode_active}</p>
+              <p className="text-xs text-income-600 mt-1">{t.helper_mode_active_desc}</p>
             </div>
           )}
         </div>

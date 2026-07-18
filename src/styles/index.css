@@ -14,6 +14,15 @@
     scroll-behavior: smooth;
   }
 
+  /* Settings: Font Size = Large (applied via .font-large on <html>) */
+  html.font-large { font-size: 17px; }
+  html.font-large body { line-height: 1.7; }
+
+  /* Settings: List Density = Compact (applied via .density-compact on <html>) */
+  /* Tightens card padding from p-4 (16) to p-3 (12) for denser lists */
+  html.density-compact .card { padding: 12px; }
+  html.density-compact .divide-y > * { padding-top: 10px; padding-bottom: 10px; }
+
   body {
     @apply bg-background text-ink-strong font-sans antialiased;
     margin: 0;
