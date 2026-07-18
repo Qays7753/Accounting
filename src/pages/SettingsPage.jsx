@@ -13,7 +13,7 @@ import { useSettings2 } from '../context/SettingsContext.jsx'
 import { triggerInstall, isStandalone, subscribeInstallAvailability } from '../utils/pwaInstall.js'
 
 export default function SettingsPage() {
-  const { settings, update, refresh } = useSettings()
+  const { refresh } = useSettings()
   const t = useTerms()
   const [templateOpen, setTemplateOpen] = useState(false)
   const [templateText, setTemplateText] = useState('')
