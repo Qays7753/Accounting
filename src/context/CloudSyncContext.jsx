@@ -52,12 +52,26 @@ export function CloudSyncProvider({ children }) {
   const debounceRef = useRef(null)
   const isSyncingRef = useRef(false)
 
-  // Check authorization on mount + when storage changes
+  // Check authorization on mount + periodically (token may expire)
+  // Also attempt silent refresh when token expires
   useEffect(() => {
-    const check = () => setAuthorized(isAuthorized())
+    const check = async () => {
+      let authed = isAuthorized()
+      if (!authed) {
+        // Try silent refresh via GIS (no popup)
+        const token = await getValidToken()
+        authed = !!token
+      }
+      setAuthorized(authed)
+    }
     check()
+    // Re-check every 5 minutes (tokens expire after 1 hour)
+    const interval = setInterval(check, 5 * 60 * 1000)
     window.addEventListener('storage', check)
-    return () => window.removeEventListener('storage', check)
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('storage', check)
+    }
   }, [])
 
   /**

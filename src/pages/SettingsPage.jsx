@@ -14,7 +14,7 @@ import { triggerInstall, isStandalone, subscribeInstallAvailability } from '../u
 import PageHeader from '../components/layout/PageHeader.jsx'
 import { useSubmitGuard } from '../hooks/useSubmitGuard.js'
 import { useCloudSync } from '../context/CloudSyncContext.jsx'
-import { loginWithGoogle, logout as gdriveLogout, isAuthorized as gdriveIsAuthorized } from '../utils/googleDrive.js'
+import { loginWithGoogle, logout as gdriveLogout } from '../utils/googleDrive.js'
 import { formatArabicDateTime } from '../utils/date.js'
 
 export default function SettingsPage() {

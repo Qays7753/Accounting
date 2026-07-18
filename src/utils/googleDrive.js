@@ -1,21 +1,52 @@
 /**
  * Google Drive Sync — AppData folder integration.
  *
- * Uses Google Identity Services (GIS) for OAuth 2.0 login.
- * Requests ONLY 'drive.appdata' scope (hidden, private, free storage
- * in the user's Google Drive appData folder — not visible in Drive UI).
+ * Uses Google Identity Services (GIS) Token Client model exclusively.
+ * NO deprecated gapi.auth2, NO OOB redirect URIs.
  *
- * Tokens stored in LocalStorage. Silent refresh via refresh_token.
+ * Flow:
+ *   1. User clicks "Connect Google"
+ *   2. GIS script (loaded in index.html) opens a secure popup
+ *   3. User logs in + grants drive.appdata scope
+ *   4. We receive an Access Token (implicit flow, no refresh token)
+ *   5. Token stored in LocalStorage with expiry
+ *   6. When token expires, GIS silently re-requests with prompt:'' (no popup)
+ *
+ * The GIS script is loaded via <script src="accounts.google.com/gsi/client">
+ * in index.html. We wait for it to be ready before initializing.
  */
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
 const SCOPE = 'https://www.googleapis.com/auth/drive.appdata'
-const REDIRECT_URI = typeof window !== 'undefined' ? window.location.origin : ''
 
 const TOKEN_KEY = 'gdrive_access_token'
-const REFRESH_KEY = 'gdrive_refresh_token'
 const EXPIRY_KEY = 'gdrive_token_expiry'
 const LAST_SYNC_KEY = 'gdrive_last_sync'
+
+// ========== GIS Script Loading ==========
+
+/**
+ * Wait for the GIS script to be loaded (it's async/defer in index.html).
+ * @returns {Promise<void>}
+ */
+function waitForGIS(timeoutMs = 10000) {
+  return new Promise((resolve, reject) => {
+    if (typeof google !== 'undefined' && google.accounts?.oauth2) {
+      resolve()
+      return
+    }
+    const start = Date.now()
+    const interval = setInterval(() => {
+      if (typeof google !== 'undefined' && google.accounts?.oauth2) {
+        clearInterval(interval)
+        resolve()
+      } else if (Date.now() - start > timeoutMs) {
+        clearInterval(interval)
+        reject(new Error('GIS script failed to load. Check your internet connection.'))
+      }
+    }, 100)
+  })
+}
 
 // ========== Token Management ==========
 
@@ -27,12 +58,8 @@ export function getAccessToken() {
   return token
 }
 
-export function getRefreshToken() {
-  return localStorage.getItem(REFRESH_KEY)
-}
-
 export function isAuthorized() {
-  return !!(getAccessToken() || getRefreshToken())
+  return !!getAccessToken()
 }
 
 export function getLastSync() {
@@ -45,87 +72,100 @@ export function setLastSync(ts = Date.now()) {
 }
 
 export function logout() {
+  // Revoke the token at Google before clearing local storage
+  const token = localStorage.getItem(TOKEN_KEY)
+  if (token) {
+    fetch(`https://oauth2.googleapis.com/revoke?token=${token}`, { method: 'POST' })
+      .catch(() => {}) // best-effort, don't block logout
+  }
   localStorage.removeItem(TOKEN_KEY)
-  localStorage.removeItem(REFRESH_KEY)
   localStorage.removeItem(EXPIRY_KEY)
   localStorage.removeItem(LAST_SYNC_KEY)
 }
 
 /**
- * Initiate OAuth 2.0 flow using GIS token client.
- * Falls back to manual redirect flow if GIS is not available.
+ * Store the access token from GIS response.
+ */
+function storeToken(accessToken, expiresIn) {
+  localStorage.setItem(TOKEN_KEY, accessToken)
+  localStorage.setItem(EXPIRY_KEY, String(Date.now() + expiresIn * 1000 - 60000)) // 1min buffer
+}
+
+/**
+ * Login with Google using GIS Token Client.
+ * Opens a secure popup for user consent.
+ * @returns {Promise<string>} access token
  */
 export async function loginWithGoogle() {
   if (!CLIENT_ID) {
     throw new Error('VITE_GOOGLE_CLIENT_ID is not set. Add it to your .env file.')
   }
 
-  // Try GIS token client first (popup-based, no redirect)
-  if (typeof google !== 'undefined' && google.accounts?.oauth2) {
-    return new Promise((resolve, reject) => {
-      const tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: CLIENT_ID,
-        scope: SCOPE,
-        callback: async (response) => {
-          if (response.access_token) {
-            const expiresIn = Number(response.expires_in || 3600)
-            localStorage.setItem(TOKEN_KEY, response.access_token)
-            localStorage.setItem(EXPIRY_KEY, String(Date.now() + expiresIn * 1000 - 60000))
-            resolve(response.access_token)
-          } else {
-            reject(new Error('لم يتم منح الإذن'))
-          }
-        },
-        error_callback: (err) => {
-          reject(new Error(err?.message || 'فشل تسجيل الدخول'))
-        },
-      })
-      tokenClient.requestAccessToken({ prompt: 'consent' })
-    })
-  }
+  await waitForGIS()
 
-  // Fallback: redirect-based OAuth flow
-  // Note: This requires the app to handle the redirect callback on load.
-  const params = new URLSearchParams({
-    client_id: CLIENT_ID,
-    redirect_uri: REDIRECT_URI,
-    response_type: 'code',
-    scope: SCOPE,
-    access_type: 'offline',
-    prompt: 'consent',
+  return new Promise((resolve, reject) => {
+    const tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: CLIENT_ID,
+      scope: SCOPE,
+      callback: (response) => {
+        if (response.access_token) {
+          const expiresIn = Number(response.expires_in || 3600)
+          storeToken(response.access_token, expiresIn)
+          resolve(response.access_token)
+        } else {
+          reject(new Error('لم يتم منح الإذن'))
+        }
+      },
+      error_callback: (err) => {
+        reject(new Error(err?.message || 'فشل تسجيل الدخول عبر Google'))
+      },
+    })
+    // prompt: 'consent' forces the consent screen on first login
+    tokenClient.requestAccessToken({ prompt: 'consent' })
   })
-  window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`
 }
 
 /**
- * Silent token refresh using refresh_token.
- * Called automatically when the access token expires.
- * @returns {Promise<string|null>} new access token or null if refresh failed
+ * Silently refresh the access token using GIS.
+ * GIS Token Client with prompt: '' will return a new token without
+ * showing a popup (if the user previously granted consent).
+ * @returns {Promise<string|null>} new access token or null if failed
  */
 export async function refreshAccessToken() {
-  const refreshToken = getRefreshToken()
-  if (!refreshToken || !CLIENT_ID) return null
+  if (!CLIENT_ID) return null
 
   try {
-    const res = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: CLIENT_ID,
-        grant_type: 'refresh_token',
-        refresh_token: refreshToken,
-      }),
-    })
-    if (!res.ok) throw new Error('Refresh failed')
-    const data = await res.json()
-    const expiresIn = Number(data.expires_in || 3600)
-    localStorage.setItem(TOKEN_KEY, data.access_token)
-    localStorage.setItem(EXPIRY_KEY, String(Date.now() + expiresIn * 1000 - 60000))
-    return data.access_token
-  } catch (e) {
-    console.error('Token refresh failed:', e)
+    await waitForGIS(5000)
+  } catch {
+    // GIS not available — can't refresh
     return null
   }
+
+  return new Promise((resolve) => {
+    try {
+      const tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: SCOPE,
+        callback: (response) => {
+          if (response.access_token) {
+            const expiresIn = Number(response.expires_in || 3600)
+            storeToken(response.access_token, expiresIn)
+            resolve(response.access_token)
+          } else {
+            resolve(null)
+          }
+        },
+        error_callback: () => {
+          // Silent refresh failed — user needs to re-login manually
+          resolve(null)
+        },
+      })
+      // prompt: '' = no popup, uses existing session/consent
+      tokenClient.requestAccessToken({ prompt: '' })
+    } catch {
+      resolve(null)
+    }
+  })
 }
 
 /**
@@ -135,22 +175,18 @@ export async function refreshAccessToken() {
 export async function getValidToken() {
   let token = getAccessToken()
   if (token) return token
-  // Try silent refresh
+  // Try silent refresh via GIS
   token = await refreshAccessToken()
   return token
 }
 
 // ========== Drive AppData Operations ==========
+// (These remain unchanged — they use fetch + Bearer token)
 
 const DRIVE_API = 'https://www.googleapis.com/drive/v3'
 const UPLOAD_API = 'https://www.googleapis.com/upload/drive/v3'
 const FIELDS = 'id,name,modifiedTime'
 
-/**
- * Find a file by name in the AppData folder.
- * @param {string} name — file name (e.g., 'current.json')
- * @returns {Promise<{id, name, modifiedTime}|null>}
- */
 export async function findFile(name) {
   const token = await getValidToken()
   if (!token) return null
@@ -170,18 +206,10 @@ export async function findFile(name) {
   return data.files?.[0] || null
 }
 
-/**
- * Upload (create or update) a file in the AppData folder.
- * Uses multipart upload to set both metadata and content.
- * @param {string} name — file name
- * @param {string} content — file content (JSON string)
- * @returns {Promise<{id, name, modifiedTime}>}
- */
 export async function uploadFile(name, content) {
   const token = await getValidToken()
   if (!token) throw new Error('Not authorized')
 
-  // Check if file already exists
   const existing = await findFile(name)
 
   const boundary = '-------314159265358979323846'
@@ -225,11 +253,6 @@ export async function uploadFile(name, content) {
   return res.json()
 }
 
-/**
- * Download a file's content from Drive.
- * @param {string} fileId — Drive file ID
- * @returns {Promise<string>} file content (JSON string)
- */
 export async function downloadFile(fileId) {
   const token = await getValidToken()
   if (!token) throw new Error('Not authorized')
@@ -241,11 +264,6 @@ export async function downloadFile(fileId) {
   return res.text()
 }
 
-/**
- * Rename a file on Drive (used for current.json → previous.json).
- * @param {string} fileId — Drive file ID
- * @param {string} newName — new file name
- */
 export async function renameFile(fileId, newName) {
   const token = await getValidToken()
   if (!token) throw new Error('Not authorized')
@@ -262,10 +280,6 @@ export async function renameFile(fileId, newName) {
   return res.json()
 }
 
-/**
- * Delete a file from Drive AppData.
- * @param {string} fileId — Drive file ID
- */
 export async function deleteFile(fileId) {
   const token = await getValidToken()
   if (!token) throw new Error('Not authorized')
@@ -277,10 +291,6 @@ export async function deleteFile(fileId) {
   if (!res.ok && res.status !== 204) throw new Error(`Delete failed: ${res.status}`)
 }
 
-/**
- * List all files in AppData folder.
- * @returns {Promise<Array<{id, name, modifiedTime}>>}
- */
 export async function listFiles() {
   const token = await getValidToken()
   if (!token) return []
