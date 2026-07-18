@@ -168,6 +168,8 @@ export default {
       borderRadius: {
         '12': '12px', '16': '16px', '20': '20px',
         card: '16px', sheet: '20px', pill: '9999px',
+        // §7.3 segmented control track — slightly larger than card for visual hierarchy
+        segment: '18px',
         xl: '12px', '2xl': '16px', '3xl': '20px',
       },
       boxShadow: {
@@ -182,6 +184,14 @@ export default {
         'nav': '0 -2px 12px -8px rgba(60,50,40,.15)',
         'lg': '0 6px 20px rgba(60,50,40,.10)',
         'xl': '0 16px 40px rgba(60,50,40,.16)',
+      },
+      // §5 typography scale — named tokens replace arbitrary text-[NNpx]
+      fontSize: {
+        'title':    ['28px', { lineHeight: '1.2',  fontWeight: '700', letterSpacing: '-0.01em' }],
+        'title-sm': ['20px', { lineHeight: '1.3',  fontWeight: '700' }],
+        'section':  ['17px', { lineHeight: '1.4',  fontWeight: '600' }],
+        'card-title': ['15px', { lineHeight: '1.4', fontWeight: '600' }],
+        'caption':  ['12px', { lineHeight: '1.4',  fontWeight: '400' }],
       },
       spacing: {
         '1': '4px', '2': '8px', '3': '12px', '4': '16px',
