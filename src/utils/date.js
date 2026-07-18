@@ -45,7 +45,6 @@ export function getGreeting() {
   const hour = new Date().getHours()
   if (hour < 12) return 'صباح الخير'
   if (hour < 17) return 'مساء الخير'
-  if (hour < 21) return 'مساء الخير'
   return 'مساء الخير'
 }
 

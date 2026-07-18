@@ -174,4 +174,14 @@
   .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
 }
 
+/* C3: Respect prefers-reduced-motion — disable animations + count-up */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 .skeleton { @apply rounded-12; background: #F0EEE6; animation: skeleton 1.5s ease-in-out infinite; }

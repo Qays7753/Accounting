@@ -148,8 +148,6 @@ export default {
         'withdrawal-bg': '#E8EEF3',
         amber: '#B08532',
         'amber-bg': '#F6ECCF',
-        purple: '#5644d0',
-        'purple-bg': '#eeecfb',
         // Unified status colors (no duplicates)
         status: {
           progress: '#C99100',
@@ -186,12 +184,13 @@ export default {
         'xl': '0 16px 40px rgba(60,50,40,.16)',
       },
       // §5 typography scale — named tokens replace arbitrary text-[NNpx]
+      // C1: no negative letter-spacing on Arabic (breaks letter joining)
       fontSize: {
-        'title':    ['28px', { lineHeight: '1.2',  fontWeight: '700', letterSpacing: '-0.01em' }],
+        'title':    ['28px', { lineHeight: '1.3',  fontWeight: '700' }],
         'title-sm': ['20px', { lineHeight: '1.3',  fontWeight: '700' }],
         'section':  ['17px', { lineHeight: '1.4',  fontWeight: '600' }],
         'card-title': ['15px', { lineHeight: '1.4', fontWeight: '600' }],
-        'caption':  ['12px', { lineHeight: '1.4',  fontWeight: '400' }],
+        'caption':  ['12px', { lineHeight: '1.5',  fontWeight: '400' }],
       },
       spacing: {
         '1': '4px', '2': '8px', '3': '12px', '4': '16px',

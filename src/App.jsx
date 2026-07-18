@@ -20,8 +20,22 @@ const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'))
 
 function PageLoader() {
   return (
-    <div className="flex items-center justify-center py-20">
-      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+    <div className="px-4 py-6 space-y-3">
+      {/* Skeleton: card-shaped placeholder matching real content */}
+      <div className="bg-surface rounded-card p-4 shadow-card">
+        <div className="h-4 w-1/3 bg-divider rounded animate-pulse mb-3" />
+        <div className="h-8 w-2/3 bg-divider rounded animate-pulse" />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-surface rounded-card p-4 shadow-card">
+          <div className="h-4 w-1/2 bg-divider rounded animate-pulse mb-2" />
+          <div className="h-6 w-3/4 bg-mute rounded animate-pulse" />
+        </div>
+        <div className="bg-surface rounded-card p-4 shadow-card">
+          <div className="h-4 w-1/2 bg-divider rounded animate-pulse mb-2" />
+          <div className="h-6 w-3/4 bg-mute rounded animate-pulse" />
+        </div>
+      </div>
     </div>
   )
 }

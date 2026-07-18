@@ -68,7 +68,7 @@ export default function SegmentedControl({
               >
                 {seg.label}
                 {seg.badge !== undefined && (
-                  <span className={`tnum text-[11px] font-bold px-1.5 py-px rounded-full ${on ? 'bg-primary text-white' : 'bg-mute text-faint'}`}>
+                  <span className={`tnum text-caption font-bold px-1.5 py-px rounded-full ${on ? 'bg-primary text-white' : 'bg-mute text-faint'}`}>
                     {seg.badge}
                   </span>
                 )}
@@ -79,7 +79,7 @@ export default function SegmentedControl({
         {/* Sliding underline indicator */}
         {thumb.width > 0 && (
           <div
-            className="absolute bottom-[-1px] h-[3px] bg-primary rounded-full transition-all duration-300 ease-out"
+            className="absolute bottom-0 h-1 bg-primary rounded-full transition-all duration-300 ease-out"
             style={{ right: thumb.right, width: thumb.width }}
           />
         )}
