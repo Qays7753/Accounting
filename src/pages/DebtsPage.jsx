@@ -8,6 +8,7 @@ import BottomSheet from '../components/ui/BottomSheet.jsx'
 import AmountInput from '../components/ui/AmountInput.jsx'
 import { hapticLight, hapticSuccess, hapticMedium, hapticError } from '../utils/haptics.js'
 import { sendDebtReminder } from '../utils/whatsapp.js'
+import { useTerms } from '../context/TermsContext.jsx'
 
 /**
  * Debts Page (V4 Phase 1) - Tracks receivables and payables with tabs.
@@ -18,6 +19,7 @@ import { sendDebtReminder } from '../utils/whatsapp.js'
  * - Summary: "إجمالي لهم عندي" and "إجمالي عندي لهم"
  */
 export default function DebtsPage() {
+  const t = useTerms()
   const [receivables, setReceivables] = useState([])
   const [payables, setPayables] = useState([])
   const [loading, setLoading] = useState(true)
@@ -104,12 +106,12 @@ export default function DebtsPage() {
       {/* Header */}
       <header className="px-4 pt-8 pb-3 safe-area-top sticky top-0 bg-background z-20">
         <div className="flex items-center justify-between">
-          <h1 className="text-[30px] font-extrabold text-ink -tracking-[.5px]">الديون</h1>
+          <h1 className="text-[30px] font-extrabold text-ink -tracking-[.5px]">{t.debts_title}</h1>
           <button
             type="button"
             onClick={() => handleAddDebt('debt_given')}
             className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shadow-fab active:scale-95 transition-transform"
-            aria-label="إضافة دين"
+            aria-label={t.add_debt_receivable}
           >
             <Icon name="plus" className="w-5 h-5 text-white" strokeWidth={2.5} />
           </button>
@@ -120,22 +122,22 @@ export default function DebtsPage() {
       <div className="px-4 mb-4">
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-primary text-white rounded-16 p-4">
-            <p className="text-sm font-medium text-income-50 mb-1">إجمالي لهم عندي</p>
+            <p className="text-sm font-medium text-income-50 mb-1">{t.total_receivables}</p>
             {loading ? (
               <div className="h-8 w-24 bg-white/20 rounded animate-pulse" />
             ) : (
               <p className="text-2xl font-bold tabular-nums">{formatAmount(totalReceivable)}</p>
             )}
-            <p className="text-xs text-income-50 mt-1">من {receivables.length} شخص</p>
+            <p className="text-xs text-income-50 mt-1">{receivables.length} {t.receivables_tab}</p>
           </div>
           <div className="bg-expense text-white rounded-16 p-4">
-            <p className="text-sm font-medium text-expense-50 mb-1">إجمالي عندي لهم</p>
+            <p className="text-sm font-medium text-expense-50 mb-1">{t.total_payables}</p>
             {loading ? (
               <div className="h-8 w-24 bg-white/20 rounded animate-pulse" />
             ) : (
               <p className="text-2xl font-bold tabular-nums">{formatAmount(totalPayable)}</p>
             )}
-            <p className="text-xs text-expense-50 mt-1">لـ {payables.length} شخص</p>
+            <p className="text-xs text-expense-50 mt-1">{payables.length} {t.payables_tab}</p>
           </div>
         </div>
       </div>
@@ -151,7 +153,7 @@ export default function DebtsPage() {
             }`}
           >
             <Icon name="arrowDown" className="w-4 h-4" />
-            لهم عندي
+            {t.receivables_tab}
           </button>
           <button
             type="button"
@@ -161,7 +163,7 @@ export default function DebtsPage() {
             }`}
           >
             <Icon name="arrowUp" className="w-4 h-4" />
-            عندي لهم
+            {t.payables_tab}
           </button>
         </div>
       </div>
@@ -182,10 +184,10 @@ export default function DebtsPage() {
           </div>
           <div className="text-right">
             <p className="font-semibold text-text-primary text-sm">
-              {activeTab === 'receivables' ? 'إضافة دين لهم عندي' : 'إضافة دين عندي لهم'}
+              {activeTab === 'receivables' ? t.add_debt_receivable : t.add_debt_payable}
             </p>
             <p className="text-xs text-text-tertiary">
-              {activeTab === 'receivables' ? 'زبون يشتري الآن ويدفع لاحقاً' : 'مواد على الحساب من مورد'}
+              {activeTab === 'receivables' ? t.receivable_desc : t.payable_desc}
             </p>
           </div>
         </button>
@@ -196,7 +198,7 @@ export default function DebtsPage() {
         {activeTab === 'receivables' ? (
           <>
             <h2 className="text-sm font-bold text-txt-secondary mb-3 px-1">
-              لهم عندي ({receivables.length})
+              {t.receivables_tab} ({receivables.length})
             </h2>
             {loading ? (
               <div className="space-y-2">
@@ -210,8 +212,8 @@ export default function DebtsPage() {
             ) : receivables.length === 0 ? (
               <EmptyState
                 icon="checkCircle"
-                title="لا توجد ديون لهم عندي"
-                description="عندما يطلب أحد مبلغاً مؤجلاً، ستظهر هنا"
+                title={t.empty_no_debts_receivable}
+                description={t.receivable_desc}
               />
             ) : (
               <div className="space-y-2">
@@ -306,15 +308,16 @@ export default function DebtsPage() {
  * Debt Card - shows a single debt with progress bar, settle button, and WhatsApp reminder (V4)
  */
 function DebtCard({ debt, isReceivable, onSettle, onViewDetail, onSendReminder }) {
+  const t = useTerms()
   const remaining = debt.amount - (debt.debtAmountPaid || 0)
   const paidPercent = debt.amount > 0 ? ((debt.debtAmountPaid || 0) / debt.amount) * 100 : 0
   const isPartial = (debt.debtAmountPaid || 0) > 0 && debt.debtStatus !== 'settled'
 
   const statusBadge = debt.debtStatus === 'settled'
-    ? { label: 'مسدد', class: 'bg-income-50 text-income-600' }
+    ? { label: t.debt_settled, class: 'bg-income-50 text-income-600' }
     : isPartial
-    ? { label: 'جزئي', class: 'bg-withdrawal-50 text-withdrawal-600' }
-    : { label: 'غير مسدد', class: 'bg-expense-50 text-expense-600' }
+    ? { label: t.debt_partial, class: 'bg-withdrawal-50 text-withdrawal-600' }
+    : { label: t.debt_unpaid, class: 'bg-expense-50 text-expense-600' }
 
   return (
     <div
@@ -322,7 +325,7 @@ function DebtCard({ debt, isReceivable, onSettle, onViewDetail, onSendReminder }
       onClick={onViewDetail}
     >
       <div className="flex items-center justify-between mb-2">
-        <p className="font-bold text-txt-primary">{debt.description || 'دين'}</p>
+        <p className="font-bold text-txt-primary">{debt.description || t.debts_title}</p>
         <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${statusBadge.class}`}>
           {statusBadge.label}
         </span>
@@ -330,10 +333,10 @@ function DebtCard({ debt, isReceivable, onSettle, onViewDetail, onSendReminder }
       <div className="flex items-center justify-between text-sm mb-2">
         <div>
           <p className="text-txt-secondary">
-            الإجمالي: <span className="font-bold text-txt-primary tabular-nums">{formatAmount(debt.amount)}</span>
+            {t.debt_total}: <span className="font-bold text-txt-primary tabular-nums">{formatAmount(debt.amount)}</span>
           </p>
           <p className="text-xs text-txt-tertiary mt-0.5">
-            المتبقي: <span className={`font-bold tabular-nums ${isReceivable ? 'text-income-600' : 'text-expense-600'}`}>
+            {t.debt_remaining}: <span className={`font-bold tabular-nums ${isReceivable ? 'text-income-600' : 'text-expense-600'}`}>
               {formatAmount(remaining)}
             </span>
           </p>
@@ -348,8 +351,8 @@ function DebtCard({ debt, isReceivable, onSettle, onViewDetail, onSendReminder }
                 onSendReminder()
               }}
               className="w-10 h-10 rounded-lg bg-income-50 flex items-center justify-center active:scale-95 transition-transform"
-              aria-label="تذكير واتساب"
-              title="إرسال تذكير واتساب"
+              aria-label={t.send_reminder}
+              title={t.send_reminder}
             >
               <Icon name="whatsapp" className="w-4 h-4 text-income-600" />
             </button>
@@ -365,7 +368,7 @@ function DebtCard({ debt, isReceivable, onSettle, onViewDetail, onSendReminder }
                 isReceivable ? 'bg-income-500' : 'bg-expense-500'
               }`}
             >
-              {isReceivable ? 'تسجيل دفعة' : 'سداد دفعة'}
+              {isReceivable ? t.settle_payment : t.pay_payment}
             </button>
           )}
         </div>
@@ -388,6 +391,7 @@ function DebtCard({ debt, isReceivable, onSettle, onViewDetail, onSendReminder }
  * Debt Form Sheet - add a new debt (receivable or payable)
  */
 function DebtFormSheet({ open, type, onClose, onSaved }) {
+  const t = useTerms()
   const [personName, setPersonName] = useState('')
   const [amount, setAmount] = useState(0)
   const [description, setDescription] = useState('')
@@ -436,31 +440,31 @@ function DebtFormSheet({ open, type, onClose, onSaved }) {
     }
   }
 
-  const title = type === 'debt_given' ? 'تسجيل دين لي' : 'تسجيل دين علي'
+  const title = type === 'debt_given' ? t.add_debt_receivable : t.add_debt_payable
 
   return (
     <BottomSheet open={open} onClose={onClose} title={title}>
       <div className="space-y-5 pb-4">
         <div>
-          <label className="block text-sm font-semibold text-text-secondary mb-2">اسم الشخص</label>
+          <label className="block text-sm font-semibold text-text-secondary mb-2">{t.customer_name}</label>
           <input
             type="text"
             value={personName}
             onChange={(e) => setPersonName(e.target.value)}
-            placeholder={type === 'debt_given' ? 'اسم الزبون' : 'اسم المورد'}
+            placeholder={type === 'debt_given' ? t.customer_name : 'اسم المورد'}
             className="input-field"
             dir="rtl"
           />
         </div>
 
-        <AmountInput value={amount} onChange={setAmount} label="المبلغ" autoFocus />
+        <AmountInput value={amount} onChange={setAmount} label={t.order_amount} autoFocus />
 
         <div>
-          <label className="block text-sm font-semibold text-text-secondary mb-2">ملاحظات</label>
+          <label className="block text-sm font-semibold text-text-secondary mb-2">{t.notes}</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder={type === 'debt_given' ? 'مثال: بيع بالأجل...' : 'مثال: مواد على الحساب...'}
+            placeholder={type === 'debt_given' ? t.receivable_desc : t.payable_desc}
             rows={2}
             className="input-field resize-none"
             dir="rtl"
@@ -468,7 +472,7 @@ function DebtFormSheet({ open, type, onClose, onSaved }) {
         </div>
 
         <div>
-          <label className="block text-sm font-semibold text-text-secondary mb-2">التاريخ</label>
+          <label className="block text-sm font-semibold text-text-secondary mb-2">{t.date}</label>
           <input
             type="date"
             value={date}
@@ -486,7 +490,7 @@ function DebtFormSheet({ open, type, onClose, onSaved }) {
             type === 'debt_given' ? 'bg-income-500' : 'bg-expense-500'
           }`}
         >
-          {saving ? 'جار الحفظ...' : 'حفظ'}
+          {saving ? '…' : t.save}
         </button>
       </div>
     </BottomSheet>
@@ -497,6 +501,7 @@ function DebtFormSheet({ open, type, onClose, onSaved }) {
  * Settle Debt Sheet - record a payment for a debt
  */
 function SettleDebtSheet({ open, debt, onClose, onSaved }) {
+  const t = useTerms()
   const [paymentAmount, setPaymentAmount] = useState(0)
   const [saving, setSaving] = useState(false)
 
@@ -537,30 +542,30 @@ function SettleDebtSheet({ open, debt, onClose, onSaved }) {
   }
 
   return (
-    <BottomSheet open={open} onClose={onClose} title={isReceivable ? 'تسجيل دفعة' : 'سداد دفعة'}>
+    <BottomSheet open={open} onClose={onClose} title={isReceivable ? t.settle_payment : t.pay_payment}>
       <div className="space-y-5 pb-4">
         {/* Debt Summary */}
         <div className="bg-background rounded-2xl p-4 space-y-2">
           <div className="flex justify-between items-center">
-            <p className="text-sm text-txt-secondary">الإجمالي</p>
+            <p className="text-sm text-txt-secondary">{t.debt_total}</p>
             <p className="font-bold tabular-nums text-txt-primary">{formatAmount(debt.amount)}</p>
           </div>
           <div className="flex justify-between items-center">
-            <p className="text-sm text-txt-secondary">المدفوع سابقاً</p>
+            <p className="text-sm text-txt-secondary">{t.debt_paid}</p>
             <p className="font-bold tabular-nums text-income-600">{formatAmount(debt.debtAmountPaid || 0)}</p>
           </div>
           <div className="flex justify-between items-center pt-2 border-t border-divider">
-            <p className="text-sm font-semibold text-txt-primary">المتبقي</p>
+            <p className="text-sm font-semibold text-txt-primary">{t.debt_remaining}</p>
             <p className="font-bold tabular-nums text-expense-600">{formatAmount(remaining)}</p>
           </div>
         </div>
 
-        <AmountInput value={paymentAmount} onChange={setPaymentAmount} label="مبلغ الدفعة" autoFocus />
+        <AmountInput value={paymentAmount} onChange={setPaymentAmount} label={t.payment_amount} autoFocus />
 
         {paymentAmount > remaining && (
           <div className="bg-expense-50 rounded-xl p-3 flex items-center gap-2">
             <Icon name="info" className="w-4 h-4 text-expense-600 flex-shrink-0" />
-            <p className="text-xs text-expense-700">المبلغ أكبر من المتبقي ({formatAmount(remaining)})</p>
+            <p className="text-xs text-expense-700">{t.debt_remaining}: {formatAmount(remaining)}</p>
           </div>
         )}
 
@@ -572,7 +577,7 @@ function SettleDebtSheet({ open, debt, onClose, onSaved }) {
             isReceivable ? 'bg-income-500' : 'bg-expense-500'
           }`}
         >
-          {saving ? 'جار الحفظ...' : 'تسجيل الدفعة'}
+          {saving ? '…' : t.save}
         </button>
       </div>
     </BottomSheet>
@@ -583,6 +588,7 @@ function SettleDebtSheet({ open, debt, onClose, onSaved }) {
  * Debt Detail Sheet - shows full debt info and payment history
  */
 function DebtDetailSheet({ open, debt, onClose, onSettle, onUpdated }) {
+  const t = useTerms()
   const [settlements, setSettlements] = useState([])
 
   useEffect(() => {
@@ -597,7 +603,7 @@ function DebtDetailSheet({ open, debt, onClose, onSettle, onUpdated }) {
   const isReceivable = debt.type === 'debt_given'
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="تفاصيل الدين">
+    <BottomSheet open={open} onClose={onClose} title={t.order_details}>
       <div className="space-y-5 pb-4">
         {/* Header */}
         <div className="flex items-center gap-3">
@@ -605,42 +611,42 @@ function DebtDetailSheet({ open, debt, onClose, onSettle, onUpdated }) {
             <Icon name="user" className={`w-7 h-7 ${isReceivable ? 'text-income-600' : 'text-expense-600'}`} />
           </div>
           <div className="flex-1">
-            <p className="font-bold text-txt-primary text-lg">{debt.description || 'دين'}</p>
-            <p className="text-sm text-txt-secondary">{isReceivable ? 'دين مستحق لي' : 'دين مستحق علي'}</p>
+            <p className="font-bold text-txt-primary text-lg">{debt.description || t.debts_title}</p>
+            <p className="text-sm text-txt-secondary">{isReceivable ? t.receivables_tab : t.payables_tab}</p>
           </div>
         </div>
 
         {/* Summary */}
         <div className="bg-background rounded-2xl p-4 space-y-2">
           <div className="flex justify-between">
-            <p className="text-sm text-txt-secondary">الإجمالي</p>
+            <p className="text-sm text-txt-secondary">{t.debt_total}</p>
             <p className="font-bold tabular-nums text-txt-primary">{formatAmount(debt.amount)}</p>
           </div>
           <div className="flex justify-between">
-            <p className="text-sm text-txt-secondary">المدفوع</p>
+            <p className="text-sm text-txt-secondary">{t.debt_paid}</p>
             <p className="font-bold tabular-nums text-income-600">{formatAmount(debt.debtAmountPaid || 0)}</p>
           </div>
           <div className="flex justify-between pt-2 border-t border-divider">
-            <p className="text-sm font-semibold text-txt-primary">المتبقي</p>
+            <p className="text-sm font-semibold text-txt-primary">{t.debt_remaining}</p>
             <p className="font-bold tabular-nums text-expense-600">{formatAmount(remaining)}</p>
           </div>
         </div>
 
         {/* Date */}
         <div className="bg-background rounded-2xl p-4">
-          <p className="text-xs text-txt-secondary mb-1">تاريخ الإنشاء</p>
+          <p className="text-xs text-txt-secondary mb-1">{t.date}</p>
           <p className="text-sm font-semibold text-txt-primary">{formatArabicDate(debt.date)}</p>
         </div>
 
         {/* Payment History */}
         {settlements.length > 0 && (
           <div>
-            <p className="text-sm font-semibold text-txt-secondary mb-2">سجل الدفعات</p>
+            <p className="text-sm font-semibold text-txt-secondary mb-2">{t.payment_history}</p>
             <div className="space-y-2">
               {settlements.map((s, i) => (
                 <div key={s.id} className="bg-background rounded-2xl p-3 flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-txt-primary">دفعة {i + 1}</p>
+                    <p className="text-sm text-txt-primary">{t.payment_amount} {i + 1}</p>
                     <p className="text-xs text-txt-tertiary mt-0.5">{formatArabicDate(s.createdAt)}</p>
                   </div>
                   <p className="font-bold text-income-600 tabular-nums">{formatAmount(s.amount)}</p>
@@ -660,7 +666,7 @@ function DebtDetailSheet({ open, debt, onClose, onSettle, onUpdated }) {
             }`}
           >
             <Icon name="check" className="w-5 h-5" />
-            <span className="text-sm">{isReceivable ? 'تسجيل دفعة' : 'سداد دفعة'}</span>
+            <span className="text-sm">{isReceivable ? t.settle_payment : t.pay_payment}</span>
           </button>
         )}
       </div>

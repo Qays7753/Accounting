@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { db } from '../db'
 import Icon from '../components/ui/Icon.jsx'
 import { hapticSuccess, hapticLight } from '../utils/haptics.js'
+import { useTerms } from '../context/TermsContext.jsx'
 
 /**
  * Onboarding Page (V4 Phase 3) - Frictionless Fast Onboarding
@@ -13,8 +14,11 @@ import { hapticSuccess, hapticLight } from '../utils/haptics.js'
  *
  * Opening Balances are NO LONGER part of onboarding.
  * They move to a dismissible card on the Home Dashboard.
+ *
+ * V6: Wires useTerms() so welcome copy adapts to mode (simple vs pro).
  */
 export default function OnboardingPage({ onComplete }) {
+  const t = useTerms()
   const [step, setStep] = useState(0) // 0=welcome+name, 1=done
   const [shopName, setShopName] = useState('')
   const [saving, setSaving] = useState(false)
@@ -56,19 +60,19 @@ export default function OnboardingPage({ onComplete }) {
         <div className="w-24 h-24 rounded-3xl bg-primary flex items-center justify-center mb-6 shadow-fab animate-scale-in">
           <Icon name="wallet" className="w-12 h-12 text-white" strokeWidth={1.8} />
         </div>
-        <h1 className="text-3xl font-bold text-text-primary text-center mb-2">أهلاً بك</h1>
+        <h1 className="text-3xl font-bold text-text-primary text-center mb-2">{t.onboarding_welcome}</h1>
         <p className="text-center text-text-secondary leading-relaxed max-w-sm mb-8">
-          تطبيق بسيط لإدارة محاسبتك وطلباتك. لنبدأ في أقل من دقيقة!
+          {t.onboarding_subtitle}
         </p>
 
         <div className="w-full max-w-xs space-y-4">
           <div>
-            <label className="block text-sm font-semibold text-text-secondary mb-2">اسم متجرك</label>
+            <label className="block text-sm font-semibold text-text-secondary mb-2">{t.onboarding_shop_name}</label>
             <input
               type="text"
               value={shopName}
               onChange={(e) => setShopName(e.target.value)}
-              placeholder="متجري"
+              placeholder={t.onboarding_shop_name_placeholder}
               className="input-field text-center text-lg"
               dir="rtl"
               autoFocus
@@ -81,14 +85,14 @@ export default function OnboardingPage({ onComplete }) {
             disabled={saving}
             className="btn-primary w-full disabled:opacity-50"
           >
-            {saving ? 'جار الإعداد...' : 'ابدأ الآن'}
+            {saving ? '…' : t.onboarding_start}
           </button>
 
           <button
             onClick={handleComplete}
             className="w-full text-text-tertiary text-sm font-medium active:scale-95 transition-transform"
           >
-            تخطي (استخدام "متجري")
+            {t.onboarding_skip}
           </button>
         </div>
       </div>
@@ -102,9 +106,9 @@ export default function OnboardingPage({ onComplete }) {
         <div className="w-20 h-20 rounded-full bg-income-50 flex items-center justify-center mb-4 animate-scale-in">
           <Icon name="check" className="w-10 h-10 text-income-600" strokeWidth={2.5} />
         </div>
-        <h1 className="text-xl font-bold mb-1">جاهز!</h1>
+        <h1 className="text-xl font-bold mb-1">{t.onboarding_ready}</h1>
         <p className="text-text-secondary text-center max-w-xs text-sm">
-          ابدأ بتسجيل أول عملية بيع...
+          {t.onboarding_ready_desc}
         </p>
       </div>
     )

@@ -6,6 +6,7 @@ import Icon from '../components/ui/Icon.jsx'
 import BottomSheet from '../components/ui/BottomSheet.jsx'
 import AmountInput from '../components/ui/AmountInput.jsx'
 import { hapticLight, hapticSuccess, hapticMedium, hapticError } from '../utils/haptics.js'
+import { useTerms } from '../context/TermsContext.jsx'
 
 /**
  * Quick POS Page (V4 Phase 2)
@@ -19,6 +20,7 @@ import { hapticLight, hapticSuccess, hapticMedium, hapticError } from '../utils/
  * - COGS calculated from linked BOM components, goes to capital jar
  */
 export default function QuickPosPage() {
+  const t = useTerms()
   const [products, setProducts] = useState([])
   const [cart, setCart] = useState([]) // [{ product, qty }]
   const [loading, setLoading] = useState(true)
@@ -127,12 +129,12 @@ export default function QuickPosPage() {
       {/* Header */}
       <header className="px-4 pt-8 pb-3 safe-area-top sticky top-0 bg-background z-20">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">البيع السريع</h1>
+          <h1 className="text-2xl font-bold">{t.pos_title}</h1>
           <button
             type="button"
             onClick={() => { hapticLight(); setEditingProduct(null); setProductManageOpen(true) }}
             className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shadow-fab active:scale-95 transition-transform"
-            aria-label="إضافة منتج"
+            aria-label={t.pos_add_product}
           >
             <Icon name="plus" className="w-5 h-5 text-white" strokeWidth={2.5} />
           </button>
@@ -153,9 +155,9 @@ export default function QuickPosPage() {
         ) : products.length === 0 ? (
           <EmptyState
             icon="tag"
-            title="لا توجد منتجات سريعة"
-            description="أضف منتجاتك الأكثر مبيعاً للبيع السريع بضغطة واحدة"
-            actionLabel="إضافة منتج"
+            title={t.empty_no_products}
+            description={t.show_quick_pos_desc}
+            actionLabel={t.pos_add_product}
             onAction={() => { setEditingProduct(null); setProductManageOpen(true) }}
           />
         ) : (
@@ -190,14 +192,14 @@ export default function QuickPosPage() {
                 <div className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
                   <span className="text-sm font-bold text-primary-600 tabular-nums">{cartCount}</span>
                 </div>
-                <p className="font-bold text-text-primary text-sm">السلة</p>
+                <p className="font-bold text-text-primary text-sm">{t.pos_cart}</p>
               </div>
               <button
                 type="button"
                 onClick={handleClearCart}
                 className="text-xs text-expense-600 font-semibold active:scale-95"
               >
-                مسح
+                {t.pos_clear}
               </button>
             </div>
 
@@ -226,7 +228,7 @@ export default function QuickPosPage() {
             {/* Total + Complete */}
             <div className="flex items-center justify-between pt-2 border-t border-divider">
               <div>
-                <p className="text-xs text-text-tertiary">الإجمالي</p>
+                <p className="text-xs text-text-tertiary">{t.pos_total}</p>
                 <p className="text-xl font-bold text-primary-600 tabular-nums">{formatAmount(cartTotal)}</p>
               </div>
               <button
@@ -235,7 +237,7 @@ export default function QuickPosPage() {
                 className="bg-income-500 text-white font-bold rounded-2xl px-6 py-3 active:scale-95 transition-transform flex items-center gap-2"
               >
                 <Icon name="checkCircle" className="w-5 h-5" />
-                إتمام البيع
+                {t.pos_complete_sale}
               </button>
             </div>
           </div>
@@ -243,20 +245,20 @@ export default function QuickPosPage() {
       )}
 
       {/* Payment Method Sheet */}
-      <BottomSheet open={paymentSheetOpen} onClose={() => setPaymentSheetOpen(false)} title="إتمام البيع">
+      <BottomSheet open={paymentSheetOpen} onClose={() => setPaymentSheetOpen(false)} title={t.pos_complete_sale}>
         <div className="space-y-4 pb-4">
           <div className="bg-background rounded-2xl p-4 text-center">
-            <p className="text-sm text-text-secondary mb-1">الإجمالي</p>
+            <p className="text-sm text-text-secondary mb-1">{t.pos_total}</p>
             <p className="text-3xl font-bold tabular-nums text-text-primary">{formatAmount(cartTotal)}</p>
           </div>
-          <p className="text-sm text-text-secondary text-center">كيف تم الاستلام؟</p>
+          <p className="text-sm text-text-secondary text-center">{t.pos_payment_method}</p>
           <button
             type="button"
             onClick={() => handlePayment('cash')}
             className="w-full bg-income-500 text-white font-bold rounded-2xl py-4 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
           >
             <Icon name="wallet" className="w-5 h-5" />
-            نقداً (كاش)
+            {t.pos_cash}
           </button>
           <button
             type="button"
@@ -264,13 +266,13 @@ export default function QuickPosPage() {
             className="w-full bg-withdrawal-500 text-white font-bold rounded-2xl py-4 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
           >
             <Icon name="userMinus" className="w-5 h-5" />
-            بالأجل (دين)
+            {t.pos_credit}
           </button>
         </div>
       </BottomSheet>
 
       {/* Sale Result Sheet */}
-      <BottomSheet open={!!saleResult} onClose={() => setSaleResult(null)} title="تم البيع بنجاح">
+      <BottomSheet open={!!saleResult} onClose={() => setSaleResult(null)} title={t.pos_sale_success}>
         <div className="space-y-4 pb-4">
           <div className="flex justify-center">
             <div className="w-16 h-16 rounded-full bg-income-50 flex items-center justify-center">
@@ -278,10 +280,10 @@ export default function QuickPosPage() {
             </div>
           </div>
           <div className="text-center space-y-2">
-            <p className="text-lg font-bold text-text-primary">تم تسجيل البيع</p>
+            <p className="text-lg font-bold text-text-primary">{t.pos_sale_recorded}</p>
             <p className="text-2xl font-bold tabular-nums text-primary-600">{formatAmount(saleResult?.totalAmount || 0)}</p>
             <p className="text-sm text-text-secondary">
-              {saleResult?.paymentType === 'cash' ? 'نقداً' : 'بالأجل (دين)'}
+              {saleResult?.paymentType === 'cash' ? t.pos_cash : t.pos_credit}
             </p>
           </div>
           <button
@@ -289,7 +291,7 @@ export default function QuickPosPage() {
             onClick={() => setSaleResult(null)}
             className="w-full btn-primary"
           >
-            تم
+            {t.save}
           </button>
         </div>
       </BottomSheet>
@@ -309,6 +311,7 @@ export default function QuickPosPage() {
  * Product Management Sheet - add/edit quick products
  */
 function ProductManageSheet({ open, editData, onClose, onSave }) {
+  const t = useTerms()
   const [name, setName] = useState('')
   const [price, setPrice] = useState(0)
   // V4 Phase 3: Cost price for profit hint
@@ -338,37 +341,37 @@ function ProductManageSheet({ open, editData, onClose, onSave }) {
   const showHint = Number(costPrice) > 0 && Number(price) > 0
 
   return (
-    <BottomSheet open={open} onClose={onClose} title={editData ? 'تعديل منتج' : 'منتج جديد'}>
+    <BottomSheet open={open} onClose={onClose} title={editData ? t.pos_edit_product : t.pos_add_product}>
       <div className="space-y-5 pb-4">
         <div>
-          <label className="block text-sm font-semibold text-text-secondary mb-2">اسم المنتج</label>
+          <label className="block text-sm font-semibold text-text-secondary mb-2">{t.pos_product_name}</label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="مثال: قهوة، شاي، ساندويش..."
+            placeholder={t.pos_product_name}
             className="input-field"
             dir="rtl"
           />
         </div>
-        <AmountInput value={price} onChange={setPrice} label="سعر البيع" autoFocus />
+        <AmountInput value={price} onChange={setPrice} label={t.pos_selling_price} autoFocus />
         {/* V4 Phase 3: Cost Price for profit hint */}
-        <AmountInput value={costPrice} onChange={setCostPrice} label="سعر الشراء (اختياري)" />
+        <AmountInput value={costPrice} onChange={setCostPrice} label={t.pos_cost_price} />
         {/* V4 Phase 3: Profit Hint */}
         {showHint && (
           profit >= 0 ? (
             <div className="bg-income-50 rounded-xl p-3 text-center">
               <p className="text-sm font-semibold text-income-700">
-                هالصنف بتكسب منه {profit.toLocaleString('en-US')} دينار على كل قطعة
+                {t.profit_hint} {profit.toLocaleString('en-US')} {t.per_piece}
               </p>
             </div>
           ) : (
             <div className="bg-expense-50 rounded-xl p-3 text-center">
               <p className="text-sm font-bold text-expense-700">
-                انتبه: أنت تبيع بأقل من التكلفة!
+                {t.loss_warning}
               </p>
               <p className="text-xs text-expense-600 mt-0.5">
-                خسارة {Math.abs(profit).toLocaleString('en-US')} دينار على كل قطعة
+                {t.loss_amount} {Math.abs(profit).toLocaleString('en-US')} {t.per_piece}
               </p>
             </div>
           )
@@ -379,7 +382,7 @@ function ProductManageSheet({ open, editData, onClose, onSave }) {
           disabled={!name.trim() || !price}
           className="w-full btn-primary disabled:opacity-50"
         >
-          حفظ
+          {t.save}
         </button>
       </div>
     </BottomSheet>

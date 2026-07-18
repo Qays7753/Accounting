@@ -9,22 +9,25 @@ import CalendarView from '../components/ui/CalendarView.jsx'
 import OrderFormSheet from '../components/sheets/OrderFormSheet.jsx'
 import OrderDetailSheet from '../components/sheets/OrderDetailSheet.jsx'
 import { hapticLight } from '../utils/haptics.js'
+import { useTerms } from '../context/TermsContext.jsx'
 
+// Static status config — labels come from terms in render
 const STATUS_CONFIG = {
-  in_progress: { label: 'قيد التنفيذ', color: 'bg-status-progress', text: 'text-status-progress', badge: 'badge-progress', dot: 'bg-status-progress', bar: 'border-returns-500' },
-  ready: { label: 'جاهز', color: 'bg-primary', text: 'text-primary-600', badge: 'badge-ready', dot: 'bg-primary', bar: 'border-primary' },
-  closed: { label: 'مغلق', color: 'bg-status-closed', text: 'text-text-secondary', badge: 'badge-closed', dot: 'bg-status-closed', bar: 'border-divider' },
+  in_progress: { color: 'bg-status-progress', text: 'text-status-progress', badge: 'badge-progress', dot: 'bg-status-progress', bar: 'border-returns-500', labelKey: 'status_in_progress' },
+  ready: { color: 'bg-primary', text: 'text-primary-600', badge: 'badge-ready', dot: 'bg-primary', bar: 'border-primary', labelKey: 'status_ready' },
+  closed: { color: 'bg-status-closed', text: 'text-text-secondary', badge: 'badge-closed', dot: 'bg-status-closed', bar: 'border-divider', labelKey: 'status_closed' },
 }
 
 // V5: Underline tabs + status-colored count badges
 const FILTER_TABS = [
-  { id: 'all', label: 'الكل', badge: 'text-primary bg-primary-tint' },
-  { id: 'in_progress', label: 'قيد التنفيذ', badge: 'text-amber bg-amber-bg' },
-  { id: 'ready', label: 'جاهز', badge: 'text-primary bg-primary-tint' },
-  { id: 'closed', label: 'مغلق', badge: 'text-faint bg-mute' },
+  { id: 'all', labelKey: 'status_all', badge: 'text-primary bg-primary-tint' },
+  { id: 'in_progress', labelKey: 'status_in_progress', badge: 'text-amber bg-amber-bg' },
+  { id: 'ready', labelKey: 'status_ready', badge: 'text-primary bg-primary-tint' },
+  { id: 'closed', labelKey: 'status_closed', badge: 'text-faint bg-mute' },
 ]
 
 export default function OrdersPage() {
+  const t = useTerms()
   const [view, setView] = useState('list') // 'list' | 'calendar'
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -115,11 +118,11 @@ export default function OrdersPage() {
       {/* Header */}
       <header className="px-4 pt-8 pb-3 safe-area-top sticky top-0 bg-background z-20">
         <div className="flex items-center justify-between mb-3">
-          <h1 className="text-2xl font-bold">الطلبات</h1>
+          <h1 className="text-2xl font-bold">{t.orders_title}</h1>
           <button
             onClick={handleNewOrder}
             className="w-10 h-10 rounded-full bg-primary flex items-center justify-center  active:scale-95 transition-transform"
-            aria-label="طلب جديد"
+            aria-label={t.new_order}
           >
             <Icon name="plus" className="w-5 h-5 text-white" strokeWidth={2.5} />
           </button>
@@ -134,7 +137,7 @@ export default function OrdersPage() {
             }`}
           >
             <Icon name="list" className="w-4 h-4" />
-            قائمة
+            {t.list_view}
           </button>
           <button
             onClick={() => handleViewChange('calendar')}
@@ -143,7 +146,7 @@ export default function OrdersPage() {
             }`}
           >
             <Icon name="calendar" className="w-4 h-4" />
-            تقويم
+            {t.calendar_view}
           </button>
         </div>
 
@@ -158,7 +161,7 @@ export default function OrdersPage() {
                 type="search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="ابحث عن طلب..."
+                placeholder={t.search_orders}
                 className="w-full bg-surface rounded-2xl pr-11 pl-4 py-3 text-sm outline-none border border-transparent focus:border-primary transition-colors"
                 dir="rtl"
               />
@@ -166,7 +169,7 @@ export default function OrdersPage() {
 
             {/* V5: Status Filter — underline tabs with sliding indicator + count badges */}
             <div className="relative">
-              <div className="flex gap-5 border-b border-[#e6e8eb] overflow-x-auto hide-scrollbar">
+              <div className="flex gap-5 border-b border-divider overflow-x-auto hide-scrollbar">
                 {FILTER_TABS.map((tab, i) => {
                   const on = statusFilter === tab.id
                   return (
@@ -178,7 +181,7 @@ export default function OrdersPage() {
                         on ? 'text-ink font-bold' : 'text-faint font-semibold'
                       }`}
                     >
-                      {tab.label}
+                      {t[tab.labelKey] || tab.id}
                       <span className={`tnum text-[11px] font-bold px-1.5 py-px rounded-full ${tab.badge}`}>
                         {counts[tab.id]}
                       </span>
@@ -213,9 +216,9 @@ export default function OrdersPage() {
           ) : items.length === 0 ? (
             <EmptyState
               icon="clipboard"
-              title="لا توجد طلبات"
-              description={search ? 'لم يتم العثور على طلبات مطابقة' : 'ابدأ بإضافة طلبك الأول'}
-              actionLabel="إضافة طلب"
+              title={t.empty_no_orders}
+              description={search ? t.empty_no_transactions_search : t.empty_no_orders}
+              actionLabel={t.new_order}
               onAction={handleNewOrder}
             />
           ) : (
@@ -239,7 +242,7 @@ export default function OrdersPage() {
 
           {!hasMore && items.length > 0 && (
             <p className="text-center text-xs text-text-tertiary py-4">
-              تم عرض جميع الطلبات ({total})
+              {t.report_total_orders}: {total}
             </p>
           )}
         </div>
@@ -273,16 +276,22 @@ export default function OrdersPage() {
   )
 }
 
-// V3: Payment status config for order cards
-const PAYMENT_BADGE = {
-  cash: { label: 'مدفوع', class: 'bg-income-50 text-income-600' },
-  credit: { label: 'أجل', class: 'bg-withdrawal-50 text-withdrawal-600' },
-  done: { label: 'تتبع', class: 'bg-mute text-ink-secondary' },
+// V3: Payment status config for order cards — labels now driven by terms
+function usePaymentBadges() {
+  const t = useTerms()
+  return {
+    cash:   { label: t.payment_cash_short,   class: 'bg-income-50 text-income-600' },
+    credit: { label: t.payment_credit_short, class: 'bg-withdrawal-50 text-withdrawal-600' },
+    done:   { label: t.payment_done_short,   class: 'bg-mute text-ink-secondary' },
+  }
 }
 
 function OrderCard({ order, onClick }) {
+  const t = useTerms()
+  const PAYMENT_BADGE = usePaymentBadges()
   const c = STATUS_CONFIG[order.status] || STATUS_CONFIG.in_progress
   const payment = order.paymentType ? PAYMENT_BADGE[order.paymentType] : null
+  const statusLabel = t[c.labelKey] || c.labelKey
   return (
     <div
       onClick={onClick}
@@ -294,7 +303,7 @@ function OrderCard({ order, onClick }) {
             <Icon name="user" className="w-5 h-5 text-primary-600" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-bold text-text-primary truncate">{order.customerName || 'زبون'}</p>
+            <p className="font-bold text-text-primary truncate">{order.customerName || t.customer_name}</p>
             <p className="text-xs text-text-secondary mt-0.5">{order.orderType}</p>
             {/* V3: Show phone */}
             {order.phone && (
@@ -307,7 +316,7 @@ function OrderCard({ order, onClick }) {
         </div>
         <div className="flex flex-col items-end gap-1 flex-shrink-0">
           <span className={`px-2 py-1 rounded-full text-xs font-semibold ${c.badge}`}>
-            {c.label}
+            {statusLabel}
           </span>
           {/* V3: Payment status badge */}
           {payment && (
@@ -331,7 +340,7 @@ function OrderCard({ order, onClick }) {
                 href={`tel:${order.phone}`}
                 onClick={(e) => e.stopPropagation()}
                 className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center active:scale-95 transition-transform"
-                aria-label="اتصال"
+                aria-label={t.call}
               >
                 <Icon name="phone" className="w-3.5 h-3.5 text-primary-600" />
               </a>
@@ -341,7 +350,7 @@ function OrderCard({ order, onClick }) {
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
                 className="w-10 h-10 rounded-full bg-income-50 flex items-center justify-center active:scale-95 transition-transform"
-                aria-label="واتساب"
+                aria-label={t.whatsapp}
               >
                 <Icon name="whatsapp" className="w-3.5 h-3.5 text-income-600" />
               </a>
