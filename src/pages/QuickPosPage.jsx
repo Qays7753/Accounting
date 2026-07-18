@@ -8,6 +8,8 @@ import AmountInput from '../components/ui/AmountInput.jsx'
 import { hapticLight, hapticSuccess, hapticMedium, hapticError } from '../utils/haptics.js'
 import { useTerms } from '../context/TermsContext.jsx'
 import PageHeader from '../components/layout/PageHeader.jsx'
+import { useLongPress } from '../hooks/useLongPress.js'
+import { useSubmitGuard } from '../hooks/useSubmitGuard.js'
 
 /**
  * Quick POS Page (V4 Phase 2)
@@ -89,7 +91,9 @@ export default function QuickPosPage() {
     setPaymentSheetOpen(true)
   }
 
-  const handlePayment = async (paymentType) => {
+  // A2: Submit guard on payment — prevents double-charge
+  const [paymentSubmitting, guardPayment] = useSubmitGuard()
+  const handlePayment = guardPayment(async (paymentType) => {
     hapticSuccess()
     try {
       const result = await db.quickSale(cart, paymentType)
@@ -100,9 +104,11 @@ export default function QuickPosPage() {
       console.error('Quick sale failed:', e)
       hapticError()
     }
-  }
+  })
 
-  const handleSaveProduct = async (productData) => {
+  // A2: Submit guard on product save
+  const [productSaving, guardProductSave] = useSubmitGuard()
+  const handleSaveProduct = guardProductSave(async (productData) => {
     try {
       if (editingProduct?.id) {
         await db.updateQuickProduct(editingProduct.id, productData)
@@ -117,12 +123,37 @@ export default function QuickPosPage() {
       console.error('Save product failed:', e)
       hapticError()
     }
-  }
+  })
 
-  const handleDeleteProduct = async (id) => {
+  // A3: Long-press to delete (replaces onDoubleClick) — opens confirm sheet
+  const [deleteConfirmProduct, setDeleteConfirmProduct] = useState(null)
+  const handleLongPressDelete = (product) => {
+    setDeleteConfirmProduct(product)
+  }
+  const longPressProps = useLongPress({
+    onLongPress: () => handleLongPressDelete(deleteConfirmProduct),
+    onShortPress: null, // handled by onClick separately
+    delay: 500,
+  })
+  // Per-product long-press handler (closure capturing the product)
+  const getProductLongPressProps = (product) => ({
+    onPointerDown: (e) => {
+      longPressProps.onPointerDown(e)
+      // Store product for the long-press callback
+      setDeleteConfirmProduct(product)
+    },
+    onPointerMove: longPressProps.onPointerMove,
+    onPointerUp: longPressProps.onPointerUp,
+    onPointerLeave: longPressProps.onPointerLeave,
+    onPointerCancel: longPressProps.onPointerCancel,
+  })
+
+  const confirmDeleteProduct = async () => {
+    if (!deleteConfirmProduct) return
     hapticMedium()
-    await db.deleteQuickProduct(id)
+    await db.deleteQuickProduct(deleteConfirmProduct.id)
     loadProducts()
+    setDeleteConfirmProduct(null)
   }
 
   return (
@@ -158,8 +189,8 @@ export default function QuickPosPage() {
                 key={product.id}
                 type="button"
                 onClick={() => handleAddToCart(product)}
-                onDoubleClick={() => handleDeleteProduct(product.id)}
-                className="bg-surface rounded-2xl p-4 shadow-card active:scale-95 transition-transform text-right"
+                {...getProductLongPressProps(product)}
+                className="bg-surface rounded-card p-4 shadow-card active:scale-95 transition-transform text-right"
               >
                 <div className="w-full h-16 rounded-xl bg-primary-50 flex items-center justify-center mb-2">
                   <Icon name="tag" className="w-8 h-8 text-primary-600" strokeWidth={1.8} />
@@ -246,17 +277,27 @@ export default function QuickPosPage() {
           <button
             type="button"
             onClick={() => handlePayment('cash')}
-            className="w-full bg-income-500 text-white font-bold rounded-2xl py-4 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+            disabled={paymentSubmitting}
+            className="w-full bg-income-500 text-white font-bold rounded-2xl py-4 active:scale-[0.98] transition-transform flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            <Icon name="wallet" className="w-5 h-5" />
+            {paymentSubmitting ? (
+              <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Icon name="wallet" className="w-5 h-5" />
+            )}
             {t.pos_cash}
           </button>
           <button
             type="button"
             onClick={() => handlePayment('credit')}
-            className="w-full bg-withdrawal-500 text-white font-bold rounded-2xl py-4 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+            disabled={paymentSubmitting}
+            className="w-full bg-withdrawal-500 text-white font-bold rounded-2xl py-4 active:scale-[0.98] transition-transform flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            <Icon name="userMinus" className="w-5 h-5" />
+            {paymentSubmitting ? (
+              <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Icon name="userMinus" className="w-5 h-5" />
+            )}
             {t.pos_credit}
           </button>
         </div>
@@ -294,6 +335,35 @@ export default function QuickPosPage() {
         onClose={() => { setProductManageOpen(false); setEditingProduct(null) }}
         onSave={handleSaveProduct}
       />
+
+      {/* A3: Long-press delete confirmation */}
+      <BottomSheet
+        open={!!deleteConfirmProduct}
+        onClose={() => setDeleteConfirmProduct(null)}
+        title={t.pos_delete_product}
+      >
+        <div className="space-y-5 pb-4">
+          <p className="text-sm text-text-secondary leading-relaxed">
+            {t.pos_delete_confirm} <strong className="text-text-primary">{deleteConfirmProduct?.name}</strong>؟
+          </p>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setDeleteConfirmProduct(null)}
+              className="flex-1 btn-outline"
+            >
+              إلغاء
+            </button>
+            <button
+              type="button"
+              onClick={confirmDeleteProduct}
+              className="flex-1 bg-expense-500 text-white font-bold rounded-12 py-3.5 active:scale-95 transition-transform"
+            >
+              {t.delete}
+            </button>
+          </div>
+        </div>
+      </BottomSheet>
     </div>
   )
 }

@@ -1,12 +1,16 @@
 import { useEffect, useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { hapticMedium } from '../../utils/haptics.js'
+import { useBackDismiss } from '../../hooks/useBackDismiss.js'
 import Icon from './Icon.jsx'
 
 /**
  * Draggable & Expandable Bottom Sheet (SOP §7.5)
  * Two snap points: collapsed (~84%) and full-screen (~94%).
  * Drag handle up → expand to full screen; drag down → collapse, then close.
+ *
+ * A1: Android/PWA back-button closes the sheet via useBackDismiss hook.
+ * B6: role="dialog" + aria-modal + focus trap + restore focus on close.
  */
 export default function BottomSheet({ open, onClose, title, children, maxHeight = '94vh' }) {
   const [show, setShow] = useState(false)
@@ -16,15 +20,26 @@ export default function BottomSheet({ open, onClose, title, children, maxHeight 
   const dragStartY = useRef(0)
   const dragMoved = useRef(0)
   const isDragging = useRef(false)
+  const previouslyFocused = useRef(null)
+  const sheetContainerRef = useRef(null)
+
+  // A1: Back-button dismisses the sheet (not the page)
+  useBackDismiss(open, onClose)
 
   useEffect(() => {
     if (open) {
       setShow(true)
       setExpanded(false)
       document.body.style.overflow = 'hidden'
+      // B6: Save currently focused element to restore on close
+      previouslyFocused.current = document.activeElement
     } else {
       const t = setTimeout(() => setShow(false), 300)
       document.body.style.overflow = ''
+      // B6: Restore focus to the element that opened the sheet
+      if (previouslyFocused.current && previouslyFocused.current.focus) {
+        setTimeout(() => previouslyFocused.current?.focus?.(), 100)
+      }
       return () => clearTimeout(t)
     }
   }, [open])
@@ -39,6 +54,36 @@ export default function BottomSheet({ open, onClose, title, children, maxHeight 
     window.addEventListener('keydown', handleEsc)
     return () => window.removeEventListener('keydown', handleEsc)
   }, [open, onClose, expanded])
+
+  // B6: Focus trap — when sheet is open, Tab cycles within the sheet only
+  useEffect(() => {
+    if (!open) return
+    const sheet = sheetContainerRef.current
+    if (!sheet) return
+
+    // Focus the sheet container (or first focusable) on open
+    setTimeout(() => {
+      const firstFocusable = sheet.querySelector('button, input, textarea, select, a[href], [tabindex]:not([tabindex="-1"])')
+      firstFocusable?.focus?.()
+    }, 100)
+
+    const handleTab = (e) => {
+      if (e.key !== 'Tab') return
+      const focusables = sheet.querySelectorAll('button, input, textarea, select, a[href], [tabindex]:not([tabindex="-1"])')
+      if (focusables.length === 0) return
+      const first = focusables[0]
+      const last = focusables[focusables.length - 1]
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
+    sheet.addEventListener('keydown', handleTab)
+    return () => sheet.removeEventListener('keydown', handleTab)
+  }, [open])
 
   // Drag handlers
   const onPointerDown = (e) => {
@@ -94,8 +139,12 @@ export default function BottomSheet({ open, onClose, title, children, maxHeight 
       />
 
       <div
-        ref={sheetRef}
-        className={`fixed inset-x-0 bottom-0 bg-surface rounded-t-sheet z-50 flex flex-col ${open ? 'translate-y-0' : 'translate-y-full'}`}
+        ref={(el) => { sheetRef.current = el; sheetContainerRef.current = el; }}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title || 'نافذة منبثقة'}
+        tabIndex={-1}
+        className={`fixed inset-x-0 bottom-0 bg-surface rounded-t-sheet z-50 flex flex-col outline-none ${open ? 'translate-y-0' : 'translate-y-full'}`}
         style={{
           maxHeight: expanded ? maxHeight : maxCollapsedHeight,
           height: sheetHeight,
@@ -115,7 +164,7 @@ export default function BottomSheet({ open, onClose, title, children, maxHeight 
         >
           <div className="w-9 h-[5px] rounded-full mx-auto bg-divider" />
           {!expanded && (
-            <div className="text-center text-[10px] text-placeholder mt-1.5 transition-opacity">
+            <div className="text-center text-caption text-placeholder mt-1.5 transition-opacity">
               ↑ اسحب للأعلى للتوسّع
             </div>
           )}
@@ -124,7 +173,7 @@ export default function BottomSheet({ open, onClose, title, children, maxHeight 
         {/* Header */}
         {title && (
           <div className="px-5 py-2 flex items-center justify-between">
-            <h2 className="text-[19px] font-extrabold text-ink">{title}</h2>
+            <h2 className="text-title-sm text-ink">{title}</h2>
             <button
               type="button"
               onClick={() => { hapticMedium(); onClose?.() }}

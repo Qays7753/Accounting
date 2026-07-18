@@ -17,6 +17,7 @@ import { Link } from 'react-router-dom'
 import { hapticLight, hapticSuccess, hapticMedium } from '../utils/haptics.js'
 import { exportBackup } from '../utils/backup.js'
 import PageHeader from '../components/layout/PageHeader.jsx'
+import { useSubmitGuard } from '../hooks/useSubmitGuard.js'
 
 export default function HomePage() {
   const stats = useDashboardStats()
@@ -90,13 +91,15 @@ export default function HomePage() {
     setZReportSheetOpen(true)
   }
 
-  const handleSaveZReport = async () => {
+  // A2: Submit guards — prevent double-submit on financial actions
+  const [zReportSaving, guardZReport] = useSubmitGuard()
+  const handleSaveZReport = guardZReport(async () => {
     hapticSuccess()
     const counted = parseNumber(countedCash) || 0
     await db.saveDailyClosure({ expected_cash: expectedCash, counted_cash: counted })
     setZReportSaved(true)
     setShowZReportCard(false)
-  }
+  })
 
   // Weekly backup handler
   const handleBackupNow = async () => {
@@ -118,7 +121,8 @@ export default function HomePage() {
     setShowOpeningBalanceCard(false)
   }
 
-  const handleSaveOpeningBalance = async () => {
+  const [openingSaving, guardOpening] = useSubmitGuard()
+  const handleSaveOpeningBalance = guardOpening(async () => {
     hapticSuccess()
     if (openingCash > 0) {
       const now = new Date()
@@ -136,7 +140,7 @@ export default function HomePage() {
     setOpeningBalanceSheetOpen(false)
     db.getTwoJars().then(setJars)
     stats.refresh()
-  }
+  })
 
   // Z-Report variance calculation
   const counted = parseNumber(countedCash) || 0
@@ -502,10 +506,12 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={handleSaveZReport}
-                disabled={!countedCash}
+                disabled={!countedCash || zReportSaving}
                 className="w-full btn-primary disabled:opacity-50"
               >
-                {t.z_report_save}
+                {zReportSaving ? (
+                  <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
+                ) : t.z_report_save}
               </button>
             </>
           )}
@@ -527,9 +533,12 @@ export default function HomePage() {
           <button
             type="button"
             onClick={handleSaveOpeningBalance}
-            className="w-full btn-primary"
+            disabled={openingSaving}
+            className="w-full btn-primary disabled:opacity-50"
           >
-            {t.save}
+            {openingSaving ? (
+              <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
+            ) : t.save}
           </button>
           <button
             type="button"

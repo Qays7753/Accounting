@@ -12,6 +12,7 @@ import { useTerms, useTermsMode } from '../context/TermsContext.jsx'
 import { useSettings2 } from '../context/SettingsContext.jsx'
 import { triggerInstall, isStandalone, subscribeInstallAvailability } from '../utils/pwaInstall.js'
 import PageHeader from '../components/layout/PageHeader.jsx'
+import { useSubmitGuard } from '../hooks/useSubmitGuard.js'
 
 export default function SettingsPage() {
   const { refresh } = useSettings()
@@ -222,7 +223,8 @@ export default function SettingsPage() {
     }
   }
 
-  const handleRestore = async () => {
+  const [restoring, guardRestore] = useSubmitGuard()
+  const handleRestore = guardRestore(async () => {
     hapticMedium()
     try {
       const result = await importBackup()
@@ -237,13 +239,14 @@ export default function SettingsPage() {
       console.error('Restore failed:', e)
       alert('فشل الاستعادة: ' + e.message)
     }
-  }
+  })
 
-  const handleSaveTemplate = async () => {
+  const [templateSaving, guardTemplate] = useSubmitGuard()
+  const handleSaveTemplate = guardTemplate(async () => {
     hapticSuccess()
     await setWhatsAppTemplate(templateText)
     setTemplateOpen(false)
-  }
+  })
 
   const insertPlaceholder = (token) => {
     hapticLight()
@@ -658,9 +661,12 @@ export default function SettingsPage() {
 
           <button
             onClick={handleSaveTemplate}
-            className="w-full btn-primary"
+            disabled={templateSaving}
+            className="w-full btn-primary disabled:opacity-50"
           >
-            حفظ القالب
+            {templateSaving ? (
+              <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
+            ) : 'حفظ القالب'}
           </button>
         </div>
       </BottomSheet>

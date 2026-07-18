@@ -6,6 +6,7 @@ import { formatAmount } from '../../utils/format.js'
 import { formatArabicDateTime } from '../../utils/date.js'
 import { hapticMedium, hapticSuccess, hapticLight } from '../../utils/haptics.js'
 import { shareOrderViaWhatsApp } from '../../utils/whatsapp.js'
+import { useSubmitGuard } from '../../hooks/useSubmitGuard.js'
 
 const STATUS_CONFIG = {
   in_progress: { label: 'قيد التنفيذ', badge: 'badge-progress' },
@@ -82,8 +83,9 @@ export default function OrderDetailSheet({ order, open, onClose, onEdit, onUpdat
     await shareOrderViaWhatsApp(order)
   }
 
-  // Complete & Sell handler
-  const handleComplete = async (paymentType) => {
+  // Complete & Sell handler — submit guard prevents double-complete
+  const [completing, guardComplete] = useSubmitGuard()
+  const handleComplete = guardComplete(async (paymentType) => {
     hapticLight()
     setCompleteSheetOpen(false)
     try {
@@ -94,7 +96,7 @@ export default function OrderDetailSheet({ order, open, onClose, onEdit, onUpdat
     } catch (e) {
       console.error('Complete order failed:', e)
     }
-  }
+  })
 
   return (
     <>
@@ -321,27 +323,30 @@ export default function OrderDetailSheet({ order, open, onClose, onEdit, onUpdat
           <button
             type="button"
             onClick={() => handleComplete('cash')}
-            className="w-full bg-income-500 text-white font-bold rounded-2xl py-4 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+            disabled={completing}
+            className="w-full bg-income-500 text-white font-bold rounded-2xl py-4 active:scale-[0.98] transition-transform flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            <Icon name="checkCircle" className="w-5 h-5" />
+            {completing ? <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Icon name="checkCircle" className="w-5 h-5" />}
             نعم، استلمت المبلغ نقداً
           </button>
 
           <button
             type="button"
             onClick={() => handleComplete('credit')}
-            className="w-full bg-withdrawal-500 text-white font-bold rounded-2xl py-4 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+            disabled={completing}
+            className="w-full bg-withdrawal-500 text-white font-bold rounded-2xl py-4 active:scale-[0.98] transition-transform flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            <Icon name="userMinus" className="w-5 h-5" />
+            {completing ? <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Icon name="userMinus" className="w-5 h-5" />}
             لا، بيع بالأجل (دين)
           </button>
 
           <button
             type="button"
             onClick={() => handleComplete('done')}
-            className="w-full bg-background text-text-secondary font-semibold rounded-2xl py-4 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+            disabled={completing}
+            className="w-full bg-background text-text-secondary font-semibold rounded-2xl py-4 active:scale-[0.98] transition-transform flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            <Icon name="check" className="w-5 h-5" />
+            {completing ? <span className="w-5 h-5 border-2 border-divider border-t-transparent rounded-full animate-spin" /> : <Icon name="check" className="w-5 h-5" />}
             مجرد إنهاء (تتبع فقط)
           </button>
 

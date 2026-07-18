@@ -317,6 +317,8 @@ export const terms_simple = {
   pos_cost_price: 'سعر الشراء',
   pos_add_product: 'منتج جديد',
   pos_edit_product: 'تعديل منتج',
+  pos_delete_product: 'حذف منتج',
+  pos_delete_confirm: 'هل تريد حذف',
 
   // ===== Snackbar =====
   undo: 'تراجع',
