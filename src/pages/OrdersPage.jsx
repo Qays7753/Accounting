@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useOrders, useDebounce, useInfiniteScroll } from '../hooks/useDatabase.js'
 import { db } from '../db'
 import { formatAmount } from '../utils/format.js'
@@ -10,6 +10,8 @@ import OrderFormSheet from '../components/sheets/OrderFormSheet.jsx'
 import OrderDetailSheet from '../components/sheets/OrderDetailSheet.jsx'
 import { hapticLight } from '../utils/haptics.js'
 import { useTerms } from '../context/TermsContext.jsx'
+import PageHeader from '../components/layout/PageHeader.jsx'
+import SegmentedControl from '../components/ui/SegmentedControl.jsx'
 
 // Static status config — labels come from terms in render
 const STATUS_CONFIG = {
@@ -56,18 +58,8 @@ export default function OrdersPage() {
     return () => { cancelled = true }
   }, [dataVersion])
 
-  // V5: Sliding underline indicator over the active tab
-  const tabRefs = useRef([])
-  const [underline, setUnderline] = useState({ right: 0, width: 0 })
-  const activeTabIndex = FILTER_TABS.findIndex((t) => t.id === statusFilter)
-  useLayoutEffect(() => {
-    const el = tabRefs.current[activeTabIndex]
-    const container = el?.parentElement
-    if (el && container) {
-      const right = container.getBoundingClientRect().right - el.getBoundingClientRect().right
-      setUnderline({ right, width: el.offsetWidth })
-    }
-  }, [activeTabIndex, view, counts])
+  // SegmentedControl (underline variant) computes its own indicator position internally,
+  // so we no longer need tabRefs/underline state/useLayoutEffect here.
 
   const {
     items,
@@ -115,88 +107,40 @@ export default function OrdersPage() {
 
   return (
     <div className="min-h-screen pb-32">
-      {/* Header */}
-      <header className="px-4 pt-8 pb-3 safe-area-top sticky top-0 bg-background z-20">
-        <div className="flex items-center justify-between mb-3">
-          <h1 className="text-2xl font-bold">{t.orders_title}</h1>
-          <button
-            onClick={handleNewOrder}
-            className="w-10 h-10 rounded-full bg-primary flex items-center justify-center  active:scale-95 transition-transform"
-            aria-label={t.new_order}
-          >
-            <Icon name="plus" className="w-5 h-5 text-white" strokeWidth={2.5} />
-          </button>
-        </div>
-
-        {/* View Tabs (List vs Calendar) — segmented track (SOP §7.3) */}
-        <div className="bg-mute rounded-[18px] p-1 mb-3.5 flex">
-          <button
-            onClick={() => handleViewChange('list')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[14px] text-sm transition-all ${
-              view === 'list' ? 'bg-surface text-primary font-bold shadow-sm' : 'text-sub font-semibold'
-            }`}
-          >
-            <Icon name="list" className="w-4 h-4" />
-            {t.list_view}
-          </button>
-          <button
-            onClick={() => handleViewChange('calendar')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[14px] text-sm transition-all ${
-              view === 'calendar' ? 'bg-surface text-primary font-bold shadow-sm' : 'text-sub font-semibold'
-            }`}
-          >
-            <Icon name="calendar" className="w-4 h-4" />
-            {t.calendar_view}
-          </button>
-        </div>
-
-        {view === 'list' && (
+      <PageHeader
+        title={t.orders_title}
+        actions={[{ icon: 'plus', onClick: handleNewOrder, label: t.new_order }]}
+        search={view === 'list' ? { value: search, onChange: setSearch, placeholder: t.search_orders } : undefined}
+        subheader={
           <>
-            {/* Search */}
-            <div className="relative mb-3">
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                <Icon name="search" className="w-5 h-5 text-text-tertiary" />
+            {/* View Tabs (List vs Calendar) — SegmentedControl pill variant */}
+            <SegmentedControl
+              variant="pill"
+              segments={[
+                { id: 'list',     label: t.list_view },
+                { id: 'calendar', label: t.calendar_view },
+              ]}
+              value={view}
+              onChange={(v) => handleViewChange(v)}
+            />
+            {view === 'list' && (
+              <div className="mt-3">
+                {/* Status Filter — underline variant with count badges */}
+                <SegmentedControl
+                  variant="underline"
+                  segments={FILTER_TABS.map((tab) => ({
+                    id: tab.id,
+                    label: t[tab.labelKey] || tab.id,
+                    badge: counts[tab.id],
+                  }))}
+                  value={statusFilter}
+                  onChange={(v) => handleStatusFilterChange(v)}
+                />
               </div>
-              <input
-                type="search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={t.search_orders}
-                className="w-full bg-surface rounded-2xl pr-11 pl-4 py-3 text-sm outline-none border border-transparent focus:border-primary transition-colors"
-                dir="rtl"
-              />
-            </div>
-
-            {/* V5: Status Filter — underline tabs with sliding indicator + count badges */}
-            <div className="relative">
-              <div className="flex gap-5 border-b border-divider overflow-x-auto hide-scrollbar">
-                {FILTER_TABS.map((tab, i) => {
-                  const on = statusFilter === tab.id
-                  return (
-                    <button
-                      key={tab.id}
-                      ref={(el) => (tabRefs.current[i] = el)}
-                      onClick={() => handleStatusFilterChange(tab.id)}
-                      className={`relative flex-none pb-2.5 flex items-center gap-1.5 text-[14px] whitespace-nowrap transition-colors ${
-                        on ? 'text-ink font-bold' : 'text-faint font-semibold'
-                      }`}
-                    >
-                      {t[tab.labelKey] || tab.id}
-                      <span className={`tnum text-[11px] font-bold px-1.5 py-px rounded-full ${tab.badge}`}>
-                        {counts[tab.id]}
-                      </span>
-                    </button>
-                  )
-                })}
-              </div>
-              <div
-                className="absolute bottom-[-1.5px] h-[3px] bg-primary rounded-full transition-all duration-300 ease-out"
-                style={{ right: underline.right, width: underline.width }}
-              />
-            </div>
+            )}
           </>
-        )}
-      </header>
+        }
+      />
 
       {/* Content */}
       {view === 'list' ? (

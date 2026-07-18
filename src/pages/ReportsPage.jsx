@@ -9,6 +9,8 @@ import { hapticLight, hapticSuccess } from '../utils/haptics.js'
 import { sendDebtReminder } from '../utils/whatsapp.js'
 import { Link } from 'react-router-dom'
 import { useCountUp } from '../hooks/useCountUp.js'
+import PageHeader from '../components/layout/PageHeader.jsx'
+import SegmentedControl from '../components/ui/SegmentedControl.jsx'
 
 /**
  * Reports Page (V4 Phase 3) - Adaptive Reporting
@@ -147,7 +149,7 @@ export default function ReportsPage() {
     { id: 'year', label: 'السنة' },
   ]
 
-  const activePresetIndex = Math.max(0, presets.findIndex((p) => p.id === activePreset))
+  // activePresetIndex no longer needed — SegmentedControl computes its own thumb position
 
   const varianceColor = report
     ? (report.variance > 0 ? 'text-withdrawal-600'
@@ -162,57 +164,44 @@ export default function ReportsPage() {
 
   return (
     <div className="min-h-screen pb-32">
-      {/* Header */}
-      <header className="px-4 pt-8 pb-3 safe-area-top sticky top-0 bg-background z-20">
-        <h1 className="text-[30px] font-extrabold text-ink -tracking-[.5px] mb-3">{t.reports_title}</h1>
-
-        {/* V5: Period segmented control */}
-        <div className="relative grid grid-cols-5 bg-mute rounded-[16px] p-1 mb-3">
-          <div
-            className="absolute top-1 bottom-1 rounded-[12px] bg-primary shadow-sm transition-all duration-300 ease-out"
-            style={{ right: `calc(${activePresetIndex * 20}% + 4px)`, width: 'calc(20% - 8px)' }}
-          />
-          {presets.map((p) => {
-            const on = p.id === activePreset
-            return (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => setPreset(p.id)}
-                className={`relative z-10 py-2 text-[13px] transition-colors ${
-                  on ? 'text-white font-bold' : 'text-sub font-semibold'
-                }`}
-              >
-                {p.label}
-              </button>
-            )
-          })}
-        </div>
-
-        {/* Custom Date Range */}
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-semibold text-text-secondary mb-1.5">{t.date}</label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={handleStartDateChange}
-              className="input-field text-sm"
-              dir="ltr"
+      <PageHeader
+        title={t.reports_title}
+        subheader={
+          <>
+            {/* Period segmented control */}
+            <SegmentedControl
+              variant="pill"
+              segments={presets.map((p) => ({ id: p.id, label: p.label }))}
+              value={activePreset}
+              onChange={(v) => setPreset(v)}
             />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-text-secondary mb-1.5">{t.date}</label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={handleEndDateChange}
-              className="input-field text-sm"
-              dir="ltr"
-            />
-          </div>
-        </div>
-      </header>
+
+            {/* Custom Date Range */}
+            <div className="grid grid-cols-2 gap-3 mt-3">
+              <div>
+                <label className="block text-xs font-semibold text-text-secondary mb-1.5">{t.date}</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={handleStartDateChange}
+                  className="input-field text-sm"
+                  dir="ltr"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-text-secondary mb-1.5">{t.date}</label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={handleEndDateChange}
+                  className="input-field text-sm"
+                  dir="ltr"
+                />
+              </div>
+            </div>
+          </>
+        }
+      />
 
       {loading ? (
         <div className="flex items-center justify-center py-20">

@@ -9,6 +9,7 @@ import AmountInput from '../components/ui/AmountInput.jsx'
 import { hapticLight, hapticSuccess, hapticMedium, hapticError } from '../utils/haptics.js'
 import { sendDebtReminder } from '../utils/whatsapp.js'
 import { useTerms } from '../context/TermsContext.jsx'
+import PageHeader from '../components/layout/PageHeader.jsx'
 
 /**
  * Debts Page (V4 Phase 1) - Tracks receivables and payables with tabs.
@@ -103,22 +104,12 @@ export default function DebtsPage() {
 
   return (
     <div className="min-h-screen pb-32">
-      {/* Header */}
-      <header className="px-4 pt-8 pb-3 safe-area-top sticky top-0 bg-background z-20">
-        <div className="flex items-center justify-between">
-          <h1 className="text-[30px] font-extrabold text-ink -tracking-[.5px]">{t.debts_title}</h1>
-          <button
-            type="button"
-            onClick={() => handleAddDebt('debt_given')}
-            className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shadow-fab active:scale-95 transition-transform"
-            aria-label={t.add_debt_receivable}
-          >
-            <Icon name="plus" className="w-5 h-5 text-white" strokeWidth={2.5} />
-          </button>
-        </div>
-      </header>
+      <PageHeader
+        title={t.debts_title}
+        actions={[{ icon: 'plus', onClick: () => handleAddDebt('debt_given'), label: t.add_debt_receivable }]}
+      />
 
-      {/* V4 Phase 1: Summary Cards with new labels */}
+      {/* Summary Cards — scroll with content (was inside sticky header) */}
       <div className="px-4 mb-4">
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-primary text-white rounded-16 p-4">
@@ -126,7 +117,7 @@ export default function DebtsPage() {
             {loading ? (
               <div className="h-8 w-24 bg-white/20 rounded animate-pulse" />
             ) : (
-              <p className="text-2xl font-bold tabular-nums">{formatAmount(totalReceivable)}</p>
+              <p className="text-2xl font-bold tabular-nums num">{formatAmount(totalReceivable)}</p>
             )}
             <p className="text-xs text-income-50 mt-1">{receivables.length} {t.receivables_tab}</p>
           </div>
@@ -135,14 +126,14 @@ export default function DebtsPage() {
             {loading ? (
               <div className="h-8 w-24 bg-white/20 rounded animate-pulse" />
             ) : (
-              <p className="text-2xl font-bold tabular-nums">{formatAmount(totalPayable)}</p>
+              <p className="text-2xl font-bold tabular-nums num">{formatAmount(totalPayable)}</p>
             )}
             <p className="text-xs text-expense-50 mt-1">{payables.length} {t.payables_tab}</p>
           </div>
         </div>
       </div>
 
-      {/* V4 Phase 1: Tab System (لهم عندي / عندي لهم) */}
+      {/* Tab System — scroll with content */}
       <div className="px-4 mb-4">
         <div className="bg-surface rounded-2xl p-1 flex shadow-card">
           <button

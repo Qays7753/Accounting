@@ -7,6 +7,7 @@ import BottomSheet from '../components/ui/BottomSheet.jsx'
 import AmountInput from '../components/ui/AmountInput.jsx'
 import { hapticLight, hapticSuccess, hapticMedium, hapticError } from '../utils/haptics.js'
 import { useTerms } from '../context/TermsContext.jsx'
+import PageHeader from '../components/layout/PageHeader.jsx'
 
 /**
  * Quick POS Page (V4 Phase 2)
@@ -126,20 +127,10 @@ export default function QuickPosPage() {
 
   return (
     <div className="min-h-screen pb-40">
-      {/* Header */}
-      <header className="px-4 pt-8 pb-3 safe-area-top sticky top-0 bg-background z-20">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">{t.pos_title}</h1>
-          <button
-            type="button"
-            onClick={() => { hapticLight(); setEditingProduct(null); setProductManageOpen(true) }}
-            className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shadow-fab active:scale-95 transition-transform"
-            aria-label={t.pos_add_product}
-          >
-            <Icon name="plus" className="w-5 h-5 text-white" strokeWidth={2.5} />
-          </button>
-        </div>
-      </header>
+      <PageHeader
+        title={t.pos_title}
+        actions={[{ icon: 'plus', onClick: () => { hapticLight(); setEditingProduct(null); setProductManageOpen(true) }, label: t.pos_add_product }]}
+      />
 
       {/* Products Grid */}
       <div className="px-4 mb-4">

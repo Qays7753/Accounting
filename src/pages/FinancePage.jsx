@@ -11,6 +11,8 @@ import Icon from '../components/ui/Icon.jsx'
 import TransactionFormSheet from '../components/sheets/TransactionFormSheet.jsx'
 import { hapticLight, hapticSuccess, hapticMedium } from '../utils/haptics.js'
 import { Link } from 'react-router-dom'
+import PageHeader from '../components/layout/PageHeader.jsx'
+import SegmentedControl from '../components/ui/SegmentedControl.jsx'
 
 // Type segmented control (SOP §7.3 sliding thumb) — filters the ledger by kind
 // Labels resolve via useTerms() at render time (see TYPE_LABEL_KEYS below).
@@ -144,91 +146,66 @@ export default function FinancePage() {
   }, [filteredItems, t.today_label, t.yesterday_label])
 
   const monthNet = stats.monthIncome - stats.monthExpense
-  const activeIndex = TYPE_SEGMENTS.findIndex((s) => s.id === typeFilter)
 
   return (
     <div className="min-h-screen pb-32">
-      {/* Header */}
-      <header className="px-4 pt-8 pb-3 safe-area-top sticky top-0 bg-background z-20">
-        <div className="flex items-center justify-between mb-3.5">
-          <h1 className="text-[30px] font-extrabold text-ink -tracking-[.5px]">{t.finance_title}</h1>
-        </div>
-
-        {/* {t.net_this_month} */}
-        <div className="bg-surface rounded-card px-4 py-[18px] shadow-card flex items-center justify-between mb-3.5">
-          <div>
-            <div className="text-[12px] text-faint font-medium">{t.net_this_month}</div>
-            <div className={`tnum text-[28px] font-extrabold mt-0.5 num ${monthNet >= 0 ? 'text-income-600' : 'text-expense-600'}`}>
-              {monthNet >= 0 ? '+' : '−'}{formatAmount(Math.abs(monthNet))}
+      <PageHeader
+        title={t.finance_title}
+        search={{ value: search, onChange: handleSearchChange, placeholder: t.search_transactions }}
+        subheader={
+          <>
+            {/* Net this month — summary card */}
+            <div className="bg-surface rounded-card px-4 py-4 shadow-card flex items-center justify-between">
+              <div>
+                <div className="text-caption text-faint font-medium">{t.net_this_month}</div>
+                <div className={`tnum text-title num ${monthNet >= 0 ? 'text-income-600' : 'text-expense-600'}`}>
+                  {monthNet >= 0 ? '+' : '−'}{formatAmount(Math.abs(monthNet))}
+                </div>
+              </div>
+              <div className="flex gap-4 text-center">
+                <div>
+                  <div className="text-[11px] text-faint">{t.total_income}</div>
+                  <div className="tnum text-card-title font-bold text-income-600 num">{formatAmount(stats.monthIncome)}</div>
+                </div>
+                <div className="w-px bg-divider" />
+                <div>
+                  <div className="text-[11px] text-faint">{t.total_expense}</div>
+                  <div className="tnum text-card-title font-bold text-expense-600 num">{formatAmount(stats.monthExpense)}</div>
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="flex gap-[18px] text-center">
-            <div>
-              <div className="text-[11px] text-faint">{t.total_income}</div>
-              <div className="tnum text-[15px] font-bold text-income-600 num">{formatAmount(stats.monthIncome)}</div>
-            </div>
-            <div className="w-px bg-divider" />
-            <div>
-              <div className="text-[11px] text-faint">{t.total_expense}</div>
-              <div className="tnum text-[15px] font-bold text-expense-600 num">{formatAmount(stats.monthExpense)}</div>
-            </div>
-          </div>
-        </div>
 
-        {/* Search */}
-        <div className="relative mb-3.5">
-          <div className="absolute right-4 top-1/2 -translate-y-1/2">
-            <Icon name="search" className="w-[21px] h-[21px] text-faint" />
-          </div>
-          <input
-            type="search"
-            value={search}
-            onChange={handleSearchChange}
-            placeholder={t.search_transactions}
-            className="w-full bg-mute rounded-[18px] pr-12 pl-4 py-3 text-sm outline-none border-2 border-transparent focus:border-primary transition-colors"
-            dir="rtl"
-          />
-        </div>
-
-        {/* V5: Segmented control — sliding blue thumb (RTL) */}
-        <div className="relative grid grid-cols-4 bg-mute rounded-[16px] p-1">
-          <div
-            className="absolute top-1 bottom-1 rounded-[12px] bg-primary shadow-sm transition-all duration-300 ease-out"
-            style={{ right: `calc(${activeIndex * 25}% + 4px)`, width: 'calc(25% - 8px)' }}
-          />
-          {TYPE_SEGMENTS.map((seg) => {
-            const on = seg.id === typeFilter
-            return (
-              <button
-                key={seg.id}
-                onClick={() => handleTypeChange(seg.id)}
-                className={`relative z-10 text-[13px] py-2 transition-colors ${on ? 'text-white font-bold' : 'text-sub font-semibold'}`}
-              >
-                {t[seg.labelKey]}
-              </button>
-            )
-          })}
-        </div>
-      </header>
+            {/* Type Segmented control */}
+            <div className="mt-3">
+              <SegmentedControl
+                variant="pill"
+                segments={TYPE_SEGMENTS.map((seg) => ({ id: seg.id, label: t[seg.labelKey] }))}
+                value={typeFilter}
+                onChange={(v) => handleTypeChange(v)}
+              />
+            </div>
+          </>
+        }
+      />
 
       {/* Quick access — clearly labeled entries for Debts & Reports (not in bottom nav) */}
       <div className="px-4 pt-4 grid grid-cols-2 gap-3">
-        <Link to="/debts" className="press bg-surface rounded-[20px] p-4 shadow-card flex items-center gap-3">
-          <div className="w-11 h-11 rounded-[13px] bg-withdraw-bg grid place-items-center flex-none">
-            <Icon name="bank" className="w-[22px] h-[22px] text-withdrawal" strokeWidth={2} />
+        <Link to="/debts" className="press bg-surface rounded-card p-4 shadow-card flex items-center gap-3">
+          <div className="w-11 h-11 rounded-12 bg-withdraw-bg grid place-items-center flex-none">
+            <Icon name="bank" className="w-5 h-5 text-withdrawal" strokeWidth={2} />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[15px] font-bold text-ink">{t.debts_title}</div>
+            <div className="text-card-title font-bold text-ink">{t.debts_title}</div>
             <div className="text-[11px] text-faint">{t.receivables_tab} {t.payables_tab}</div>
           </div>
           <Icon name="chevronLeft" className="w-4 h-4 text-disabled flex-none" />
         </Link>
-        <Link to="/reports" className="press bg-surface rounded-[20px] p-4 shadow-card flex items-center gap-3">
-          <div className="w-11 h-11 rounded-[13px] bg-primary-tint grid place-items-center flex-none">
-            <Icon name="document" className="w-[22px] h-[22px] text-primary" strokeWidth={2} />
+        <Link to="/reports" className="press bg-surface rounded-card p-4 shadow-card flex items-center gap-3">
+          <div className="w-11 h-11 rounded-12 bg-primary-tint grid place-items-center flex-none">
+            <Icon name="document" className="w-5 h-5 text-primary" strokeWidth={2} />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[15px] font-bold text-ink">{t.reports_title}</div>
+            <div className="text-card-title font-bold text-ink">{t.reports_title}</div>
             <div className="text-[11px] text-faint">{t.report_profit_label}</div>
           </div>
           <Icon name="chevronLeft" className="w-4 h-4 text-disabled flex-none" />

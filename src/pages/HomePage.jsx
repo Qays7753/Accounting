@@ -16,6 +16,7 @@ import AmountInput from '../components/ui/AmountInput.jsx'
 import { Link } from 'react-router-dom'
 import { hapticLight, hapticSuccess, hapticMedium } from '../utils/haptics.js'
 import { exportBackup } from '../utils/backup.js'
+import PageHeader from '../components/layout/PageHeader.jsx'
 
 export default function HomePage() {
   const stats = useDashboardStats()
@@ -144,34 +145,9 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen pb-32">
-      {/* Header — compact (SOP §6: avatar + greeting leading, notifications action) */}
-      <header className="px-5 pt-12 pb-4 safe-area-top">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 min-w-0">
-            {logo ? (
-              <img src={logo} alt="شعار" className="w-[46px] h-[46px] rounded-full object-cover flex-none" />
-            ) : (
-              <div className="w-[46px] h-[46px] rounded-full bg-primary-pill grid place-items-center flex-none">
-                <Icon name="storefront" className="w-[26px] h-[26px] text-primary" strokeWidth={2} />
-              </div>
-            )}
-            <div className="min-w-0">
-              <p className="text-[13px] text-faint font-medium">{getGreeting()}</p>
-              <h1 className="text-lg font-bold text-ink leading-tight truncate">{businessName || t.onboarding_welcome}</h1>
-              <p className="text-[11px] text-faint mt-0.5">{formatArabicDate(new Date())}</p>
-            </div>
-          </div>
-          <button
-            type="button"
-            className="press w-11 h-11 rounded-full bg-mute grid place-items-center flex-none"
-            aria-label="الإشعارات"
-          >
-            <Icon name="bell" className="w-6 h-6 text-sub" />
-          </button>
-        </div>
-      </header>
+      <PageHeader variant="home" />
 
-      {/* V5 SOP: Two Jars Dashboard */}
+      {/* Two Jars Dashboard */}
       <section className="px-4 mb-3">
         <div
           className="rounded-16 p-4 text-ink relative overflow-hidden bg-mute shadow-card"
@@ -221,7 +197,7 @@ export default function HomePage() {
       </section>
 
       {/* Today's Income & Expenses */}
-      <section className="px-5 mb-6">
+      <section className="px-4 mb-6">
         <div className="grid grid-cols-2 gap-3">
           {/* Today's Income */}
           <Link
@@ -266,7 +242,7 @@ export default function HomePage() {
       </section>
 
       {/* Upcoming Orders */}
-      <section className="px-5 mb-6">
+      <section className="px-4 mb-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-base font-bold text-text-primary">{t.upcoming_orders}</h2>
           <Link to="/orders" className="text-sm text-primary-600 font-medium">
@@ -314,7 +290,7 @@ export default function HomePage() {
 
       {/* This Month Summary — gated by monthlySummary setting */}
       {monthlySummary && (
-      <section className="px-5 mb-6">
+      <section className="px-4 mb-6">
         <div className="bg-surface rounded-2xl p-5 shadow-card">
           <h2 className="text-base font-bold text-text-primary mb-4">{t.net_this_month}</h2>
           <div className="grid grid-cols-3 gap-3">
@@ -345,7 +321,7 @@ export default function HomePage() {
 
       {/* V4 Phase 2: Z-Report Reminder Card */}
       {showZReportCard && (
-        <section className="px-5 mb-4">
+        <section className="px-4 mb-4">
           <button
             type="button"
             onClick={handleOpenZReport}
@@ -365,7 +341,7 @@ export default function HomePage() {
 
       {/* V4 Phase 2: Weekly Backup Prompt */}
       {showBackupPrompt && (
-        <section className="px-5 mb-4">
+        <section className="px-4 mb-4">
           <div className="bg-primary-50 border border-primary-100 rounded-2xl p-4 animate-fade-in">
             <div className="flex items-start gap-3 mb-3">
               <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0">
@@ -400,7 +376,7 @@ export default function HomePage() {
 
       {/* V4 Phase 3: Opening Balance Prompt Card */}
       {showOpeningBalanceCard && (
-        <section className="px-5 mb-4">
+        <section className="px-4 mb-4">
           <div className="bg-income-50 border border-income-200 rounded-2xl p-4 animate-fade-in">
             <div className="flex items-start gap-3 mb-3">
               <div className="w-10 h-10 rounded-xl bg-income-100 flex items-center justify-center flex-shrink-0">

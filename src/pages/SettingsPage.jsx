@@ -11,6 +11,7 @@ import { useHelperMode } from '../context/HelperModeContext.jsx'
 import { useTerms, useTermsMode } from '../context/TermsContext.jsx'
 import { useSettings2 } from '../context/SettingsContext.jsx'
 import { triggerInstall, isStandalone, subscribeInstallAvailability } from '../utils/pwaInstall.js'
+import PageHeader from '../components/layout/PageHeader.jsx'
 
 export default function SettingsPage() {
   const { refresh } = useSettings()
@@ -289,12 +290,9 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen pb-32">
-      {/* Header */}
-      <header className="px-5 pt-8 pb-3 safe-area-top">
-        <h1 className="text-[30px] font-extrabold text-ink -tracking-[.5px]">{t.settings_title}</h1>
-      </header>
+      <PageHeader title={t.settings_title} />
 
-      <div className="px-5 space-y-4">
+      <div className="px-4 space-y-4">
         {/* Backup Reminder */}
         {backupReminder && (
           <div className="bg-withdrawal-50 border border-withdrawal-200 rounded-2xl p-4 flex items-start gap-3 animate-fade-in">
