@@ -31,6 +31,14 @@ export default function SettingsPage() {
   const [closingTime, setClosingTime] = useState('20:00')
   const { isHelperMode, enterHelperMode, helperModeEnabled } = useHelperMode()
 
+  // V6: Professional settings — security, display, fiscal, notifications
+  const [autoLock, setAutoLock] = useState('off')           // 'off' | '30s' | '1m' | '5m'
+  const [hideAmounts, setHideAmounts] = useState(false)
+  const [fontSize, setFontSize] = useState('normal')        // 'normal' | 'large'
+  const [listDensity, setListDensity] = useState('comfortable') // 'comfortable' | 'compact'
+  const [fiscalYearStart, setFiscalYearStart] = useState(1) // month 1-12
+  const [monthlySummary, setMonthlySummary] = useState(true)
+
   // V4 Phase 3: Report Mode (uses TermsContext for live switching)
   const [reportMode, setReportModeCtx] = useTermsMode()
 
@@ -49,6 +57,13 @@ export default function SettingsPage() {
     // V4 Phase 2: Load Quick POS + closing time settings
     db.getShowQuickPos().then(setShowQuickPosSetting)
     db.getClosingTime().then(setClosingTime)
+    // V6: Load professional settings
+    db.getSetting('auto_lock', 'off').then(setAutoLock)
+    db.getSetting('hide_amounts', false).then(setHideAmounts)
+    db.getSetting('font_size', 'normal').then(setFontSize)
+    db.getSetting('list_density', 'comfortable').then(setListDensity)
+    db.getSetting('fiscal_year_start', 1).then(v => setFiscalYearStart(Number(v) || 1))
+    db.getSetting('monthly_summary', true).then(v => setMonthlySummary(v !== false))
   }, [])
 
   // V4 Phase 2: Toggle Quick POS visibility
@@ -80,6 +95,39 @@ export default function SettingsPage() {
     const val = e.target.value
     setClosingTime(val)
     await db.setSetting('closing_time', val)
+  }
+
+  // V6: Professional settings handlers
+  const handleAutoLockChange = async (val) => {
+    hapticLight()
+    setAutoLock(val)
+    await db.setSetting('auto_lock', val)
+  }
+  const handleHideAmountsToggle = async (enabled) => {
+    hapticLight()
+    setHideAmounts(enabled)
+    await db.setSetting('hide_amounts', enabled)
+  }
+  const handleFontSizeChange = async (val) => {
+    hapticLight()
+    setFontSize(val)
+    await db.setSetting('font_size', val)
+  }
+  const handleListDensityChange = async (val) => {
+    hapticLight()
+    setListDensity(val)
+    await db.setSetting('list_density', val)
+  }
+  const handleFiscalYearStartChange = async (e) => {
+    hapticLight()
+    const val = Number(e.target.value)
+    setFiscalYearStart(val)
+    await db.setSetting('fiscal_year_start', val)
+  }
+  const handleMonthlySummaryToggle = async (enabled) => {
+    hapticLight()
+    setMonthlySummary(enabled)
+    await db.setSetting('monthly_summary', enabled)
   }
 
   const handleBackup = async () => {
@@ -214,6 +262,26 @@ export default function SettingsPage() {
               description={t.restore_desc}
               onClick={handleRestore}
             />
+            {/* V6: Fiscal year start (month picker) */}
+            <div className="w-full flex items-center gap-3 p-4 text-right">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-accent-50 text-accent-600">
+                <Icon name="calendar" className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-text-primary text-sm">{t.fiscal_year_start}</p>
+                <p className="text-xs text-text-tertiary mt-0.5">{t.fiscal_year_start_desc}</p>
+              </div>
+              <select
+                value={fiscalYearStart}
+                onChange={handleFiscalYearStartChange}
+                className="bg-background rounded-xl px-3 py-2 text-sm outline-none border border-divider text-text-primary"
+                dir="rtl"
+              >
+                {['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'].map((m, i) => (
+                  <option key={i+1} value={i+1}>{m}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </section>
 
@@ -269,10 +337,122 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* V2: Appearance (Theme + Branding) */}
+        {/* V6: Security (auto-lock + hide amounts) */}
         <section>
-          <h2 className="text-[12px] font-bold text-primary mb-2 px-1.5">{t.appearance}</h2>
+          <h2 className="text-[12px] font-bold text-primary mb-2 px-1.5">{t.security_section}</h2>
           <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
+            {/* Auto-lock segmented control */}
+            <div className="w-full p-4 text-right">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-withdrawal-50 text-withdrawal-600">
+                  <Icon name="lock" className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-text-primary text-sm">{t.auto_lock}</p>
+                  <p className="text-xs text-text-tertiary mt-0.5">{t.auto_lock_desc}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { v: 'off', label: t.auto_lock_off },
+                  { v: '30s', label: t.auto_lock_30s },
+                  { v: '1m',  label: t.auto_lock_1m },
+                  { v: '5m',  label: t.auto_lock_5m },
+                ].map((opt) => (
+                  <button
+                    key={opt.v}
+                    type="button"
+                    onClick={() => handleAutoLockChange(opt.v)}
+                    className={`py-2.5 rounded-xl text-[12px] font-semibold transition-all active:scale-95 ${
+                      autoLock === opt.v ? 'bg-primary text-white' : 'bg-background text-text-secondary border border-divider'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Hide amounts toggle */}
+            <SettingsToggle
+              icon="eye"
+              iconBg="bg-withdrawal-50 text-withdrawal-600"
+              label={t.hide_amounts}
+              description={t.hide_amounts_desc}
+              checked={hideAmounts}
+              onChange={handleHideAmountsToggle}
+            />
+          </div>
+        </section>
+
+        {/* V6: Display (font size + list density) */}
+        <section>
+          <h2 className="text-[12px] font-bold text-primary mb-2 px-1.5">{t.display_section}</h2>
+          <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
+            {/* Font size segmented control */}
+            <div className="w-full p-4 text-right">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-primary-50 text-primary-600">
+                  <Icon name="document" className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-text-primary text-sm">{t.font_size}</p>
+                  <p className="text-xs text-text-tertiary mt-0.5">{t.font_size_desc}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleFontSizeChange('normal')}
+                  className={`py-3 rounded-xl text-sm font-semibold transition-all active:scale-95 ${
+                    fontSize === 'normal' ? 'bg-primary text-white' : 'bg-background text-text-secondary border border-divider'
+                  }`}
+                >
+                  {t.font_size_normal}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleFontSizeChange('large')}
+                  className={`py-3 rounded-xl text-[16px] font-semibold transition-all active:scale-95 ${
+                    fontSize === 'large' ? 'bg-primary text-white' : 'bg-background text-text-secondary border border-divider'
+                  }`}
+                >
+                  {t.font_size_large}
+                </button>
+              </div>
+            </div>
+            {/* List density segmented control */}
+            <div className="w-full p-4 text-right">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-accent-50 text-accent-600">
+                  <Icon name="list" className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-text-primary text-sm">{t.list_density}</p>
+                  <p className="text-xs text-text-tertiary mt-0.5">{t.list_density_desc}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleListDensityChange('comfortable')}
+                  className={`py-3 rounded-xl text-sm font-semibold transition-all active:scale-95 ${
+                    listDensity === 'comfortable' ? 'bg-primary text-white' : 'bg-background text-text-secondary border border-divider'
+                  }`}
+                >
+                  {t.list_density_comfortable}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleListDensityChange('compact')}
+                  className={`py-2 rounded-xl text-sm font-semibold transition-all active:scale-95 ${
+                    listDensity === 'compact' ? 'bg-primary text-white' : 'bg-background text-text-secondary border border-divider'
+                  }`}
+                >
+                  {t.list_density_compact}
+                </button>
+              </div>
+            </div>
+            {/* Branding row (moved from appearance) */}
             <SettingsRow
               icon="user"
               iconBg="bg-withdrawal-50 text-withdrawal-600"
@@ -352,6 +532,15 @@ export default function SettingsPage() {
                 }
               }}
             />
+            {/* V6: Monthly summary toggle */}
+            <SettingsToggle
+              icon="document"
+              iconBg="bg-income-50 text-income-600"
+              label={t.monthly_summary}
+              description={t.monthly_summary_desc}
+              checked={monthlySummary}
+              onChange={handleMonthlySummaryToggle}
+            />
             <SettingsRow
               icon="install"
               iconBg="bg-primary-50 text-primary-600"
@@ -361,7 +550,7 @@ export default function SettingsPage() {
             />
             <SettingsRow
               icon="info"
-              iconBg="bg-gray-100 text-text-secondary"
+              iconBg="bg-mute text-text-secondary"
               label={t.about_app}
               description="v1.0.0"
               onClick={() => alert('الحسابات - إصدار 1.0.0\nتطبيق محاسبة وإدارة الطلبات للشركات الصغيرة')}
@@ -611,7 +800,7 @@ function SettingsToggle({ icon, iconBg, label, description, checked, onChange })
         type="button"
         onClick={() => onChange(!checked)}
         className={`relative w-12 h-7 rounded-full transition-colors flex-shrink-0 ${
-          checked ? 'bg-primary' : 'bg-gray-200'
+          checked ? 'bg-primary' : 'bg-disabled'
         }`}
         role="switch"
         aria-checked={checked}
