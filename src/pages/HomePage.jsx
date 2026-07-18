@@ -156,7 +156,7 @@ export default function HomePage() {
             )}
             <div className="min-w-0">
               <p className="text-[13px] text-faint font-medium">{getGreeting()}</p>
-              <h1 className="text-lg font-bold text-ink leading-tight truncate">{businessName || 'أهلاً بك'}</h1>
+              <h1 className="text-lg font-bold text-ink leading-tight truncate">{businessName || t.onboarding_welcome}</h1>
               <p className="text-[11px] text-faint mt-0.5">{formatArabicDate(new Date())}</p>
             </div>
           </div>
@@ -277,8 +277,8 @@ export default function HomePage() {
           <div className="bg-surface rounded-2xl p-5 shadow-card">
             <EmptyState
               icon="clipboard"
-              title="لا توجد طلبات قادمة"
-              description="أضف طلباتك القادمة لتتبعها هنا"
+              title={t.empty_no_orders}
+              description={t.upcoming_orders}
             />
           </div>
         ) : (
@@ -292,7 +292,7 @@ export default function HomePage() {
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-text-primary truncate">
-                      {order.customerName || 'زبون'}
+                      {order.customerName || t.customer_name}
                     </p>
                     <p className="text-xs text-text-secondary mt-0.5">{order.orderType}</p>
                     <p className="text-xs text-text-tertiary mt-1">{getRelativeTime(order.scheduledDate)}</p>
@@ -314,23 +314,23 @@ export default function HomePage() {
       {/* This Month Summary */}
       <section className="px-5 mb-6">
         <div className="bg-surface rounded-2xl p-5 shadow-card">
-          <h2 className="text-base font-bold text-text-primary mb-4">ملخص هذا الشهر</h2>
+          <h2 className="text-base font-bold text-text-primary mb-4">{t.net_this_month}</h2>
           <div className="grid grid-cols-3 gap-3">
             <div className="text-center">
-              <p className="text-xs text-text-secondary mb-1">القبض</p>
-              <p className="text-base font-bold text-income-600 tabular-nums">
+              <p className="text-xs text-text-secondary mb-1">{t.total_income}</p>
+              <p className="text-base font-bold text-income-600 tabular-nums num">
                 {formatAmount(stats.monthIncome)}
               </p>
             </div>
             <div className="text-center border-r border-l border-divider">
-              <p className="text-xs text-text-secondary mb-1">الصرف</p>
-              <p className="text-base font-bold text-expense-600 tabular-nums">
+              <p className="text-xs text-text-secondary mb-1">{t.total_expense}</p>
+              <p className="text-base font-bold text-expense-600 tabular-nums num">
                 {formatAmount(stats.monthExpense)}
               </p>
             </div>
             <div className="text-center">
-              <p className="text-xs text-text-secondary mb-1">صافي الربح</p>
-              <p className={`text-base font-bold tabular-nums ${
+              <p className="text-xs text-text-secondary mb-1">{t.net_profit}</p>
+              <p className={`text-base font-bold tabular-nums num ${
                 stats.monthIncome - stats.monthExpense >= 0 ? 'text-income-600' : 'text-expense-600'
               }`}>
                 {formatAmount(stats.monthIncome - stats.monthExpense)}
@@ -352,8 +352,8 @@ export default function HomePage() {
               <Icon name="clock" className="w-6 h-6 text-withdrawal-600" strokeWidth={2} />
             </div>
             <div className="flex-1">
-              <p className="font-bold text-withdrawal-700 text-sm">حان وقت إقفال اليوم</p>
-              <p className="text-xs text-withdrawal-600 mt-0.5">اضغط هنا لعد النقد ومطابقته مع السجلات</p>
+              <p className="font-bold text-withdrawal-700 text-sm">{t.z_report_reminder}</p>
+              <p className="text-xs text-withdrawal-600 mt-0.5">{t.z_report_reminder_desc}</p>
             </div>
             <Icon name="chevronLeft" className="w-5 h-5 text-withdrawal-600" />
           </button>
@@ -369,16 +369,16 @@ export default function HomePage() {
                 <Icon name="download" className="w-5 h-5 text-primary-600" strokeWidth={2} />
               </div>
               <div className="flex-1">
-                <p className="font-bold text-primary-700 text-sm">حماية بياناتك</p>
+                <p className="font-bold text-primary-700 text-sm">{t.backup_reminder_title}</p>
                 <p className="text-xs text-primary-600 mt-0.5">
-                  لحماية بياناتك، اضغط هنا لإرسال نسخة احتياطية لنفسك عبر واتساب
+                  {t.backup_reminder_desc}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowBackupPrompt(false)}
                 className="text-primary-400 active:scale-95"
-                aria-label="إغلاق"
+                aria-label={t.notes}
               >
                 <Icon name="close" className="w-4 h-4" />
               </button>
@@ -386,10 +386,10 @@ export default function HomePage() {
             <button
               type="button"
               onClick={handleBackupNow}
-              className="w-full bg-primary text-ink font-semibold rounded-xl py-2.5 active:scale-95 transition-transform text-sm flex items-center justify-center gap-2"
+              className="w-full bg-primary text-white font-semibold rounded-xl py-2.5 active:scale-95 transition-transform text-sm flex items-center justify-center gap-2"
             >
               <Icon name="whatsapp" className="w-4 h-4" />
-              إرسال نسخة احتياطية عبر واتساب
+              {t.backup_send}
             </button>
           </div>
         </section>
@@ -404,16 +404,16 @@ export default function HomePage() {
                 <Icon name="wallet" className="w-5 h-5 text-income-600" strokeWidth={2} />
               </div>
               <div className="flex-1">
-                <p className="font-bold text-income-700 text-sm">أدخل رصيدك الحالي</p>
+                <p className="font-bold text-income-700 text-sm">{t.opening_balance_title}</p>
                 <p className="text-xs text-income-600 mt-0.5">
-                  أدخل رصيدك الحالي لبدء الحساب بدقة. يمكنك القيام بذلك لاحقاً.
+                  {t.opening_balance_desc}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={handleDismissOpeningBalance}
                 className="text-income-400 active:scale-95"
-                aria-label="إغلاق"
+                aria-label={t.notes}
               >
                 <Icon name="close" className="w-4 h-4" />
               </button>
@@ -422,16 +422,16 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={() => { hapticLight(); setOpeningBalanceSheetOpen(true) }}
-                className="flex-1 bg-income-500 text-ink font-semibold rounded-xl py-2.5 active:scale-95 transition-transform text-sm"
+                className="flex-1 bg-income-500 text-white font-semibold rounded-xl py-2.5 active:scale-95 transition-transform text-sm"
               >
-                إدخال الرصيد
+                {t.opening_balance_enter}
               </button>
               <button
                 type="button"
                 onClick={handleDismissOpeningBalance}
                 className="bg-surface text-text-secondary font-semibold rounded-xl py-2.5 px-4 active:scale-95 transition-transform text-sm"
               >
-                لاحقاً
+                {t.opening_balance_later}
               </button>
             </div>
           </div>
@@ -455,34 +455,34 @@ export default function HomePage() {
       />
 
       {/* V4 Phase 2: Z-Report Bottom Sheet */}
-      <BottomSheet open={zReportSheetOpen} onClose={() => setZReportSheetOpen(false)} title="إقفال اليومية">
+      <BottomSheet open={zReportSheetOpen} onClose={() => setZReportSheetOpen(false)} title={t.z_report_title}>
         <div className="space-y-5 pb-4">
           {zReportSaved ? (
             <div className="text-center space-y-4">
               <div className="w-16 h-16 rounded-full bg-income-50 flex items-center justify-center mx-auto">
                 <Icon name="checkCircle" className="w-8 h-8 text-income-600" strokeWidth={2} />
               </div>
-              <p className="text-lg font-bold text-text-primary">تم حفظ الإقفال بنجاح</p>
+              <p className="text-lg font-bold text-text-primary">{t.snackbar_closing_saved}</p>
               <button
                 type="button"
                 onClick={() => setZReportSheetOpen(false)}
                 className="w-full btn-primary"
               >
-                تم
+                {t.save}
               </button>
             </div>
           ) : (
             <>
               {/* Expected Cash */}
               <div className="bg-background rounded-2xl p-4">
-                <p className="text-xs text-text-secondary mb-1">النقد المتوقع في الصندوق</p>
-                <p className="text-3xl font-bold tabular-nums text-text-primary">{formatAmount(expectedCash)}</p>
-                <p className="text-xs text-text-tertiary mt-1">بناءً على سجلات التطبيق</p>
+                <p className="text-xs text-text-secondary mb-1">{t.z_report_expected}</p>
+                <p className="text-3xl font-bold tabular-nums num text-text-primary">{formatAmount(expectedCash)}</p>
+                <p className="text-xs text-text-tertiary mt-1">{t.z_report_expected}</p>
               </div>
 
               {/* Counted Cash Input */}
               <div>
-                <label className="block text-sm font-semibold text-text-secondary mb-2">النقد الفعلي الذي عده التاجر</label>
+                <label className="block text-sm font-semibold text-text-secondary mb-2">{t.z_report_counted}</label>
                 <input
                   type="text"
                   inputMode="decimal"
@@ -506,11 +506,11 @@ export default function HomePage() {
                         zVarianceType === 'surplus' ? 'text-income-700' :
                         zVarianceType === 'shortage' ? 'text-expense-700' : 'text-text-primary'
                       }`}>
-                        {zVarianceType === 'surplus' ? 'فائض' : zVarianceType === 'shortage' ? 'عجز' : 'متطابق'}
+                        {zVarianceType === 'surplus' ? t.report_variance_surplus : zVarianceType === 'shortage' ? t.report_variance_shortage : t.report_variance_balanced}
                       </p>
-                      <p className="text-xs text-text-tertiary mt-0.5">الفرق بين المتوقع والفعلي</p>
+                      <p className="text-xs text-text-tertiary mt-0.5">{t.z_report_variance}</p>
                     </div>
-                    <p className={`text-2xl font-bold tabular-nums ${
+                    <p className={`text-2xl font-bold tabular-nums num ${
                       zVarianceType === 'surplus' ? 'text-income-600' :
                       zVarianceType === 'shortage' ? 'text-expense-600' : 'text-text-primary'
                     }`}>
@@ -526,7 +526,7 @@ export default function HomePage() {
                 disabled={!countedCash}
                 className="w-full btn-primary disabled:opacity-50"
               >
-                حفظ الإقفال
+                {t.z_report_save}
               </button>
             </>
           )}
@@ -534,15 +534,15 @@ export default function HomePage() {
       </BottomSheet>
 
       {/* V4 Phase 3: Opening Balance Sheet */}
-      <BottomSheet open={openingBalanceSheetOpen} onClose={() => setOpeningBalanceSheetOpen(false)} title="إدخال الرصيد الحالي">
+      <BottomSheet open={openingBalanceSheetOpen} onClose={() => setOpeningBalanceSheetOpen(false)} title={t.opening_balance_title}>
         <div className="space-y-5 pb-4">
           <p className="text-sm text-text-secondary leading-relaxed">
-            أدخل المبلغ الذي تملكه حالياً نقداً (في الصندوق أو البنك). سيكون هذا هو رصيدك الافتتاحي.
+            {t.opening_balance_desc}
           </p>
           <AmountInput
             value={openingCash}
             onChange={setOpeningCash}
-            label="النقد المتاح"
+            label={t.opening_balance_amount}
             autoFocus
           />
           <button
@@ -550,14 +550,14 @@ export default function HomePage() {
             onClick={handleSaveOpeningBalance}
             className="w-full btn-primary"
           >
-            حفظ الرصيد
+            {t.save}
           </button>
           <button
             type="button"
             onClick={handleDismissOpeningBalance}
             className="w-full bg-background text-text-secondary font-semibold rounded-2xl py-3.5 active:scale-[0.98] transition-transform"
           >
-            تخطي الآن
+            {t.opening_balance_later}
           </button>
         </div>
       </BottomSheet>

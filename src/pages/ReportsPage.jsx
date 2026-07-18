@@ -1,20 +1,31 @@
-import { useTerms } from '../context/TermsContext.jsx'
+import { useTerms, useTermsMode } from '../context/TermsContext.jsx'
 import { useState, useEffect, useCallback } from 'react'
 import { db } from '../db'
 import { formatAmount } from '../utils/format.js'
 import { formatArabicDate } from '../utils/date.js'
-import { ARABIC_DAYS } from '../utils/date.js'
 import EmptyState from '../components/ui/EmptyState.jsx'
 import Icon from '../components/ui/Icon.jsx'
 import { hapticLight, hapticSuccess } from '../utils/haptics.js'
 import { sendDebtReminder } from '../utils/whatsapp.js'
 import { Link } from 'react-router-dom'
+import { useCountUp } from '../hooks/useCountUp.js'
 
 /**
  * Reports Page (V4 Phase 3) - Adaptive Reporting
  *
- * Simple Mode: Conversational cards, CSS bar charts, actionable insights
- * Pro Mode: Data tables, financial summaries, variance analysis
+ * Simple Mode: Conversational cards, CSS bar charts, actionable insights.
+ *              Hides theoretical/BOM/variance sections. Shows only:
+ *              - Net cash earned (hero card, count-up animated)
+ *              - Cash received / Cash spent (mini cards)
+ *              - Daily sales bar chart
+ *              - Top debtors (actionable reminder)
+ *              - Order stats (totals only — no margins)
+ *
+ * Pro Mode: Full data tables — cash flow, theoretical profit (BOM),
+ *           variance analysis, order stats with computed margins.
+ *
+ * Mode is read from TermsContext (useTermsMode) so toggling in Settings
+ * re-renders this page instantly without reload.
  */
 export default function ReportsPage() {
   const now = new Date()
@@ -26,16 +37,21 @@ export default function ReportsPage() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
   })
   const t = useTerms()
+  const [reportMode] = useTermsMode()
   const [report, setReport] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  // V4 Phase 3: Report mode + extra data for Simple mode
-  const [reportMode, setReportMode] = useState('simple')
+  // Extra data for Simple mode
   const [topDebtors, setTopDebtors] = useState([])
   const [dailyBreakdown, setDailyBreakdown] = useState([])
 
   // V5: active period preset (drives the sliding segmented control)
   const [activePreset, setActivePreset] = useState('month')
+
+  // Count-up animations for the hero numbers (preserved in BOTH modes)
+  const animatedProfit = useCountUp(report?.realCashProfit || 0)
+  const animatedReceived = useCountUp(report?.cashReceived || 0)
+  const animatedSpent = useCountUp(report?.cashSpent || 0)
 
   const loadReport = useCallback(async () => {
     setLoading(true)
@@ -43,25 +59,22 @@ export default function ReportsPage() {
       const result = await db.getReport(startDate, endDate)
       setReport(result)
 
-      // V4 Phase 3: Load extra data for Simple mode
       const [receivables, transactions] = await Promise.all([
         db.getReceivables(),
         db.getTransactionsByDateRange(startDate, endDate),
       ])
-      // Top 3 debtors with outstanding amounts
       const debtors = receivables
-        .map(d => ({ name: d.description || 'زبون', amount: d.amount - (d.debtAmountPaid || 0), date: d.date, raw: d }))
+        .map(d => ({ name: d.description || t.customer_name, amount: d.amount - (d.debtAmountPaid || 0), date: d.date, raw: d }))
         .filter(d => d.amount > 0)
         .sort((a, b) => b.amount - a.amount)
         .slice(0, 3)
       setTopDebtors(debtors)
 
-      // Daily breakdown for bar chart (income per day)
       const byDay = {}
-      for (const t of transactions) {
-        if (t.type === 'income') {
-          const day = new Date(t.dateTimestamp).getDate()
-          byDay[day] = (byDay[day] || 0) + t.amount
+      for (const tx of transactions) {
+        if (tx.type === 'income') {
+          const day = new Date(tx.dateTimestamp).getDate()
+          byDay[day] = (byDay[day] || 0) + tx.amount
         }
       }
       const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
@@ -75,16 +88,11 @@ export default function ReportsPage() {
     } finally {
       setLoading(false)
     }
-  }, [startDate, endDate])
+  }, [startDate, endDate, t.customer_name])
 
   useEffect(() => {
     loadReport()
   }, [loadReport])
-
-  // V4 Phase 3: Load report mode from settings
-  useEffect(() => {
-    db.getSetting('report_mode', 'simple').then(setReportMode)
-  }, [])
 
   const handleStartDateChange = (e) => {
     hapticLight()
@@ -132,14 +140,13 @@ export default function ReportsPage() {
   }
 
   const presets = [
-    { id: 'today', label: 'اليوم' },
+    { id: 'today', label: t.today_label },
     { id: 'week', label: 'الأسبوع' },
     { id: 'month', label: 'الشهر' },
     { id: 'lastMonth', label: 'الماضي' },
     { id: 'year', label: 'السنة' },
   ]
 
-  // V5: sliding thumb behind the active preset (5 equal segments, RTL)
   const activePresetIndex = Math.max(0, presets.findIndex((p) => p.id === activePreset))
 
   const varianceColor = report
@@ -148,9 +155,9 @@ export default function ReportsPage() {
       : 'text-text-secondary')
     : 'text-text-secondary'
   const varianceLabel = report
-    ? (report.variance > 0 ? 'دفعات معلقة (ديون لم تُحصّل)'
-      : report.variance < 0 ? 'تحصيل زائد (دفعات مقدمة)'
-      : 'متوازن')
+    ? (report.variance > 0 ? t.report_variance_surplus_desc
+      : report.variance < 0 ? t.report_variance_shortage_desc
+      : t.report_variance_balanced_desc)
     : ''
 
   return (
@@ -159,7 +166,7 @@ export default function ReportsPage() {
       <header className="px-4 pt-8 pb-3 safe-area-top sticky top-0 bg-background z-20">
         <h1 className="text-[30px] font-extrabold text-ink -tracking-[.5px] mb-3">{t.reports_title}</h1>
 
-        {/* V5: Period segmented control — connected track + sliding blue thumb */}
+        {/* V5: Period segmented control */}
         <div className="relative grid grid-cols-5 bg-mute rounded-[16px] p-1 mb-3">
           <div
             className="absolute top-1 bottom-1 rounded-[12px] bg-primary shadow-sm transition-all duration-300 ease-out"
@@ -185,7 +192,7 @@ export default function ReportsPage() {
         {/* Custom Date Range */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-text-secondary mb-1.5">من تاريخ</label>
+            <label className="block text-xs font-semibold text-text-secondary mb-1.5">{t.date}</label>
             <input
               type="date"
               value={startDate}
@@ -195,7 +202,7 @@ export default function ReportsPage() {
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-text-secondary mb-1.5">إلى تاريخ</label>
+            <label className="block text-xs font-semibold text-text-secondary mb-1.5">{t.date}</label>
             <input
               type="date"
               value={endDate}
@@ -214,37 +221,39 @@ export default function ReportsPage() {
       ) : !report ? (
         <EmptyState
           icon="document"
-          title="لا توجد بيانات"
-          description="اختر نطاقاً زمنياً لعرض التقرير"
+          title={t.empty_no_data}
+          description={t.report_period}
         />
       ) : reportMode === 'simple' ? (
-        /* V4 Phase 3: Simple Mode — Conversational cards + CSS bar charts */
+        /* ============================================
+           SIMPLE MODE — Conversational, hides advanced metrics
+           ============================================ */
         <div className="px-4 space-y-4">
-          {/* Card 1: Today's earnings */}
+          {/* Hero: Net earned (count-up animated) */}
           <div className="bg-primary text-white rounded-16 p-4">
-            <p className="text-sm text-income-50 mb-1">في هالفترة كسبت</p>
-            <p className="text-3xl font-bold tabular-nums">{formatAmount(report.realCashProfit)}</p>
-            <p className="text-xs text-income-50 mt-2">
-              {report.realCashProfit >= 0 ? 'ربح صافي' : 'خسارة — راجع مصاريفك'}
+            <p className="text-sm text-white/80 mb-1">{t.report_earned}</p>
+            <p className="text-3xl font-bold tabular-nums num">{formatAmount(animatedProfit)}</p>
+            <p className="text-xs text-white/80 mt-2">
+              {report.realCashProfit >= 0 ? t.report_profit_label : t.report_loss_label}
             </p>
           </div>
 
-          {/* Card 2: Quick stats */}
+          {/* Quick stats: received / spent */}
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-surface rounded-2xl p-4 shadow-card text-center">
-              <p className="text-xs text-text-tertiary mb-1">قبضت</p>
-              <p className="text-xl font-bold text-income-600 tabular-nums">{formatAmount(report.cashReceived)}</p>
+              <p className="text-xs text-text-tertiary mb-1">{t.report_received}</p>
+              <p className="text-xl font-bold text-income-600 tabular-nums num">{formatAmount(animatedReceived)}</p>
             </div>
             <div className="bg-surface rounded-2xl p-4 shadow-card text-center">
-              <p className="text-xs text-text-tertiary mb-1">صرفت</p>
-              <p className="text-xl font-bold text-expense-600 tabular-nums">{formatAmount(report.cashSpent)}</p>
+              <p className="text-xs text-text-tertiary mb-1">{t.report_spent}</p>
+              <p className="text-xl font-bold text-expense-600 tabular-nums num">{formatAmount(animatedSpent)}</p>
             </div>
           </div>
 
-          {/* Card 3: Best sales day (CSS bar chart) */}
+          {/* Daily bar chart */}
           {dailyBreakdown.length > 0 && (
             <div className="bg-surface rounded-2xl p-4 shadow-card">
-              <p className="text-sm font-bold text-text-primary mb-3">مبيعات يومية</p>
+              <p className="text-sm font-bold text-text-primary mb-3">{t.report_daily_sales}</p>
               {(() => {
                 const maxAmount = Math.max(...dailyBreakdown.map(d => d.amount), 1)
                 const bestDay = dailyBreakdown.reduce((best, d) => d.amount > best.amount ? d : best, { day: 0, amount: 0 })
@@ -252,7 +261,7 @@ export default function ReportsPage() {
                   <>
                     {bestDay.amount > 0 && (
                       <p className="text-xs text-text-secondary mb-2">
-                        أفضل يوم مبيعاً كان يوم {bestDay.day}: {formatAmount(bestDay.amount)}
+                        {t.report_best_day} {bestDay.day}: {formatAmount(bestDay.amount)}
                       </p>
                     )}
                     <div className="flex items-end gap-0.5 h-24 overflow-x-auto hide-scrollbar">
@@ -282,24 +291,24 @@ export default function ReportsPage() {
             </div>
           )}
 
-          {/* Card 4: Debt reminders */}
+          {/* Debt reminders */}
           {topDebtors.length > 0 && (
             <div className="bg-surface rounded-2xl p-4 shadow-card">
-              <p className="text-sm font-bold text-text-primary mb-3">عندهم فلوس لك</p>
+              <p className="text-sm font-bold text-text-primary mb-3">{t.report_debtors}</p>
               <div className="space-y-2">
                 {topDebtors.map((debtor, i) => (
                   <div key={i} className="flex items-center justify-between bg-background rounded-xl p-3">
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-text-primary">{debtor.name}</p>
-                      <p className="text-xs text-text-tertiary">عليه {formatAmount(debtor.amount)}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-text-primary truncate">{debtor.name}</p>
+                      <p className="text-xs text-text-tertiary">{t.report_owes} {formatAmount(debtor.amount)}</p>
                     </div>
                     <button
                       type="button"
                       onClick={() => { hapticLight(); sendDebtReminder(debtor.raw) }}
-                      className="bg-income-50 text-income-600 text-xs font-semibold px-3 py-2 rounded-lg active:scale-95 transition-transform flex items-center gap-1.5"
+                      className="bg-income-50 text-income-600 text-xs font-semibold px-3 py-2 rounded-lg active:scale-95 transition-transform flex items-center gap-1.5 flex-shrink-0"
                     >
                       <Icon name="whatsapp" className="w-4 h-4" />
-                      تذكير
+                      {t.report_send_reminder}
                     </button>
                   </div>
                 ))}
@@ -307,34 +316,36 @@ export default function ReportsPage() {
             </div>
           )}
 
-          {/* Card 5: Order stats */}
+          {/* Order stats — totals only, NO margins */}
           <div className="bg-surface rounded-2xl p-4 shadow-card">
             <div className="grid grid-cols-2 gap-3 text-center">
               <div>
-                <p className="text-2xl font-bold text-primary-600 tabular-nums">{report.totalOrders}</p>
-                <p className="text-xs text-text-tertiary">إجمالي الطلبات</p>
+                <p className="text-2xl font-bold text-primary-600 tabular-nums num">{report.totalOrders}</p>
+                <p className="text-xs text-text-tertiary">{t.report_total_orders}</p>
               </div>
               <div>
-                <p className="text-2xl font-bold text-income-600 tabular-nums">{report.completedOrders}</p>
-                <p className="text-xs text-text-tertiary">طلبات مكتملة</p>
+                <p className="text-2xl font-bold text-income-600 tabular-nums num">{report.completedOrders}</p>
+                <p className="text-xs text-text-tertiary">{t.report_completed_orders}</p>
               </div>
             </div>
           </div>
 
-          {/* Link to Pro mode */}
+          {/* Link to switch to Pro */}
           <Link
             to="/settings"
             className="block text-center text-xs text-primary-600 font-medium py-2"
           >
-            تغيير إلى عرض احترافي من الإعدادات
+            {t.report_switch_to_pro}
           </Link>
         </div>
       ) : (
-        /* V4 Phase 3: Pro Mode — Existing detailed report */
+        /* ============================================
+           PRO MODE — Full data tables, theoretical/BOM, variance
+           ============================================ */
         <div className="px-4 space-y-4">
           {/* Period Summary */}
           <div className="bg-surface rounded-2xl p-4 shadow-card">
-            <p className="text-xs text-text-tertiary mb-1">الفترة</p>
+            <p className="text-xs text-text-tertiary mb-1">{t.report_period}</p>
             <p className="text-sm font-semibold text-text-primary">
               {formatArabicDate(report.period.start)} — {formatArabicDate(report.period.end)}
             </p>
@@ -342,66 +353,66 @@ export default function ReportsPage() {
 
           {/* Real Cash Flow Section */}
           <section>
-            <h2 className="text-sm font-bold text-txt-secondary mb-2 px-1">التدفق النقدي الفعلي</h2>
+            <h2 className="text-sm font-bold text-txt-secondary mb-2 px-1 truncate">{t.report_net_cash_profit}</h2>
             <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
               {/* Cash Received */}
               <div className="flex items-center justify-between p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-income-50 flex items-center justify-center">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-income-50 flex items-center justify-center flex-shrink-0">
                     <Icon name="arrowDown" className="w-5 h-5 text-income-600" strokeWidth={2} />
                   </div>
-                  <div>
-                    <p className="font-semibold text-text-primary text-sm">إجمالي النقد المستلم</p>
-                    <p className="text-xs text-text-tertiary">قبض (دخل فعلي)</p>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-text-primary text-sm truncate">{t.report_cash_received}</p>
+                    <p className="text-xs text-text-tertiary">{t.report_received}</p>
                   </div>
                 </div>
-                <p className="text-lg font-bold text-income-600 tabular-nums">
-                  {formatAmount(report.cashReceived)}
+                <p className="text-lg font-bold text-income-600 tabular-nums num flex-shrink-0">
+                  {formatAmount(animatedReceived)}
                 </p>
               </div>
 
               {/* Cash Spent */}
               <div className="flex items-center justify-between p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-expense-50 flex items-center justify-center">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-expense-50 flex items-center justify-center flex-shrink-0">
                     <Icon name="arrowUp" className="w-5 h-5 text-expense-600" strokeWidth={2} />
                   </div>
-                  <div>
-                    <p className="font-semibold text-text-primary text-sm">إجمالي المصاريف</p>
-                    <p className="text-xs text-text-tertiary">صرف (مصاريف تشغيلية)</p>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-text-primary text-sm truncate">{t.report_operational_expenses}</p>
+                    <p className="text-xs text-text-tertiary">{t.report_spent}</p>
                   </div>
                 </div>
-                <p className="text-lg font-bold text-expense-600 tabular-nums">
-                  {formatAmount(report.cashSpent)}
+                <p className="text-lg font-bold text-expense-600 tabular-nums num flex-shrink-0">
+                  {formatAmount(animatedSpent)}
                 </p>
               </div>
 
               {/* Personal Withdrawal */}
               <div className="flex items-center justify-between p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-withdrawal-50 flex items-center justify-center">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-withdrawal-50 flex items-center justify-center flex-shrink-0">
                     <Icon name="userMinus" className="w-5 h-5 text-withdrawal-600" strokeWidth={2} />
                   </div>
-                  <div>
-                    <p className="font-semibold text-text-primary text-sm">سحب شخصي</p>
-                    <p className="text-xs text-text-tertiary">لا يؤثر على الربح</p>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-text-primary text-sm truncate">{t.report_personal_withdrawal}</p>
+                    <p className="text-xs text-text-tertiary">{t.withdrawal_desc}</p>
                   </div>
                 </div>
-                <p className="text-lg font-bold text-withdrawal-600 tabular-nums">
+                <p className="text-lg font-bold text-withdrawal-600 tabular-nums num flex-shrink-0">
                   {formatAmount(report.withdrawal)}
                 </p>
               </div>
 
               {/* Net Cash Profit */}
               <div className="flex items-center justify-between p-4 bg-background rounded-b-2xl">
-                <div>
-                  <p className="font-bold text-text-primary">صافي الربح النقدي</p>
-                  <p className="text-xs text-text-tertiary">القبض - الصرف</p>
+                <div className="min-w-0">
+                  <p className="font-bold text-text-primary truncate">{t.report_net_cash_profit}</p>
+                  <p className="text-xs text-text-tertiary">{t.report_received} − {t.report_spent}</p>
                 </div>
-                <p className={`text-2xl font-bold tabular-nums ${
+                <p className={`text-2xl font-bold tabular-nums num flex-shrink-0 ${
                   report.realCashProfit >= 0 ? 'text-income-600' : 'text-expense-600'
                 }`}>
-                  {formatAmount(report.realCashProfit)}
+                  {formatAmount(animatedProfit)}
                 </p>
               </div>
             </div>
@@ -410,39 +421,39 @@ export default function ReportsPage() {
           {/* Theoretical Profit Section (BOM-based, analytical) */}
           <section>
             <h2 className="text-sm font-bold text-txt-secondary mb-2 px-1 flex items-center gap-2">
-              <Icon name="info" className="w-4 h-4 text-primary-600" />
-              الربح النظري (استشاري)
+              <Icon name="info" className="w-4 h-4 text-primary-600 flex-shrink-0" />
+              <span className="truncate">{t.report_theoretical_profit}</span>
             </h2>
             <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
               {/* Theoretical Revenue */}
-              <div className="flex items-center justify-between p-4">
-                <div>
-                  <p className="font-semibold text-text-primary text-sm">إيرادات الطلبات المكتملة</p>
-                  <p className="text-xs text-text-tertiary">{report.completedOrders} طلب مكتمل</p>
+              <div className="flex items-center justify-between p-4 gap-3">
+                <div className="min-w-0">
+                  <p className="font-semibold text-text-primary text-sm truncate">{t.report_theoretical_revenue}</p>
+                  <p className="text-xs text-text-tertiary">{report.completedOrders} {t.report_completed_orders}</p>
                 </div>
-                <p className="text-lg font-bold text-text-primary tabular-nums">
+                <p className="text-lg font-bold text-text-primary tabular-nums num flex-shrink-0">
                   {formatAmount(report.theoreticalRevenue)}
                 </p>
               </div>
 
               {/* Theoretical Cost (BOM) */}
-              <div className="flex items-center justify-between p-4">
-                <div>
-                  <p className="font-semibold text-text-primary text-sm">تكلفة المواد (BOM)</p>
-                  <p className="text-xs text-text-tertiary">استشاري - لا يُخصم من المالية</p>
+              <div className="flex items-center justify-between p-4 gap-3">
+                <div className="min-w-0">
+                  <p className="font-semibold text-text-primary text-sm truncate">{t.report_theoretical_cost}</p>
+                  <p className="text-xs text-text-tertiary">{t.cost_of_goods}</p>
                 </div>
-                <p className="text-lg font-bold text-expense-600 tabular-nums">
+                <p className="text-lg font-bold text-expense-600 tabular-nums num flex-shrink-0">
                   {formatAmount(report.theoreticalCost)}
                 </p>
               </div>
 
               {/* Theoretical Profit */}
-              <div className="flex items-center justify-between p-4 bg-background rounded-b-2xl">
-                <div>
-                  <p className="font-bold text-text-primary">الربح النظري المتوقع</p>
-                  <p className="text-xs text-text-tertiary">الإيرادات - تكلفة المواد</p>
+              <div className="flex items-center justify-between p-4 bg-background rounded-b-2xl gap-3">
+                <div className="min-w-0">
+                  <p className="font-bold text-text-primary truncate">{t.report_theoretical_profit}</p>
+                  <p className="text-xs text-text-tertiary">{t.report_theoretical_revenue} − {t.report_theoretical_cost}</p>
                 </div>
-                <p className={`text-2xl font-bold tabular-nums ${
+                <p className={`text-2xl font-bold tabular-nums num flex-shrink-0 ${
                   report.theoreticalProfit >= 0 ? 'text-income-600' : 'text-expense-600'
                 }`}>
                   {formatAmount(report.theoreticalProfit)}
@@ -453,11 +464,11 @@ export default function ReportsPage() {
 
           {/* Variance Analysis */}
           <section>
-            <h2 className="text-sm font-bold text-txt-secondary mb-2 px-1">تحليل الفرق</h2>
+            <h2 className="text-sm font-bold text-txt-secondary mb-2 px-1 truncate">{t.report_variance}</h2>
             <div className="bg-surface rounded-2xl p-4 shadow-card">
-              <div className="flex items-center justify-between mb-2">
-                <p className="font-semibold text-text-primary text-sm">الفرق بين النقدي والنظري</p>
-                <p className={`text-xl font-bold tabular-nums ${varianceColor}`}>
+              <div className="flex items-center justify-between mb-2 gap-3">
+                <p className="font-semibold text-text-primary text-sm truncate">{t.report_variance}</p>
+                <p className={`text-xl font-bold tabular-nums num flex-shrink-0 ${varianceColor}`}>
                   {report.variance > 0 ? '+' : ''}{formatAmount(report.variance)}
                 </p>
               </div>
@@ -466,10 +477,10 @@ export default function ReportsPage() {
               </p>
               <p className="text-xs text-text-tertiary mt-2 leading-relaxed">
                 {report.variance > 0
-                  ? 'هناك طلبات بيعت بالأجل ولم تُحصّل بعد. راجع صفحة الديون لتتبع المستحقات.'
+                  ? t.report_variance_surplus_desc
                   : report.variance < 0
-                  ? 'تم تحصيل مبالغ مقدمة أو دفعات ديون من فترات سابقة.'
-                  : 'التدفق النقدي متوازن مع الربح النظري.'
+                  ? t.report_variance_shortage_desc
+                  : t.report_variance_balanced_desc
                 }
               </p>
             </div>
@@ -477,18 +488,26 @@ export default function ReportsPage() {
 
           {/* Order Stats */}
           <section>
-            <h2 className="text-sm font-bold text-txt-secondary mb-2 px-1">إحصائيات الطلبات</h2>
+            <h2 className="text-sm font-bold text-txt-secondary mb-2 px-1 truncate">{t.report_total_orders}</h2>
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-surface rounded-2xl p-4 shadow-card text-center">
-                <p className="text-xs text-text-secondary mb-1">إجمالي الطلبات</p>
-                <p className="text-2xl font-bold text-text-primary tabular-nums">{report.totalOrders}</p>
+                <p className="text-xs text-text-secondary mb-1">{t.report_total_orders}</p>
+                <p className="text-2xl font-bold text-text-primary tabular-nums num">{report.totalOrders}</p>
               </div>
               <div className="bg-surface rounded-2xl p-4 shadow-card text-center">
-                <p className="text-xs text-text-secondary mb-1">طلبات مكتملة</p>
-                <p className="text-2xl font-bold text-income-600 tabular-nums">{report.completedOrders}</p>
+                <p className="text-xs text-text-secondary mb-1">{t.report_completed_orders}</p>
+                <p className="text-2xl font-bold text-income-600 tabular-nums num">{report.completedOrders}</p>
               </div>
             </div>
           </section>
+
+          {/* Link to switch to Simple */}
+          <Link
+            to="/settings"
+            className="block text-center text-xs text-primary-600 font-medium py-2"
+          >
+            {t.report_switch_to_pro}
+          </Link>
         </div>
       )}
     </div>
