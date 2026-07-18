@@ -10,6 +10,7 @@ import { requestNotificationPermission, sendTestNotification, initNotificationSe
 import { useHelperMode } from '../context/HelperModeContext.jsx'
 import { useTerms, useTermsMode } from '../context/TermsContext.jsx'
 import { useSettings2 } from '../context/SettingsContext.jsx'
+import { triggerInstall, isStandalone, subscribeInstallAvailability } from '../utils/pwaInstall.js'
 
 export default function SettingsPage() {
   const { settings, update, refresh } = useSettings()
@@ -48,6 +49,14 @@ export default function SettingsPage() {
   // Local copy of fiscal year start (not yet consumed by reports)
   const [fiscalYearStart, setFiscalYearStart] = useState(1)
 
+  // V7: PWA install + clear-data confirmation sheet
+  const [installAvailable, setInstallAvailable] = useState(false)
+  const [standalone] = useState(() => isStandalone())
+  const [installing, setInstalling] = useState(false)
+  const [installResult, setInstallResult] = useState(null)  // { ok, accepted, reason } | null
+  const [clearDataSheetOpen, setClearDataSheetOpen] = useState(false)
+  const [clearConfirmText, setClearConfirmText] = useState('')
+
   // V4 Phase 3: Report Mode (uses TermsContext for live switching)
   const [reportMode, setReportModeCtx] = useTermsMode()
 
@@ -72,6 +81,39 @@ export default function SettingsPage() {
   useEffect(() => {
     setBusinessNameInput(businessName || '')
   }, [businessName])
+
+  // Subscribe to PWA install-prompt availability
+  useEffect(() => {
+    const unsub = subscribeInstallAvailability(setInstallAvailable)
+    return unsub
+  }, [])
+
+  // Trigger native PWA install prompt
+  const handleInstallClick = async () => {
+    hapticLight()
+    setInstalling(true)
+    setInstallResult(null)
+    const result = await triggerInstall()
+    setInstallResult(result)
+    setInstalling(false)
+    if (result.ok && result.accepted) {
+      hapticSuccess()
+    }
+  }
+
+  // Clear all data — requires typing 'حذف' to confirm (strong security step)
+  const handleClearDataConfirm = async () => {
+    if (clearConfirmText.trim() !== 'حذف') {
+      hapticError()
+      return
+    }
+    hapticSuccess()
+    setClearDataSheetOpen(false)
+    setClearConfirmText('')
+    await db.clearAllData()
+    // Reload app to trigger onboarding
+    window.location.href = '/'
+  }
 
   // Quick POS visibility (now via context — propagates to BottomNav instantly)
   const handleQuickPosToggle = async (enabled) => {
@@ -571,17 +613,7 @@ export default function SettingsPage() {
               iconBg="bg-expense-50 text-expense-600"
               label={t.factory_reset}
               description={t.factory_reset_desc}
-              onClick={async () => {
-                hapticMedium()
-                const confirmed = confirm('سيتم حذف جميع البيانات نهائياً (المعاملات، الطلبات، الإعدادات). هذا الإجراء لا يمكن التراجع عنه. هل أنت متأكد؟')
-                if (!confirmed) return
-                const confirmed2 = confirm('تأكيد أخير: سيتم مسح كل شيء. متابعة؟')
-                if (!confirmed2) return
-                await db.clearAllData()
-                hapticSuccess()
-                // Reload app to trigger onboarding
-                window.location.href = '/'
-              }}
+              onClick={() => { hapticMedium(); setClearDataSheetOpen(true) }}
             />
           </div>
         </section>
@@ -635,32 +667,119 @@ export default function SettingsPage() {
         </div>
       </BottomSheet>
 
-      {/* Install Instructions */}
-      <BottomSheet open={installOpen} onClose={() => setInstallOpen(false)} title="كيفية تثبيت التطبيق">
+      {/* V7: Install App Sheet — real beforeinstallprompt trigger */}
+      <BottomSheet open={installOpen} onClose={() => setInstallOpen(false)} title={t.install_instructions}>
         <div className="space-y-4 pb-4 text-sm leading-relaxed text-text-primary">
+
+          {/* Status banner */}
+          {standalone ? (
+            <div className="bg-income-50 border border-income-200 rounded-2xl p-4 flex items-start gap-3">
+              <Icon name="checkCircle" className="w-6 h-6 text-income-600 flex-shrink-0 mt-0.5" strokeWidth={2} />
+              <div>
+                <p className="font-semibold text-income-700">{t.install_already_done}</p>
+                <p className="text-xs text-income-600 mt-1">{t.install_already_done_desc}</p>
+              </div>
+            </div>
+          ) : installAvailable ? (
+            <div className="bg-primary-50 border border-primary-100 rounded-2xl p-4 flex items-start gap-3">
+              <Icon name="install" className="w-6 h-6 text-primary-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-semibold text-primary-700">{t.install_ready}</p>
+                <p className="text-xs text-primary-600 mt-1">{t.install_ready_desc}</p>
+                <button
+                  type="button"
+                  onClick={handleInstallClick}
+                  disabled={installing}
+                  className="mt-3 btn-primary w-full disabled:opacity-50"
+                >
+                  {installing ? '…' : t.install_button}
+                </button>
+                {installResult && !installResult.ok && (
+                  <p className="text-xs text-expense-600 mt-2">
+                    {installResult.reason === 'already-installed' ? t.install_already_done : t.install_failed}
+                  </p>
+                )}
+                {installResult && installResult.ok && !installResult.accepted && (
+                  <p className="text-xs text-text-tertiary mt-2">{t.install_dismissed}</p>
+                )}
+                {installResult && installResult.ok && installResult.accepted && (
+                  <p className="text-xs text-income-600 mt-2">{t.install_success}</p>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="bg-withdrawal-50 border border-withdrawal-200 rounded-2xl p-4 flex items-start gap-3">
+              <Icon name="info" className="w-6 h-6 text-withdrawal-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-withdrawal-700">{t.install_manual}</p>
+                <p className="text-xs text-withdrawal-600 mt-1">{t.install_manual_desc}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Manual instructions (always shown as fallback) */}
           <div className="bg-background rounded-2xl p-4">
-            <p className="font-semibold mb-2">على Android (Chrome):</p>
-            <ol className="list-decimal list-inside space-y-1 text-text-secondary">
-              <li>افتح قائمة المتصفح (⋮) في الأعلى</li>
-              <li>اختر "إضافة إلى الشاشة الرئيسية"</li>
-              <li>اضغط "تثبيت"</li>
-              <li>سيظهر التطبيق كأيقونة على هاتفك</li>
+            <p className="font-semibold mb-2">{t.install_android_title}</p>
+            <ol className="list-decimal list-inside space-y-1 text-text-secondary text-[13px]">
+              <li>{t.install_android_step1}</li>
+              <li>{t.install_android_step2}</li>
+              <li>{t.install_android_step3}</li>
+              <li>{t.install_android_step4}</li>
             </ol>
           </div>
 
           <div className="bg-background rounded-2xl p-4">
-            <p className="font-semibold mb-2">على iPhone (Safari):</p>
-            <ol className="list-decimal list-inside space-y-1 text-text-secondary">
-              <li>اضغط زر المشاركة (□↑) في الأسفل</li>
-              <li>اختر "إضافة إلى الشاشة الرئيسية"</li>
-              <li>اضغط "إضافة"</li>
-              <li>سيظهر التطبيق كأيقونة على هاتفك</li>
+            <p className="font-semibold mb-2">{t.install_ios_title}</p>
+            <ol className="list-decimal list-inside space-y-1 text-text-secondary text-[13px]">
+              <li>{t.install_ios_step1}</li>
+              <li>{t.install_ios_step2}</li>
+              <li>{t.install_ios_step3}</li>
+              <li>{t.install_ios_step4}</li>
             </ol>
           </div>
 
           <p className="text-xs text-text-tertiary text-center">
-            بعد التثبيت، يعمل التطبيق بدون إنترنت تماماً مثل التطبيقات الأصلية
+            {t.install_offline_note}
           </p>
+        </div>
+      </BottomSheet>
+
+      {/* V7: Clear All Data Sheet — strong confirmation (type 'حذف') */}
+      <BottomSheet open={clearDataSheetOpen} onClose={() => { setClearDataSheetOpen(false); setClearConfirmText('') }} title={t.factory_reset}>
+        <div className="space-y-5 pb-4">
+          <div className="bg-expense-50 border border-expense-200 rounded-2xl p-4 flex items-start gap-3">
+            <Icon name="trash" className="w-6 h-6 text-expense-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-expense-700">{t.factory_reset_warning}</p>
+              <p className="text-xs text-expense-600 mt-1">{t.factory_reset_warning_desc}</p>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-text-secondary mb-2">
+              {t.factory_reset_type_label} <span className="num font-bold text-expense-600">حذف</span>
+            </label>
+            <input
+              type="text"
+              value={clearConfirmText}
+              onChange={(e) => setClearConfirmText(e.target.value)}
+              placeholder={t.factory_reset_placeholder}
+              className="input-field text-center text-lg font-bold"
+              dir="rtl"
+              autoFocus
+            />
+            <p className="text-xs text-text-tertiary mt-2">{t.factory_reset_type_hint}</p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleClearDataConfirm}
+            disabled={clearConfirmText.trim() !== 'حذف'}
+            className="w-full bg-expense-500 text-white font-bold rounded-2xl py-4 active:scale-[0.98] transition-transform disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            <Icon name="trash" className="w-5 h-5" />
+            {t.factory_reset_confirm}
+          </button>
         </div>
       </BottomSheet>
 

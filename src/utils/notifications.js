@@ -19,7 +19,7 @@ let checkInterval = null
 let visibilityHandler = null
 let initialized = false
 
-export function initNotificationService() {
+export async function initNotificationService() {
   if (!('Notification' in window)) {
     console.log('Notifications not supported on this device')
     return
@@ -27,20 +27,34 @@ export function initNotificationService() {
 
   // Guard against double-initialization (React StrictMode calls effects twice)
   if (initialized) return
+
+  // Respect user's notifications_enabled setting. If not enabled, don't auto-start.
+  // (SettingsPage.handleNotificationsToggle will call initNotificationService()
+  // explicitly after the user enables the feature.)
+  try {
+    const { db } = await import('../db')
+    const enabled = await db.getSetting('notifications_enabled', false)
+    if (!enabled) {
+      console.log('Notifications disabled in settings — skipping init')
+      return
+    }
+    _startService()
+  } catch (e) {
+    console.error('initNotificationService failed:', e)
+  }
+}
+
+// Internal: actually start the periodic check + listeners
+function _startService() {
+  if (initialized) return
   initialized = true
-
-  // Start periodic check for due notifications
   startNotificationCheck()
-
-  // Check on app visibility change (store handler so it can be removed if needed)
   visibilityHandler = () => {
     if (!document.hidden) {
       checkDueNotifications()
     }
   }
   document.addEventListener('visibilitychange', visibilityHandler)
-
-  // Initial check after a short delay
   setTimeout(checkDueNotifications, 2000)
 }
 
