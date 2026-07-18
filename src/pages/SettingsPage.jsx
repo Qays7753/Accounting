@@ -14,7 +14,6 @@ export default function SettingsPage() {
   const [templateOpen, setTemplateOpen] = useState(false)
   const [templateText, setTemplateText] = useState('')
   const [installOpen, setInstallOpen] = useState(false)
-  const [pinToggle, setPinToggle] = useState(false)
   const [backupReminder, setBackupReminder] = useState(null)
 
   // V2: Theme & Branding state
@@ -27,7 +26,6 @@ export default function SettingsPage() {
   const [showQuickPosSetting, setShowQuickPosSetting] = useState(true)
   const [helperPinSheetOpen, setHelperPinSheetOpen] = useState(false)
   const [helperPinInput, setHelperPinInput] = useState('')
-  const [helperModeActive, setHelperModeActive] = useState(false)
   const [closingTime, setClosingTime] = useState('20:00')
   const { isHelperMode, enterHelperMode, helperModeEnabled } = useHelperMode()
 
@@ -42,9 +40,8 @@ export default function SettingsPage() {
     checkBackupReminder().then(setBackupReminder)
   }, [])
 
-  // V2: Load current theme color and branding on mount
+  // V2: Load branding on mount
   useEffect(() => {
-    db.getThemeColor().then(setCurrentThemeColor)
     db.getLogo().then(setLogoPreview)
     db.getBusinessName().then(name => setBusinessNameInput(name || ''))
     // V4 Phase 2: Load Quick POS + closing time settings
@@ -83,18 +80,6 @@ export default function SettingsPage() {
     const val = e.target.value
     setClosingTime(val)
     await db.setSetting('closing_time', val)
-  }
-
-  const handlePinToggle = async (enabled) => {
-    hapticLight()
-    setPinToggle(enabled)
-    await update('pin_enabled', enabled)
-    if (enabled) {
-      // TODO: Agent 6/7 - implement PIN setup flow
-      await update('pin_enabled', false)
-      setPinToggle(false)
-      alert('سيتم تفعيل قفل التطبيق في الإصدار القادم')
-    }
   }
 
   const handleBackup = async () => {
@@ -294,21 +279,6 @@ export default function SettingsPage() {
               label="شعار واسم النشاط"
               description="رفع شعار واسم المتجر"
               onClick={() => setBrandingSheetOpen(true)}
-            />
-          </div>
-        </section>
-
-        {/* Security */}
-        <section>
-          <h2 className="text-[12px] font-bold text-primary mb-2 px-1.5">الأمان</h2>
-          <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
-            <SettingsToggle
-              icon="lock"
-              iconBg="bg-expense-50 text-expense-600"
-              label="قفل التطبيق برمز PIN"
-              description="حماية بياناتك برمز سري"
-              checked={pinToggle}
-              onChange={handlePinToggle}
             />
           </div>
         </section>
