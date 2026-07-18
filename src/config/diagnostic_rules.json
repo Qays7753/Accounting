@@ -1,0 +1,63 @@
+[
+  {
+    "id": "strength_sales_growing",
+    "type": "strength",
+    "severity": "green",
+    "requires": ["salesTrend"],
+    "condition": "salesTrend.value > 10",
+    "text": {
+      "simple": "مبيعاتك الأسبوع هاد ارتفعت {value}٪ — استمر!",
+      "pro": "نمو المبيعات الأسبوعي بلغ {value}٪ — اتجاه إيجابي مستدام"
+    },
+    "action": null,
+    "actionLabel": null
+  },
+  {
+    "id": "threat_overdue_debt",
+    "type": "threat",
+    "severity": "red",
+    "requires": ["overdueDebt", "dailySales"],
+    "condition": "overdueDebt.value > dailySales.value * 3 && overdueDebt.value > 0",
+    "text": {
+      "simple": "عندك ديون متأخرة أكبر من ٣ أيام مبيعات — لازم تحصّلها",
+      "pro": "الذمم المدينة المتأخرة تتجاوز ٣ أضعاف المبيعات اليومية — يجب تحصيلها فوراً"
+    },
+    "action": "whatsapp_bulk",
+    "actionLabel": {
+      "simple": "أرسل تذكير واتساب",
+      "pro": "إرسال تذكير تحصيل"
+    }
+  },
+  {
+    "id": "opportunity_pending_orders",
+    "type": "opportunity",
+    "severity": "teal",
+    "requires": ["pendingOrdersCount"],
+    "condition": "pendingOrdersCount.value > 0",
+    "text": {
+      "simple": "عندك {value} طلب جاي — خلّصهن وادخل فلوسهن",
+      "pro": "{value} طلب قيد التنفيذ — أتممهن لتحقيق الإيراد"
+    },
+    "action": "navigate_orders",
+    "actionLabel": {
+      "simple": "روح للطلبات",
+      "pro": "عرض الطلبات"
+    }
+  },
+  {
+    "id": "weakness_low_runway",
+    "type": "weakness",
+    "severity": "orange",
+    "requires": ["runwayDays"],
+    "condition": "runwayDays.value < 14 && runwayDays.value >= 0",
+    "text": {
+      "simple": "صندوقك يكفي بس {value} يوم — قلّل المصاريف أو زِد المبيعات",
+      "pro": "السيولة النقدية تكفي {value} يوماً فقط — راجع التدفق النقدي"
+    },
+    "action": "navigate_finance",
+    "actionLabel": {
+      "simple": "شوف المالية",
+      "pro": "تحليل التدفق"
+    }
+  }
+]
