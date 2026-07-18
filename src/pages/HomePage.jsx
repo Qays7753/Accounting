@@ -190,33 +190,33 @@ export default function HomePage() {
         </div>
         <div className="grid grid-cols-2 gap-3 mt-3">
           <div className="card">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-[34px] h-[34px] rounded-12 grid place-items-center bg-primary-100">
+            <div className="flex items-center gap-2 mb-2 min-w-0">
+              <div className="w-[34px] h-[34px] rounded-12 grid place-items-center bg-primary-100 flex-shrink-0">
                 <Icon name="wallet" className="w-5 h-5" strokeWidth={1.5} />
               </div>
-              <span className="text-[13px] font-semibold text-primary-700">{t.shop_equity}</span>
+              <span className="text-[13px] font-semibold text-primary-700 truncate">{t.shop_equity}</span>
             </div>
             <div className="num text-[24px] font-semibold text-ink leading-none">
               {maskAmount(animatedCapital)}
             </div>
-            <div className="text-[12px] mt-1 text-ink-secondary">{t.shop_equity_desc}</div>
+            <div className="text-[12px] mt-1 text-ink-secondary leading-snug">{t.shop_equity_desc}</div>
           </div>
           <div className="card">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-[34px] h-[34px] rounded-12 grid place-items-center bg-income-100">
+            <div className="flex items-center gap-2 mb-2 min-w-0">
+              <div className="w-[34px] h-[34px] rounded-12 grid place-items-center bg-income-100 flex-shrink-0">
                 <Icon name="trendingUp" className="w-5 h-5" strokeWidth={1.5} />
               </div>
-              <span className="text-[13px] font-semibold text-income-700">{t.merchant_equity}</span>
+              <span className="text-[13px] font-semibold text-income-700 truncate">{t.merchant_equity}</span>
             </div>
             <div className="num text-[24px] font-semibold leading-none text-income-600">
               {maskAmount(animatedProfit)}
             </div>
-            <div className="text-[12px] mt-1 text-ink-secondary">{t.merchant_equity_desc}</div>
+            <div className="text-[12px] mt-1 text-ink-secondary leading-snug">{t.merchant_equity_desc}</div>
           </div>
         </div>
-        <div className="flex items-center gap-1.5 justify-center mt-2">
-          <Icon name="info" className="w-4 h-4" strokeWidth={1.5} />
-          <span className="text-[12px] text-ink-secondary">لا تسحب من {t.shop_equity} إلا لإعادة تعبئة البضاعة</span>
+        <div className="flex items-center gap-1.5 justify-center mt-2 px-2">
+          <Icon name="info" className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
+          <span className="text-[12px] text-ink-secondary text-center leading-snug">{t.jars_helper}</span>
         </div>
       </section>
 
