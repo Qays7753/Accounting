@@ -12,6 +12,7 @@ import { useTerms, useTermsMode } from '../context/TermsContext.jsx'
 
 export default function SettingsPage() {
   const { settings, update, refresh } = useSettings()
+  const t = useTerms()
   const [templateOpen, setTemplateOpen] = useState(false)
   const [templateText, setTemplateText] = useState('')
   const [installOpen, setInstallOpen] = useState(false)
@@ -174,7 +175,7 @@ export default function SettingsPage() {
     <div className="min-h-screen pb-32">
       {/* Header */}
       <header className="px-5 pt-8 pb-3 safe-area-top">
-        <h1 className="text-[30px] font-extrabold text-ink -tracking-[.5px]">الإعدادات</h1>
+        <h1 className="text-[30px] font-extrabold text-ink -tracking-[.5px]">{t.settings_title}</h1>
       </header>
 
       <div className="px-5 space-y-4">
@@ -183,13 +184,13 @@ export default function SettingsPage() {
           <div className="bg-withdrawal-50 border border-withdrawal-200 rounded-2xl p-4 flex items-start gap-3 animate-fade-in">
             <Icon name="bell" className="w-5 h-5 text-withdrawal-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="text-sm font-semibold text-withdrawal-700">تذكير بالنسخ الاحتياطي</p>
+              <p className="text-sm font-semibold text-withdrawal-700">{t.backup_reminder_title}</p>
               <p className="text-xs text-withdrawal-600 mt-1">{backupReminder.message}</p>
               <button
                 onClick={handleBackup}
                 className="mt-2 bg-withdrawal-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg active:scale-95 transition-transform"
               >
-                نسخ احتياطي الآن
+                {t.backup}
               </button>
             </div>
           </div>
@@ -197,20 +198,20 @@ export default function SettingsPage() {
 
         {/* Data Management */}
         <section>
-          <h2 className="text-[12px] font-bold text-primary mb-2 px-1.5">إدارة البيانات</h2>
+          <h2 className="text-[12px] font-bold text-primary mb-2 px-1.5">{t.data_management}</h2>
           <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
             <SettingsRow
               icon="download"
               iconBg="bg-primary-50 text-primary-600"
-              label="نسخة احتياطية"
-              description="تصدير البيانات إلى ملف"
+              label={t.backup}
+              description={t.backup_desc}
               onClick={handleBackup}
             />
             <SettingsRow
               icon="upload"
               iconBg="bg-income-50 text-income-600"
-              label="استعادة من نسخة"
-              description="استيراد البيانات من ملف"
+              label={t.restore}
+              description={t.restore_desc}
               onClick={handleRestore}
             />
           </div>
@@ -218,13 +219,13 @@ export default function SettingsPage() {
 
         {/* WhatsApp */}
         <section>
-          <h2 className="text-[12px] font-bold text-primary mb-2 px-1.5">واتساب</h2>
+          <h2 className="text-[12px] font-bold text-primary mb-2 px-1.5">{t.whatsapp_section}</h2>
           <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
             <SettingsRow
               icon="whatsapp"
               iconBg="bg-income-50 text-income-600"
-              label="قالب رسالة الطلب"
-              description="تخصيص الرسالة المرسلة للزبون"
+              label={t.whatsapp_template}
+              description={t.whatsapp_template_desc}
               onClick={() => setTemplateOpen(true)}
             />
           </div>
@@ -232,7 +233,7 @@ export default function SettingsPage() {
 
         {/* V4 Phase 3: Report Display Mode */}
         <section>
-          <h2 className="text-[12px] font-bold text-primary mb-2 px-1.5">عرض التقارير</h2>
+          <h2 className="text-[12px] font-bold text-primary mb-2 px-1.5">{t.report_display}</h2>
           <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
             <div className="w-full p-4">
               <div className="flex items-center gap-3 mb-3">
@@ -240,28 +241,28 @@ export default function SettingsPage() {
                   <Icon name="document" className="w-5 h-5" />
                 </div>
                 <div className="flex-1">
-                  <p className="font-semibold text-text-primary text-sm">أسلوب العرض</p>
-                  <p className="text-xs text-text-tertiary mt-0.5">بسيطة (بطاقات) أو احترافية (جداول)</p>
+                  <p className="font-semibold text-text-primary text-sm">{t.report_display}</p>
+                  <p className="text-xs text-text-tertiary mt-0.5">{t.report_mode_desc}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  onClick={async () => { hapticLight(); setReportModeCtx('simple'); await db.setSetting('report_mode', 'simple') }}
+                  onClick={async () => { hapticLight(); await setReportModeCtx('simple') }}
                   className={`py-3 rounded-xl text-sm font-semibold transition-all active:scale-95 ${
                     reportMode === 'simple' ? 'bg-primary text-white' : 'bg-background text-text-secondary border border-divider'
                   }`}
                 >
-                  بسيطة
+                  {t.report_mode_simple}
                 </button>
                 <button
                   type="button"
-                  onClick={async () => { hapticLight(); setReportModeCtx('pro'); await db.setSetting('report_mode', 'pro') }}
+                  onClick={async () => { hapticLight(); await setReportModeCtx('pro') }}
                   className={`py-3 rounded-xl text-sm font-semibold transition-all active:scale-95 ${
                     reportMode === 'pro' ? 'bg-primary text-white' : 'bg-background text-text-secondary border border-divider'
                   }`}
                 >
-                  احترافية
+                  {t.report_mode_pro}
                 </button>
               </div>
             </div>
@@ -270,13 +271,13 @@ export default function SettingsPage() {
 
         {/* V2: Appearance (Theme + Branding) */}
         <section>
-          <h2 className="text-[12px] font-bold text-primary mb-2 px-1.5">المظهر</h2>
+          <h2 className="text-[12px] font-bold text-primary mb-2 px-1.5">{t.appearance}</h2>
           <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
             <SettingsRow
               icon="user"
               iconBg="bg-withdrawal-50 text-withdrawal-600"
-              label="شعار واسم النشاط"
-              description="رفع شعار واسم المتجر"
+              label={t.branding}
+              description={t.branding_desc}
               onClick={() => setBrandingSheetOpen(true)}
             />
           </div>
@@ -284,14 +285,14 @@ export default function SettingsPage() {
 
         {/* V4 Phase 2: Operations (Quick POS + Helper Mode + Closing Time) */}
         <section>
-          <h2 className="text-[12px] font-bold text-primary mb-2 px-1.5">التشغيل والأمان</h2>
+          <h2 className="text-[12px] font-bold text-primary mb-2 px-1.5">{t.operations_security}</h2>
           <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
             {/* Quick POS Toggle */}
             <SettingsToggle
               icon="tag"
               iconBg="bg-primary-50 text-primary-600"
-              label="إظهار شاشة البيع السريع"
-              description="بيع منتجات بضغطة واحدة"
+              label={t.show_quick_pos}
+              description={t.show_quick_pos_desc}
               checked={showQuickPosSetting}
               onChange={handleQuickPosToggle}
             />
@@ -299,16 +300,16 @@ export default function SettingsPage() {
             <SettingsRow
               icon="lock"
               iconBg="bg-withdrawal-50 text-withdrawal-600"
-              label="تفعيل وضع المساعد"
-              description="وضع محدود للموظفين (بيع فقط)"
+              label={t.helper_mode}
+              description={t.helper_mode_desc}
               onClick={() => { hapticLight(); setHelperPinSheetOpen(true) }}
             />
             {helperModeEnabled && (
               <SettingsRow
                 icon="info"
                 iconBg="bg-income-50 text-income-600"
-                label="الدخول لوضع المساعد الآن"
-                description="تفعيل الوضع المحدود فوراً"
+                label={t.enter_helper_mode}
+                description={t.enter_helper_mode_desc}
                 onClick={handleEnterHelperMode}
               />
             )}
@@ -318,8 +319,8 @@ export default function SettingsPage() {
                 <Icon name="clock" className="w-5 h-5" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-text-primary text-sm">وقت إقفال اليومية</p>
-                <p className="text-xs text-text-tertiary mt-0.5">وقت تذكير بإقفال الصندوق</p>
+                <p className="font-semibold text-text-primary text-sm">{t.closing_time}</p>
+                <p className="text-xs text-text-tertiary mt-0.5">{t.closing_time_desc}</p>
               </div>
               <input
                 type="time"
@@ -334,13 +335,13 @@ export default function SettingsPage() {
 
         {/* App Info */}
         <section>
-          <h2 className="text-[12px] font-bold text-primary mb-2 px-1.5">التطبيق</h2>
+          <h2 className="text-[12px] font-bold text-primary mb-2 px-1.5">{t.app_section}</h2>
           <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
             <SettingsRow
               icon="bell"
               iconBg="bg-withdrawal-50 text-withdrawal-600"
-              label="تفعيل تذكيرات الطلبات"
-              description="إشعارات قبل موعد الطلبات"
+              label={t.notifications}
+              description={t.notifications_desc}
               onClick={async () => {
                 hapticMedium()
                 const granted = await requestNotificationPermission()
@@ -354,22 +355,22 @@ export default function SettingsPage() {
             <SettingsRow
               icon="install"
               iconBg="bg-primary-50 text-primary-600"
-              label="كيفية تثبيت التطبيق"
-              description="تعليمات الإضافة للشاشة الرئيسية"
+              label={t.install_instructions}
+              description={t.install_desc}
               onClick={() => setInstallOpen(true)}
             />
             <SettingsRow
               icon="info"
               iconBg="bg-gray-100 text-text-secondary"
-              label="حول التطبيق"
-              description="الإصدار 1.0.0"
+              label={t.about_app}
+              description="v1.0.0"
               onClick={() => alert('الحسابات - إصدار 1.0.0\nتطبيق محاسبة وإدارة الطلبات للشركات الصغيرة')}
             />
             <SettingsRow
               icon="trash"
               iconBg="bg-expense-50 text-expense-600"
-              label="حذف جميع البيانات"
-              description="إعادة التطبيق للحالة الأولى"
+              label={t.factory_reset}
+              description={t.factory_reset_desc}
               onClick={async () => {
                 hapticMedium()
                 const confirmed = confirm('سيتم حذف جميع البيانات نهائياً (المعاملات، الطلبات، الإعدادات). هذا الإجراء لا يمكن التراجع عنه. هل أنت متأكد؟')
