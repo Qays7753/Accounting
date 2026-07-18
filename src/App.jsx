@@ -6,7 +6,7 @@ import OnboardingPage from './pages/OnboardingPage.jsx'
 import BackupReminderBanner from './components/common/BackupReminderBanner.jsx'
 import { checkBackupReminder } from './utils/backup.js'
 import { HelperModeProvider, useHelperMode } from './context/HelperModeContext.jsx'
-import { TermsProvider } from './context/TermsContext.jsx'
+import { TermsProvider, useIsInvestorMode } from './context/TermsContext.jsx'
 import { SettingsProvider } from './context/SettingsContext.jsx'
 import { CloudSyncProvider } from './context/CloudSyncContext.jsx'
 
@@ -19,6 +19,7 @@ const QuickPosPage = lazy(() => import('./pages/QuickPosPage.jsx'))
 const ReportsPage = lazy(() => import('./pages/ReportsPage.jsx'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'))
 const InventoryPage = lazy(() => import('./pages/InventoryPage.jsx'))
+const InvestorDashboard = lazy(() => import('./pages/InvestorDashboard.jsx'))
 
 function PageLoader() {
   return (
@@ -44,10 +45,10 @@ function PageLoader() {
 
 function AppRoutes() {
   const { isHelperMode } = useHelperMode()
+  const isInvestor = useIsInvestorMode()
   const navigate = useNavigate()
 
   // Helper Mode restricts navigation
-  // Staff can only access Quick POS and Orders (add only, no edit/delete)
   if (isHelperMode) {
     return (
       <Suspense fallback={<PageLoader />}>
@@ -60,6 +61,18 @@ function AppRoutes() {
     )
   }
 
+  // Investor Mode: read-only executive dashboard (all routes show it)
+  if (isInvestor) {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="*" element={<InvestorDashboard />} />
+        </Routes>
+      </Suspense>
+    )
+  }
+
+  // Daily / Manager Mode: normal routes
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>

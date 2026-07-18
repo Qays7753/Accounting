@@ -4,15 +4,16 @@ import { terms_simple } from '../utils/terms_simple.js'
 import { terms_pro } from '../utils/terms_pro.js'
 
 /**
- * Terms Context — Dual-Microcopy Architecture
+ * Terms Context — Tri-Mode Architecture (V10)
  *
- * Provides dynamic UI text based on the user's report_mode setting:
- * - 'simple' → street language (Jordanian business slang)
- * - 'pro'    → formal accounting terminology
+ * Three modes:
+ * - 'simple'   → Daily mode: street language (Jordanian business slang)
+ * - 'pro'      → Manager mode: formal accounting terminology
+ * - 'investor' → Investor mode: formal terms + executive dashboard layout
+ *                (hides BottomNav, FAB, Quick POS; shows InvestorDashboard)
  *
- * All components use `useTerms()` to get the correct terms object.
- * When the user toggles the mode in Settings, the entire app re-renders
- * with the new vocabulary instantly. The choice is persisted to Dexie.
+ * The investor mode uses pro terms (formal accounting) but also triggers
+ * a contextual layout shift via the `mode` value that AppLayout reads.
  */
 
 const TermsContext = createContext({ terms: terms_simple, mode: 'simple', setMode: () => {} })
@@ -34,9 +35,6 @@ export function TermsProvider({ children }) {
     return () => { cancelled = true }
   }, [])
 
-  // setMode persists to Dexie AND updates local state in one shot.
-  // This means toggling in Settings instantly re-renders the whole app
-  // and survives reloads.
   const setMode = useCallback(async (nextMode) => {
     const m = nextMode || 'simple'
     setModeState(m)
@@ -47,29 +45,30 @@ export function TermsProvider({ children }) {
     }
   }, [])
 
-  const terms = mode === 'pro' ? terms_pro : terms_simple
+  // Investor mode uses pro terms (formal accounting language)
+  const terms = (mode === 'pro' || mode === 'investor') ? terms_pro : terms_simple
+
+  // Helper: is the app in investor layout mode?
+  const isInvestorMode = mode === 'investor'
 
   return (
-    <TermsContext.Provider value={{ terms, mode, setMode }}>
+    <TermsContext.Provider value={{ terms, mode, setMode, isInvestorMode }}>
       {children}
     </TermsContext.Provider>
   )
 }
 
-/**
- * useTerms — returns the current terms object based on report_mode.
- * Usage: const t = useTerms(); then <h1>{t.net_profit}</h1>
- */
 export function useTerms() {
   const ctx = useContext(TermsContext)
   return ctx.terms
 }
 
-/**
- * useTermsMode — returns [mode, setMode] for Settings to toggle.
- * setMode persists to Dexie; pass 'simple' or 'pro'.
- */
 export function useTermsMode() {
   const ctx = useContext(TermsContext)
   return [ctx.mode, ctx.setMode]
+}
+
+export function useIsInvestorMode() {
+  const ctx = useContext(TermsContext)
+  return ctx.isInvestorMode
 }

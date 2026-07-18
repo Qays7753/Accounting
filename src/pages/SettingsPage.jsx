@@ -526,40 +526,56 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* V4 Phase 3: Report Display Mode */}
+        {/* V10: Tri-Mode Switcher (Daily / Manager / Investor) */}
         <section>
-          <h2 className="text-caption font-bold text-primary mb-2 px-1.5">{t.report_display}</h2>
-          <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
+          <h2 className="text-caption font-bold text-primary mb-2 px-1.5">وضع التطبيق</h2>
+          <div className="bg-surface rounded-card shadow-card divide-y divide-divider">
             <div className="w-full p-4">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-primary-50 text-primary-600">
+                <div className="w-9 h-9 rounded-12 flex items-center justify-center flex-shrink-0 bg-primary-50 text-primary-600">
                   <Icon name="document" className="w-5 h-5" />
                 </div>
                 <div className="flex-1">
-                  <p className="font-semibold text-text-primary text-sm">{t.report_display}</p>
-                  <p className="text-xs text-text-tertiary mt-0.5">{t.report_mode_desc}</p>
+                  <p className="font-semibold text-ink text-sm">اختر وضع التطبيق</p>
+                  <p className="text-caption text-ink-secondary mt-0.5">اليومي / المدير / المستثمر</p>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
                   onClick={async () => { hapticLight(); await setReportModeCtx('simple') }}
-                  className={`py-3 rounded-xl text-sm font-semibold transition-all active:scale-95 ${
-                    reportMode === 'simple' ? 'bg-primary text-white' : 'bg-background text-text-secondary border border-divider'
+                  className={`py-3 rounded-12 text-sm font-semibold transition-all active:scale-95 ${
+                    reportMode === 'simple' ? 'bg-primary text-white' : 'bg-background text-ink-secondary border border-divider'
                   }`}
                 >
-                  {t.report_mode_simple}
+                  اليومي
                 </button>
                 <button
                   type="button"
                   onClick={async () => { hapticLight(); await setReportModeCtx('pro') }}
-                  className={`py-3 rounded-xl text-sm font-semibold transition-all active:scale-95 ${
-                    reportMode === 'pro' ? 'bg-primary text-white' : 'bg-background text-text-secondary border border-divider'
+                  className={`py-3 rounded-12 text-sm font-semibold transition-all active:scale-95 ${
+                    reportMode === 'pro' ? 'bg-primary text-white' : 'bg-background text-ink-secondary border border-divider'
                   }`}
                 >
-                  {t.report_mode_pro}
+                  المدير
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => { hapticLight(); await setReportModeCtx('investor') }}
+                  className={`py-3 rounded-12 text-sm font-semibold transition-all active:scale-95 ${
+                    reportMode === 'investor' ? 'bg-primary text-white' : 'bg-background text-ink-secondary border border-divider'
+                  }`}
+                >
+                  المستثمر
                 </button>
               </div>
+              <p className="text-caption text-ink-tertiary mt-2 leading-relaxed">
+                {reportMode === 'investor'
+                  ? 'لوحة تنفيذية فاتحة بأرقام ضخمة — للتقارير والعرض على المستثمرين'
+                  : reportMode === 'pro'
+                  ? 'مصطلحات محاسبية رسمية + جداول بيانات كاملة'
+                  : 'لغة بسيطة + بطاقات محادثة — للاستخدام اليومي'}
+              </p>
             </div>
           </div>
         </section>
