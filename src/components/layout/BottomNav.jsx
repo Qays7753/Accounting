@@ -47,14 +47,14 @@ const navItems = [
     ),
   },
   {
-    to: '/pos',
-    label: 'quick_sale',
+    to: '/inventory',
+    label: 'nav_inventory',
     icon: (active) => (
       <svg className="w-6 h-6" fill={active ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 0 : 1.8}>
         {active ? (
-          <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm1.5 4.5a.75.75 0 00-1.5 0v1.5H9a.75.75 0 000 1.5h3v.75a3 3 0 11-3 3 .75.75 0 011.5 0 1.5 1.5 0 103-1.5V9.75h.75a.75.75 0 000-1.5H13.5v-1.5z" clipRule="evenodd" />
+          <path fillRule="evenodd" d="M3 6.75A2.75 2.75 0 015.75 4h12.5A2.75 2.75 0 0121 6.75v10.5A2.75 2.75 0 0118.25 20H5.75A2.75 2.75 0 013 17.25V6.75zm3.5 1.5a.75.75 0 000 1.5h11a.75.75 0 000-1.5h-11zm0 4a.75.75 0 000 1.5h11a.75.75 0 000-1.5h-11zm0 4a.75.75 0 000 1.5h7a.75.75 0 000-1.5h-7z" clipRule="evenodd" />
         ) : (
-          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a7.5 7.5 0 0014.646-2.31M19.5 12a7.5 7.5 0 00-7.5-7.5M19.5 12a7.5 7.5 0 01-7.5 7.5M19.5 12h-3m3 0V9m0 3v3M12 3v2.25m0 13.5V21M3 12h2.25m13.5 0H21M5.636 5.636l1.591 1.591m9.728 0l1.591-1.591M5.636 18.364l1.591-1.591m9.728 0l1.591 1.591" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
         )}
       </svg>
     ),

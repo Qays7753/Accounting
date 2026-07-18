@@ -11,6 +11,7 @@ export const terms_pro = {
   nav_finance: 'المالية',
   nav_orders: 'الطلبات',
   nav_settings: 'الإعدادات',
+  nav_inventory: 'المخزون',
 
   // ===== Home Dashboard =====
   greeting_morning: 'صباح الخير',

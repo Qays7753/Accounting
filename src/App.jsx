@@ -18,6 +18,7 @@ const DebtsPage = lazy(() => import('./pages/DebtsPage.jsx'))
 const QuickPosPage = lazy(() => import('./pages/QuickPosPage.jsx'))
 const ReportsPage = lazy(() => import('./pages/ReportsPage.jsx'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'))
+const InventoryPage = lazy(() => import('./pages/InventoryPage.jsx'))
 
 function PageLoader() {
   return (
@@ -69,6 +70,7 @@ function AppRoutes() {
         <Route path="/pos" element={<QuickPosPage />} />
         <Route path="/reports" element={<ReportsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/inventory" element={<InventoryPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
