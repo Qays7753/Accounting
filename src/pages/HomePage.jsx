@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useDashboardStats } from '../hooks/useDatabase.js'
 import { useCountUp } from '../hooks/useCountUp.js'
+import { useTerms } from '../context/TermsContext.jsx'
 import { db } from '../db'
 import { formatAmount, parseNumber, formatLiveInput } from '../utils/format.js'
 import { getGreeting, formatArabicDate, getRelativeTime } from '../utils/date.js'
@@ -17,6 +18,7 @@ import { exportBackup } from '../utils/backup.js'
 
 export default function HomePage() {
   const stats = useDashboardStats()
+  const t = useTerms()
   const [sheetOpen, setSheetOpen] = useState(null)
   const [logo, setLogo] = useState(null)
   const [businessName, setBusinessName] = useState(null)
@@ -175,7 +177,7 @@ export default function HomePage() {
           style={{ background: '#F0EEE6', boxShadow: '0 1px 2px rgba(60,50,40,.06), 0 4px 12px rgba(60,50,40,.06)' }}
         >
           <div className="flex items-center justify-between">
-            <span className="text-[13px] font-medium" style={{ color: '#6E6A60' }}>إجمالي النقد المتاح</span>
+            <span className="text-[13px] font-medium" style={{ color: '#6E6A60' }}>{t.total_cash}</span>
             <Icon name="wallet" className="w-5 h-5" strokeWidth={1.5} />
           </div>
           {stats.loading ? (
@@ -192,31 +194,31 @@ export default function HomePage() {
               <div className="w-[34px] h-[34px] rounded-12 grid place-items-center" style={{ background: '#E3F5F5' }}>
                 <Icon name="wallet" className="w-5 h-5" strokeWidth={1.5} />
               </div>
-              <span className="text-[13px] font-semibold" style={{ color: '#023852' }}>حق المحل</span>
+              <span className="text-[13px] font-semibold" style={{ color: '#023852' }}>{t.shop_equity}</span>
             </div>
             <div className="num text-[24px] font-semibold text-ink leading-none">
               {formatAmount(animatedCapital)}
             </div>
-            <div className="text-[12px] mt-1" style={{ color: '#647680' }}>رأس المال</div>
+            <div className="text-[12px] mt-1" style={{ color: '#647680' }}>{t.shop_equity_desc}</div>
           </div>
           <div className="card">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-[34px] h-[34px] rounded-12 grid place-items-center" style={{ background: '#E1F3EB' }}>
                 <Icon name="trendingUp" className="w-5 h-5" strokeWidth={1.5} />
               </div>
-              <span className="text-[13px] font-semibold" style={{ color: '#0E8A5F' }}>حق التاجر</span>
+              <span className="text-[13px] font-semibold" style={{ color: '#0E8A5F' }}>{t.merchant_equity}</span>
             </div>
             <div className="num text-[24px] font-semibold leading-none"
               style={{ color: animatedProfit >= 0 ? '#0E8A5F' : '#C0272B' }}
             >
               {formatAmount(animatedProfit)}
             </div>
-            <div className="text-[12px] mt-1" style={{ color: '#647680' }}>الأرباح</div>
+            <div className="text-[12px] mt-1" style={{ color: '#647680' }}>{t.merchant_equity_desc}</div>
           </div>
         </div>
         <div className="flex items-center gap-1.5 justify-center mt-2">
           <Icon name="info" className="w-4 h-4" strokeWidth={1.5} />
-          <span className="text-[12px]" style={{ color: '#647680' }}>لا تسحب من حق المحل إلا لإعادة تعبئة البضاعة</span>
+          <span className="text-[12px]" style={{ color: '#647680' }}>لا تسحب من {t.shop_equity} إلا لإعادة تعبئة البضاعة</span>
         </div>
       </section>
 
@@ -233,7 +235,7 @@ export default function HomePage() {
                 <Icon name="arrowDownLeft" className="w-5 h-5 text-income-600" strokeWidth={2} />
               </div>
             </div>
-            <p className="text-xs text-text-secondary mb-1">قبض اليوم</p>
+            <p className="text-xs text-text-secondary mb-1">{t.today_income}</p>
             {stats.loading ? (
               <div className="h-6 w-20 bg-gray-200 rounded animate-pulse" />
             ) : (
@@ -253,7 +255,7 @@ export default function HomePage() {
                 <Icon name="arrowUpRight" className="w-5 h-5 text-expense-600" strokeWidth={2} />
               </div>
             </div>
-            <p className="text-xs text-text-secondary mb-1">صرف اليوم</p>
+            <p className="text-xs text-text-secondary mb-1">{t.today_expense}</p>
             {stats.loading ? (
               <div className="h-6 w-20 bg-gray-200 rounded animate-pulse" />
             ) : (
@@ -268,9 +270,9 @@ export default function HomePage() {
       {/* Upcoming Orders */}
       <section className="px-5 mb-6">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-bold text-text-primary">الطلبات القادمة</h2>
+          <h2 className="text-base font-bold text-text-primary">{t.upcoming_orders}</h2>
           <Link to="/orders" className="text-sm text-primary-600 font-medium">
-            عرض الكل
+            {t.view_all}
           </Link>
         </div>
 

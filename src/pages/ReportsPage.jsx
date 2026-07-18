@@ -1,3 +1,4 @@
+import { useTerms } from '../context/TermsContext.jsx'
 import { useState, useEffect, useCallback } from 'react'
 import { db } from '../db'
 import { formatAmount } from '../utils/format.js'
@@ -24,6 +25,7 @@ export default function ReportsPage() {
   const [endDate, setEndDate] = useState(() => {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
   })
+  const t = useTerms()
   const [report, setReport] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -155,7 +157,7 @@ export default function ReportsPage() {
     <div className="min-h-screen pb-32">
       {/* Header */}
       <header className="px-4 pt-8 pb-3 safe-area-top sticky top-0 bg-background z-20">
-        <h1 className="text-[30px] font-extrabold text-ink -tracking-[.5px] mb-3">التقارير</h1>
+        <h1 className="text-[30px] font-extrabold text-ink -tracking-[.5px] mb-3">{t.reports_title}</h1>
 
         {/* V5: Period segmented control — connected track + sliding blue thumb */}
         <div className="relative grid grid-cols-5 bg-mute rounded-[16px] p-1 mb-3">

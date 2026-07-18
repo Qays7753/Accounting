@@ -1,3 +1,4 @@
+import { useTerms } from '../context/TermsContext.jsx'
 import { useState, useCallback, useMemo } from 'react'
 import { useTransactions, useDebounce, useInfiniteScroll, useDashboardStats } from '../hooks/useDatabase.js'
 import { db } from '../db'
@@ -33,6 +34,7 @@ function getDayInfo(date) {
 }
 
 export default function FinancePage() {
+  const t = useTerms()
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
   const [snackbar, setSnackbar] = useState(null) // { message, actionLabel, onAction }
@@ -42,7 +44,7 @@ export default function FinancePage() {
   // Debounce search to prevent query thrash on every keystroke
   const debouncedSearch = useDebounce(search, 300)
 
-  // V5: Monthly net for the "صافي هذا الشهر" card (net = income − expense; withdrawal excluded)
+  // V5: Monthly net for the "{t.net_this_month}" card (net = income − expense; withdrawal excluded)
   const stats = useDashboardStats()
 
   // Load the full ledger (all dates) so it can be grouped by day; type filtering is applied below.
@@ -151,10 +153,10 @@ export default function FinancePage() {
           <h1 className="text-[30px] font-extrabold text-ink -tracking-[.5px]">المالية</h1>
         </div>
 
-        {/* صافي هذا الشهر */}
+        {/* {t.net_this_month} */}
         <div className="bg-surface rounded-card px-4 py-[18px] shadow-card flex items-center justify-between mb-3.5">
           <div>
-            <div className="text-[12px] text-faint font-medium">صافي هذا الشهر</div>
+            <div className="text-[12px] text-faint font-medium">{t.net_this_month}</div>
             <div className={`tnum text-[28px] font-extrabold mt-0.5 ${monthNet >= 0 ? 'text-income' : 'text-expense'}`}>
               {monthNet >= 0 ? '+' : '−'}{formatAmount(Math.abs(monthNet))}
             </div>
@@ -181,7 +183,7 @@ export default function FinancePage() {
             type="search"
             value={search}
             onChange={handleSearchChange}
-            placeholder="ابحث في المعاملات…"
+            placeholder="{t.search_transactions}…"
             className="w-full bg-mute rounded-[18px] pr-12 pl-4 py-3 text-sm outline-none border-2 border-transparent focus:border-primary transition-colors"
             dir="rtl"
           />

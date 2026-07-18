@@ -2,13 +2,14 @@ import { NavLink } from 'react-router-dom'
 import { useState } from 'react'
 import { hapticLight } from '../../utils/haptics.js'
 import { useHelperMode } from '../../context/HelperModeContext.jsx'
+import { useTerms } from '../../context/TermsContext.jsx'
 import PinEntrySheet from '../sheets/PinEntrySheet.jsx'
 
 // V5: 4 tabs only — Quick Sale merged into Home
 const navItems = [
   {
     to: '/',
-    label: 'الرئيسية',
+    label: 'nav_home',
     icon: (active) => (
       <svg className="w-6 h-6" fill={active ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 0 : 1.8}>
         {active ? (
@@ -21,7 +22,7 @@ const navItems = [
   },
   {
     to: '/finance',
-    label: 'المالية',
+    label: 'nav_finance',
     icon: (active) => (
       <svg className="w-6 h-6" fill={active ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 0 : 1.8}>
         {active ? (
@@ -34,7 +35,7 @@ const navItems = [
   },
   {
     to: '/orders',
-    label: 'الطلبات',
+    label: 'nav_orders',
     icon: (active) => (
       <svg className="w-6 h-6" fill={active ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 0 : 1.8}>
         {active ? (
@@ -47,7 +48,7 @@ const navItems = [
   },
   {
     to: '/settings',
-    label: 'الإعدادات',
+    label: 'nav_settings',
     icon: (active) => (
       <svg className="w-6 h-6" fill={active ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 0 : 1.8}>
         {active ? (
@@ -68,6 +69,7 @@ const helperNavItems = navItems.filter(item => item.to === '/orders')
 
 export default function BottomNav({ showQuickPos = true }) {
   const { isHelperMode, verifyPin } = useHelperMode()
+  const t = useTerms()
   const [pinSheetOpen, setPinSheetOpen] = useState(false)
 
   const items = isHelperMode ? helperNavItems : navItems
@@ -109,7 +111,7 @@ export default function BottomNav({ showQuickPos = true }) {
                   className="text-[11px] font-semibold transition-colors"
                   style={{ color: isActive ? '#CC785C' : '#B7B2A6' }}
                 >
-                  {item.label}
+                  {t[item.label] || item.label}
                 </span>
               </>
             )}

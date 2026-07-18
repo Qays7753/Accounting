@@ -1,3 +1,4 @@
+import { useTerms } from '../../context/TermsContext.jsx'
 import { useState } from 'react'
 import BottomSheet from '../ui/BottomSheet.jsx'
 import { hapticMedium, hapticLight } from '../../utils/haptics.js'
@@ -8,6 +9,7 @@ import Icon from '../ui/Icon.jsx'
  * Fixed bottom-left (in RTL), 60×60, blue, opens Add sheet.
  */
 export default function Fab({ onAction }) {
+  const t = useTerms()
   const [open, setOpen] = useState(false)
 
   const handleOpen = () => {
@@ -40,7 +42,7 @@ export default function Fab({ onAction }) {
         <Icon name="plus" className="w-6 h-6 text-white" strokeWidth={1.5} />
       </button>
 
-      <BottomSheet open={open} onClose={() => setOpen(false)} title="إضافة جديدة">
+      <BottomSheet open={open} onClose={() => setOpen(false)} title="{t.add_new}">
         <div className="grid grid-cols-2 gap-3 pb-4">
           {actions.map((action) => (
             <button
