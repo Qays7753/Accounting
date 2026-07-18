@@ -147,8 +147,8 @@ export default function QuickPosPage() {
           <div className="grid grid-cols-2 gap-3">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="bg-surface rounded-2xl p-4 shadow-card">
-                <div className="h-16 bg-gray-200 rounded-xl animate-pulse mb-2" />
-                <div className="h-4 w-2/3 bg-gray-200 rounded animate-pulse" />
+                <div className="h-16 bg-divider rounded-xl animate-pulse mb-2" />
+                <div className="h-4 w-2/3 bg-divider rounded animate-pulse" />
               </div>
             ))}
           </div>

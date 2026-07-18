@@ -234,7 +234,7 @@ export default function HomePage() {
             </div>
             <p className="text-xs text-text-secondary mb-1">{t.today_income}</p>
             {stats.loading ? (
-              <div className="h-6 w-20 bg-gray-200 rounded animate-pulse" />
+              <div className="h-6 w-20 bg-divider rounded animate-pulse" />
             ) : (
               <p className="text-lg font-bold text-income-600 tabular-nums">
                 {formatAmount(stats.todayIncome)}
@@ -254,7 +254,7 @@ export default function HomePage() {
             </div>
             <p className="text-xs text-text-secondary mb-1">{t.today_expense}</p>
             {stats.loading ? (
-              <div className="h-6 w-20 bg-gray-200 rounded animate-pulse" />
+              <div className="h-6 w-20 bg-divider rounded animate-pulse" />
             ) : (
               <p className="text-lg font-bold text-expense-600 tabular-nums">
                 {formatAmount(stats.todayExpense)}
