@@ -990,13 +990,15 @@ class AccountingDatabase extends Dexie {
     return settlements
   }
 
-  // ========== V2: THEME & BRANDING ==========
+  // ========== THEME & BRANDING (identity is FIXED Terracotta #CC785C) ==========
 
   /**
-   * Get the current theme color (hex string). Default: Samsung Blue.
+   * Get the stored theme color (hex string). Default: Terracotta.
+   * NOTE: The app's identity is fixed to Terracotta and not user-selectable.
+   * This getter is retained for backward compatibility with any external tooling.
    */
   async getThemeColor() {
-    return await this.getSetting('theme_color', '#1F6FE8')
+    return await this.getSetting('theme_color', '#CC785C')
   }
 
   /**

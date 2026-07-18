@@ -4,7 +4,7 @@ import Icon from '../ui/Icon.jsx'
 import { hapticMedium } from '../../utils/haptics.js'
 
 /**
- * One UI "update available" banner.
+ * "Update available" banner (SOP §7.6 card style).
  * Sits above the bottom nav; the merchant decides when to update, so a new
  * version never interrupts them mid-task. Tapping "تحديث" applies the new
  * service worker and reloads.

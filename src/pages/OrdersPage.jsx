@@ -128,7 +128,7 @@ export default function OrdersPage() {
           </button>
         </div>
 
-        {/* View Tabs (List vs Calendar) — One UI segmented track */}
+        {/* View Tabs (List vs Calendar) — segmented track (SOP §7.3) */}
         <div className="bg-mute rounded-[18px] p-1 mb-3.5 flex">
           <button
             onClick={() => handleViewChange('list')}

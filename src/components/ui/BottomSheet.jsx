@@ -4,7 +4,7 @@ import { hapticMedium } from '../../utils/haptics.js'
 import Icon from './Icon.jsx'
 
 /**
- * V5: Draggable & Expandable Bottom Sheet (One UI style)
+ * Draggable & Expandable Bottom Sheet (SOP §7.5)
  * Two snap points: collapsed (~84%) and full-screen (~94%).
  * Drag handle up → expand to full screen; drag down → collapse, then close.
  */

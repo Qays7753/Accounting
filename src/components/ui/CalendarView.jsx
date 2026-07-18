@@ -11,7 +11,7 @@ const STATUS_CONFIG = {
 }
 
 /**
- * Monthly Calendar - One UI style
+ * Monthly Calendar (SOP §7.6 card + §7.9 status dots)
  * Days with orders have colored dots based on status
  */
 export default function CalendarView({ onOrderClick }) {

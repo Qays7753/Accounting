@@ -227,32 +227,51 @@ All 20 items from the Master Checklist have been verified:
 
 ---
 
-## 🎨 Design System
+## 🎨 Design System — Terracotta Warm Identity (SOP v2)
 
 ### Colors
+Identity is **FIXED** to Terracotta. Not user-selectable.
+
 | Purpose | Color | Hex |
 |---------|-------|-----|
-| Background | Light gray | `#F9F9F9` |
+| Background (warm ivory) | Greige | `#FAF9F5` |
+| Ivory mute (sections) | Greige | `#F0EEE6` |
 | Surface (cards) | White | `#FFFFFF` |
-| Primary (Samsung Blue) | Blue | `#1F6FE8` |
-| Income / Profit | Bright Green | `#23C35B` |
-| Expense / Loss | Coral Red | `#EB2323` |
-| Personal Withdrawal | Amber | `#B36A0C` |
-| Status: In Progress | Yellow | `#F5A623` |
-| Status: Ready | Blue | `#1F6FE8` |
-| Status: Closed | Gray | `#9E9E9E` |
+| Borders | Warm | `#EAE6DC` |
+| Dividers | Warm | `#DAD5C8` |
+| Ink (primary text) | Warm black | `#1F1E1D` |
+| Ink strong | Warm dark | `#33322E` |
+| Ink secondary | Warm grey | `#6E6A60` |
+| **Primary — Terracotta** | Terracotta | `#CC785C` |
+| Primary pressed | Darker terracotta | `#B4613F` |
+| Primary tint | Pale terracotta | `#F4E4DB` |
+| Accent — Teal | Teal | `#079FA0` |
+| Income / Profit | Cool green | `#2E7D57` |
+| Expense / Loss | Crimson | `#B42318` |
+| Personal Withdrawal (steel blue) | Steel blue | `#3E5C76` |
+| Investment Returns (gold, rare) | Gold | `#B08532` |
+| Status: In Progress | Amber | `#C99100` |
+| Status: Ready | Teal | `#079FA0` |
+| Status: Closed | Warm grey | `#6E6A60` |
 
 ### Typography
-- **Primary**: Cairo (Arabic + Latin)
-- **Secondary**: IBM Plex Sans Arabic
-- **Numbers**: Tabular nums for alignment
+- **Primary**: IBM Plex Sans Arabic (headings + body)
+- **Numbers**: IBM Plex Mono (`tnum` for tabular alignment)
+- Sizes 12–28 / weights 400–700 per SOP §5
 
 ### Components
-- `card` — White background, rounded 2xl, soft shadow
-- `btn-primary` — Samsung Blue, rounded 2xl, active scale
-- `input-field` — Background gray, focus blue border
-- `bottom-sheet` — Rounded top 3xl, drag handle, slide-up animation
-- `fab` — Fixed bottom center, 64px circle, blue, shadow
+- `card` — White background, rounded 16, e1 warm shadow, **no border**
+- `btn-primary` — Terracotta `#CC785C`, rounded 12, 48 height, active scale
+- `btn-secondary` — Teal `#079FA0`, same shape
+- `input-field` — White bg, 1px warm border, focus teal border, 48 height
+- `chip` — Pill, 36 height; active = terracotta bg + white text
+- `bottom-sheet` — Rounded top 20, drag handle `#DAD5C8`, slide-up animation
+- `fab` — Fixed bottom-left (RTL), 56×56, terracotta, shadow level 3
+
+### Warm Shadows (no cold greys anywhere)
+- `shadow-e1` / `shadow-card`: `0 1px 2px rgba(60,50,40,.06), 0 4px 12px rgba(60,50,40,.06)`
+- `shadow-e2` / `shadow-sheet`: `0 6px 20px rgba(60,50,40,.10)`
+- `shadow-e3` / `shadow-fab`: `0 16px 40px rgba(60,50,40,.16)`
 
 ---
 

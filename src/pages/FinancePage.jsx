@@ -12,7 +12,7 @@ import TransactionFormSheet from '../components/sheets/TransactionFormSheet.jsx'
 import { hapticLight, hapticSuccess, hapticMedium } from '../utils/haptics.js'
 import { Link } from 'react-router-dom'
 
-// V5: Type segmented control (One UI sliding thumb) — filters the ledger by kind
+// Type segmented control (SOP §7.3 sliding thumb) — filters the ledger by kind
 // Labels resolve via useTerms() at render time (see TYPE_LABEL_KEYS below).
 const TYPE_SEGMENTS = [
   { id: 'all', labelKey: 'filter_all' },

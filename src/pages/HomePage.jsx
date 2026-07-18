@@ -143,7 +143,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen pb-32">
-      {/* Header — compact One UI (avatar + greeting leading, notifications action) */}
+      {/* Header — compact (SOP §6: avatar + greeting leading, notifications action) */}
       <header className="px-5 pt-12 pb-4 safe-area-top">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
