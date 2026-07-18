@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
 import ErrorBoundary from './components/common/ErrorBoundary.jsx'
+import { TermsProvider } from './context/TermsContext.jsx'
 import './styles/index.css'
 import { registerSW } from 'virtual:pwa-register'
 import { initNotificationService } from './utils/notifications.js'
@@ -27,7 +28,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ErrorBoundary>
       <BrowserRouter>
-        <App />
+        <TermsProvider>
+          <App />
+        </TermsProvider>
       </BrowserRouter>
     </ErrorBoundary>
   </React.StrictMode>

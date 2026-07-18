@@ -8,6 +8,7 @@ import { getWhatsAppTemplate, setWhatsAppTemplate, WHATSAPP_PLACEHOLDERS } from 
 import { exportBackup, importBackup, checkBackupReminder, markBackupDone } from '../utils/backup.js'
 import { requestNotificationPermission, sendTestNotification } from '../utils/notifications.js'
 import { useHelperMode } from '../context/HelperModeContext.jsx'
+import { useTerms, useTermsMode } from '../context/TermsContext.jsx'
 
 export default function SettingsPage() {
   const { settings, update, refresh } = useSettings()
@@ -29,8 +30,8 @@ export default function SettingsPage() {
   const [closingTime, setClosingTime] = useState('20:00')
   const { isHelperMode, enterHelperMode, helperModeEnabled } = useHelperMode()
 
-  // V4 Phase 3: Report Mode
-  const [reportMode, setReportMode] = useState('simple')
+  // V4 Phase 3: Report Mode (uses TermsContext for live switching)
+  const [reportMode, setReportModeCtx] = useTermsMode()
 
   useEffect(() => {
     getWhatsAppTemplate().then(setTemplateText)
@@ -47,8 +48,6 @@ export default function SettingsPage() {
     // V4 Phase 2: Load Quick POS + closing time settings
     db.getShowQuickPos().then(setShowQuickPosSetting)
     db.getClosingTime().then(setClosingTime)
-    // V4 Phase 3: Load report mode
-    db.getSetting('report_mode', 'simple').then(setReportMode)
   }, [])
 
   // V4 Phase 2: Toggle Quick POS visibility
@@ -248,7 +247,7 @@ export default function SettingsPage() {
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  onClick={async () => { hapticLight(); setReportMode('simple'); await db.setSetting('report_mode', 'simple') }}
+                  onClick={async () => { hapticLight(); setReportModeCtx('simple'); await db.setSetting('report_mode', 'simple') }}
                   className={`py-3 rounded-xl text-sm font-semibold transition-all active:scale-95 ${
                     reportMode === 'simple' ? 'bg-primary text-white' : 'bg-background text-text-secondary border border-divider'
                   }`}
@@ -257,7 +256,7 @@ export default function SettingsPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={async () => { hapticLight(); setReportMode('pro'); await db.setSetting('report_mode', 'pro') }}
+                  onClick={async () => { hapticLight(); setReportModeCtx('pro'); await db.setSetting('report_mode', 'pro') }}
                   className={`py-3 rounded-xl text-sm font-semibold transition-all active:scale-95 ${
                     reportMode === 'pro' ? 'bg-primary text-white' : 'bg-background text-text-secondary border border-divider'
                   }`}
