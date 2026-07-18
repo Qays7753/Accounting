@@ -13,6 +13,9 @@ import { useSettings2 } from '../context/SettingsContext.jsx'
 import { triggerInstall, isStandalone, subscribeInstallAvailability } from '../utils/pwaInstall.js'
 import PageHeader from '../components/layout/PageHeader.jsx'
 import { useSubmitGuard } from '../hooks/useSubmitGuard.js'
+import { useCloudSync } from '../context/CloudSyncContext.jsx'
+import { loginWithGoogle, logout as gdriveLogout, isAuthorized as gdriveIsAuthorized } from '../utils/googleDrive.js'
+import { formatArabicDateTime } from '../utils/date.js'
 
 export default function SettingsPage() {
   const { refresh } = useSettings()
@@ -59,6 +62,12 @@ export default function SettingsPage() {
   const [clearDataSheetOpen, setClearDataSheetOpen] = useState(false)
   const [clearConfirmText, setClearConfirmText] = useState('')
 
+  // Cloud Sync state
+  const cloudSync = useCloudSync()
+  const [gdriveLoading, setGdriveLoading] = useState(false)
+  const [emergencySheetOpen, setEmergencySheetOpen] = useState(false)
+  const [emergencyRestoreLoading, setEmergencyRestoreLoading] = useState(false)
+
   // Report Mode (uses TermsContext for live switching)
   const [reportMode, setReportModeCtx] = useTermsMode()
 
@@ -103,7 +112,50 @@ export default function SettingsPage() {
     }
   }
 
-  // Clear all data — requires typing 'حذف' to confirm (strong security step)
+  // Cloud Sync handlers
+  const handleGoogleLogin = async () => {
+    hapticLight()
+    setGdriveLoading(true)
+    try {
+      await loginWithGoogle()
+      await cloudSync.syncNow()
+      hapticSuccess()
+    } catch (e) {
+      alert('فشل ربط حساب Google: ' + e.message)
+    } finally {
+      setGdriveLoading(false)
+    }
+  }
+
+  const handleGoogleLogout = () => {
+    hapticLight()
+    gdriveLogout()
+    window.location.reload()
+  }
+
+  const handleSyncNow = async () => {
+    hapticLight()
+    await cloudSync.syncNow()
+    hapticSuccess()
+  }
+
+  const handleEmergencyRestore = async () => {
+    hapticLight()
+    setEmergencyRestoreLoading(true)
+    try {
+      await cloudSync.restoreEmergency()
+      setEmergencySheetOpen(false)
+      hapticSuccess()
+      alert('تم استرجاع البيانات بنجاح')
+      window.location.reload()
+    } catch (e) {
+      alert('فشل الاسترجاع: ' + e.message)
+    } finally {
+      setEmergencyRestoreLoading(false)
+    }
+  }
+
+  // Clear all data — creates emergency backup first (Agent 3)
   const handleClearDataConfirm = async () => {
     if (clearConfirmText.trim() !== 'حذف') {
       hapticError()
@@ -112,8 +164,9 @@ export default function SettingsPage() {
     hapticSuccess()
     setClearDataSheetOpen(false)
     setClearConfirmText('')
+    // Agent 3: Create emergency backup before wiping
+    await cloudSync.createEmergencyBackup()
     await db.clearAllData()
-    // Reload app to trigger onboarding
     window.location.href = '/'
   }
 
@@ -298,14 +351,14 @@ export default function SettingsPage() {
       <div className="px-4 space-y-4">
         {/* Backup Reminder */}
         {backupReminder && (
-          <div className="bg-withdrawal-50 border border-withdrawal-200 rounded-2xl p-4 flex items-start gap-3 animate-fade-in">
+          <div className="bg-withdrawal-50 border border-withdrawal-200 rounded-card p-4 flex items-start gap-3 animate-fade-in">
             <Icon name="bell" className="w-5 h-5 text-withdrawal-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
               <p className="text-sm font-semibold text-withdrawal-700">{t.backup_reminder_title}</p>
-              <p className="text-xs text-withdrawal-600 mt-1">{backupReminder.message}</p>
+              <p className="text-caption text-withdrawal-600 mt-1">{backupReminder.message}</p>
               <button
                 onClick={handleBackup}
-                className="mt-2 bg-withdrawal-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg active:scale-95 transition-transform"
+                className="mt-2 bg-withdrawal-500 text-white text-caption font-semibold px-3 py-1.5 rounded-12 active:scale-95 transition-transform"
               >
                 {t.backup}
               </button>
@@ -313,10 +366,88 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {/* Data Management */}
+        {/* Cloud Sync (V7) */}
+        <section>
+          <h2 className="text-caption font-bold text-primary mb-2 px-1.5">المزامنة السحابية</h2>
+          <div className="bg-surface rounded-card shadow-card divide-y divide-divider">
+            {cloudSync.authorized ? (
+              <>
+                {/* Connected status card */}
+                <div className="bg-mute rounded-card p-4 m-3">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-9 h-9 rounded-12 bg-income-50 grid place-items-center flex-shrink-0">
+                      <Icon name="checkCircle" className="w-5 h-5 text-income-600" strokeWidth={2} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-ink text-sm">حساب Google مربوط</p>
+                      <p className="text-caption text-ink-secondary mt-0.5">
+                        {cloudSync.lastSync
+                          ? `آخر مزامنة: ${formatArabicDateTime(new Date(cloudSync.lastSync))}`
+                          : 'لم تتم المزامنة بعد'}
+                      </p>
+                    </div>
+                    {cloudSync.syncing && (
+                      <span className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleSyncNow}
+                    disabled={cloudSync.syncing}
+                    className="w-full btn-primary text-sm disabled:opacity-50"
+                  >
+                    مزامنة الآن
+                  </button>
+                </div>
+                {/* Emergency recovery (only if backup exists) */}
+                {cloudSync.emergencyBackupExists && (
+                  <SettingsRow
+                    icon="info"
+                    iconBg="bg-expense-50 text-expense-600"
+                    label="استرجاع نسخة محذوفة"
+                    description="توجد نسخة احتياطية طارئة محفوظة"
+                    onClick={() => { hapticLight(); setEmergencySheetOpen(true) }}
+                  />
+                )}
+                {/* Disconnect */}
+                <SettingsRow
+                  icon="close"
+                  iconBg="bg-mute text-text-secondary"
+                  label="قطع الاتصال بـ Google"
+                  description="إيقاف المزامنة السحابية"
+                  onClick={handleGoogleLogout}
+                />
+              </>
+            ) : (
+              <div className="p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-9 h-9 rounded-12 bg-primary-50 grid place-items-center flex-shrink-0">
+                    <Icon name="wallet" className="w-5 h-5 text-primary-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-ink text-sm">المزامنة التلقائية</p>
+                    <p className="text-caption text-ink-secondary mt-0.5">احفظ بياناتك بأمان على Google Drive</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  disabled={gdriveLoading}
+                  className="w-full btn-primary text-sm disabled:opacity-50"
+                >
+                  {gdriveLoading ? (
+                    <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
+                  ) : 'ربط حساب Google'}
+                </button>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Data Management (Manual Backup — Plan B) */}
         <section>
           <h2 className="text-caption font-bold text-primary mb-2 px-1.5">{t.data_management}</h2>
-          <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
+          <div className="bg-surface rounded-card shadow-card divide-y divide-divider">
             <SettingsRow
               icon="download"
               iconBg="bg-primary-50 text-primary-600"
@@ -894,6 +1025,47 @@ export default function SettingsPage() {
               <p className="text-xs text-income-600 mt-1">{t.helper_mode_active_desc}</p>
             </div>
           )}
+        </div>
+      </BottomSheet>
+      {/* Emergency Recovery Sheet (Agent 3) */}
+      <BottomSheet
+        open={emergencySheetOpen}
+        onClose={() => setEmergencySheetOpen(false)}
+        title="استرجاع نسخة محذوفة"
+      >
+        <div className="space-y-5 pb-4">
+          <div className="bg-expense-50 border border-expense-200 rounded-card p-4 flex items-start gap-3">
+            <Icon name="info" className="w-6 h-6 text-expense-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-expense-700">تحذير: استرجاع بيانات محذوفة</p>
+              <p className="text-caption text-expense-600 mt-1">
+                سيتم استبدال جميع بياناتك الحالية بالنسخة الاحتياطية الطارئة المحفوظة على Google Drive.
+                هذا الإجراء لا يمكن التراجع عنه.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleEmergencyRestore}
+            disabled={emergencyRestoreLoading}
+            className="w-full bg-expense-500 text-white font-bold rounded-12 py-4 active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {emergencyRestoreLoading ? (
+              <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <>
+                <Icon name="download" className="w-5 h-5" />
+                استرجاع البيانات
+              </>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setEmergencySheetOpen(false)}
+            className="w-full btn-outline"
+          >
+            إلغاء
+          </button>
         </div>
       </BottomSheet>
     </div>

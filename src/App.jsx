@@ -8,6 +8,7 @@ import { checkBackupReminder } from './utils/backup.js'
 import { HelperModeProvider, useHelperMode } from './context/HelperModeContext.jsx'
 import { TermsProvider } from './context/TermsContext.jsx'
 import { SettingsProvider } from './context/SettingsContext.jsx'
+import { CloudSyncProvider } from './context/CloudSyncContext.jsx'
 
 // Lazy-load route components for faster initial load.
 const HomePage = lazy(() => import('./pages/HomePage.jsx'))
@@ -150,7 +151,9 @@ export default function AppWithHelperMode() {
     <HelperModeProvider>
       <SettingsProvider>
         <TermsProvider>
-          <App />
+          <CloudSyncProvider>
+            <App />
+          </CloudSyncProvider>
         </TermsProvider>
       </SettingsProvider>
     </HelperModeProvider>
