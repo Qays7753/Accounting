@@ -13,15 +13,15 @@ export default function EmptyState({ icon = 'document', title, description, acti
         <Icon name={icon} className="w-6 h-6 text-ink-secondary" strokeWidth={1.5} />
         <span className="sr-only">{title}</span>
       </div>
-      <h3 className="text-[15px] font-semibold text-ink mb-1">{title}</h3>
+      <h3 className="text-card-title font-semibold text-ink mb-1">{title}</h3>
       {description && (
-        <p className="text-[13px] max-w-[280px] leading-relaxed text-ink-secondary">{description}</p>
+        <p className="text-sm max-w-[280px] leading-relaxed text-ink-secondary">{description}</p>
       )}
       {actionLabel && onAction && (
         <button
           type="button"
           onClick={onAction}
-          className="mt-4 btn-primary text-[14px] py-2.5 px-5"
+          className="mt-4 btn-primary text-sm py-2.5 px-5"
         >
           {actionLabel}
         </button>

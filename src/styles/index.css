@@ -105,7 +105,7 @@
 
   /* SOP §7.2: Search/Input — 48px, white bg, 1px border, 12px radius */
   .input-field {
-    @apply w-full bg-surface rounded-12 px-3 py-3 text-ink text-[15px] outline-none;
+    @apply w-full bg-surface rounded-12 px-3 py-3 text-ink text-card-title outline-none;
     border: 1px solid #EAE6DC;
     min-height: 48px;
     transition: border-color 0.15s ease;
@@ -114,7 +114,7 @@
 
   /* SOP §7.3: Filter chips — 36px, pill, terracotta selected */
   .chip {
-    @apply rounded-pill py-2 px-3 text-[13px] font-medium press;
+    @apply rounded-pill py-2 px-3 text-sm font-medium press;
     min-height: 36px;
     transition: all 0.2s cubic-bezier(0.16,1,0.3,1);
   }
@@ -129,22 +129,22 @@
 
   /* SOP §7.9: Tags/badges */
   .tag {
-    @apply rounded-pill py-1 px-3 text-[12px] font-semibold;
+    @apply rounded-pill py-1 px-3 text-caption font-semibold;
   }
 
   /* SOP: Status badges */
   .badge-progress {
-    @apply rounded-pill px-2 py-0.5 text-[11px] font-semibold;
+    @apply rounded-pill px-2 py-0.5 text-caption font-semibold;
     background: #F6ECCF;
     color: #B08532;
   }
   .badge-ready {
-    @apply rounded-pill px-2 py-0.5 text-[11px] font-semibold;
+    @apply rounded-pill px-2 py-0.5 text-caption font-semibold;
     background: #E3F5F5;
     color: #057B7C;
   }
   .badge-closed {
-    @apply rounded-pill px-2 py-0.5 text-[11px] font-semibold;
+    @apply rounded-pill px-2 py-0.5 text-caption font-semibold;
     background: #F0EEE6;
     color: #6E6A60;
   }

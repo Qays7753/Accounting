@@ -34,14 +34,14 @@ export default function UpdatePrompt() {
           <Icon name="download" className="w-5 h-5 text-white" strokeWidth={2} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-white text-[14px] font-bold">تحديث جديد متوفّر</p>
-          <p className="text-white/70 text-[12px]">اضغط للتحديث الآن</p>
+          <p className="text-white text-sm font-bold">تحديث جديد متوفّر</p>
+          <p className="text-white/70 text-caption">اضغط للتحديث الآن</p>
         </div>
         <button
           type="button"
           onClick={handleUpdate}
           disabled={updating}
-          className="press flex-none bg-primary text-white text-[14px] font-bold rounded-pill px-5 py-2 disabled:opacity-70"
+          className="press flex-none bg-primary text-white text-sm font-bold rounded-pill px-5 py-2 disabled:opacity-70"
         >
           {updating ? '...' : 'تحديث'}
         </button>
