@@ -161,12 +161,9 @@
 
   .ghost-card { animation: ghostOut 0.3s ease-out forwards; overflow: hidden; }
 
-  .sticky-header {
-    @apply sticky top-0 z-20;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    background: rgba(250,249,245,0.88);
-  }
+  /* Note: the old .sticky-header class was removed — its behavior
+     (blur + ivory translucent bg + sticky) is now baked into
+     <PageHeader> directly. See src/components/layout/PageHeader.jsx. */
 }
 
 @layer utilities {
