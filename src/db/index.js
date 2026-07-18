@@ -145,6 +145,23 @@ class AccountingDatabase extends Dexie {
       daily_closures: '++id, date, timestamp, createdAt',
     })
 
+    // V9: Smart Inventory — items table with predictive/exact tracking
+    // Fields: name, unit, tracking_mode ('exact'|'predictive'), current_stock,
+    //         purchase_history (array of {date, qty, unit_cost}), reorder_day, createdAt
+    this.version(8).stores({
+      transactions: '++id, type, [type+dateTimestamp], dateTimestamp, category, orderId, amount, createdAt, isRecurring, recurringParentId, debtStatus, linkedDebtId, edited, cost_of_goods',
+      orders: '++id, status, [status+scheduledTimestamp], scheduledTimestamp, customerName, customerId, phone, orderType, amount, is_paid, paymentTransactionId, createdAt',
+      customers: '++id, name, phone, archived, createdAt',
+      materials: '++id, name, unit_type, unit_cost, createdAt',
+      quick_products: '++id, name, price, createdAt',
+      settings: '++id, &key',
+      meta: '++id, &key',
+      notifications: '++id, orderId, scheduledTime, sent, createdAt',
+      settlements: '++id, debtTransactionId, paymentTransactionId, amount, createdAt',
+      daily_closures: '++id, date, timestamp, createdAt',
+      items: '++id, name, tracking_mode, createdAt',
+    })
+
     this.open()
   }
 
@@ -1531,6 +1548,116 @@ class AccountingDatabase extends Dexie {
    */
   async setShowQuickPos(show) {
     await this.setSetting('show_quick_pos', show)
+  }
+
+  // ========== V9: SMART INVENTORY ==========
+
+  /**
+   * Get all inventory items.
+   */
+  async getItems() {
+    return await this.items.toArray()
+  }
+
+  /**
+   * Add a new inventory item.
+   * Auto-categorizes tracking_mode based on first purchase.
+   */
+  async addItem({ name, unit = 'piece', qty = 0, unit_cost = 0 }) {
+    // Auto-categorization: if qty <= 5 and unit_cost > 15, track exactly.
+    // Otherwise, track predictively (based on purchase pattern).
+    const tracking_mode = (qty <= 5 && unit_cost > 15) ? 'exact' : 'predictive'
+
+    const item = {
+      name,
+      unit,
+      tracking_mode,
+      current_stock: tracking_mode === 'exact' ? qty : null,
+      purchase_history: qty > 0 ? [{ date: new Date().toISOString(), qty, unit_cost }] : [],
+      reorder_day: null, // calculated on first predictive purchase
+      createdAt: Date.now(),
+    }
+    return await this.items.add(item)
+  }
+
+  /**
+   * Record a purchase (restock) for an item.
+   * Updates purchase_history + recalculates tracking_mode + reorder_day.
+   */
+  async recordPurchase(itemId, { qty, unit_cost }) {
+    const item = await this.items.get(itemId)
+    if (!item) throw new Error('Item not found')
+
+    const purchaseEntry = { date: new Date().toISOString(), qty, unit_cost }
+    const purchase_history = [...(item.purchase_history || []), purchaseEntry]
+
+    // Recalculate tracking_mode on every purchase
+    let tracking_mode = item.tracking_mode
+    if (qty <= 5 && unit_cost > 15) {
+      tracking_mode = 'exact'
+    }
+
+    // Update current_stock for exact items
+    let current_stock = item.current_stock
+    if (tracking_mode === 'exact') {
+      current_stock = (current_stock || 0) + qty
+    }
+
+    // Calculate reorder_day for predictive items (avg days between purchases)
+    let reorder_day = item.reorder_day
+    if (tracking_mode === 'predictive' && purchase_history.length >= 2) {
+      const dates = purchase_history.map(p => new Date(p.date).getTime()).sort()
+      const intervals = []
+      for (let i = 1; i < dates.length; i++) {
+        intervals.push((dates[i] - dates[i - 1]) / (24 * 60 * 60 * 1000))
+      }
+      const avgDays = intervals.reduce((a, b) => a + b, 0) / intervals.length
+      reorder_day = Math.round(avgDays)
+    }
+
+    await this.items.update(itemId, {
+      purchase_history,
+      tracking_mode,
+      current_stock,
+      reorder_day,
+    })
+  }
+
+  /**
+   * Deduct stock on sale (exact items only).
+   * Does NOT deduct for predictive items.
+   */
+  async deductOnSale(itemId, qty = 1) {
+    const item = await this.items.get(itemId)
+    if (!item || item.tracking_mode !== 'exact') return
+
+    const newStock = Math.max(0, (item.current_stock || 0) - qty)
+    await this.items.update(itemId, { current_stock: newStock })
+  }
+
+  /**
+   * Delete an inventory item.
+   */
+  async deleteItem(itemId) {
+    await this.items.delete(itemId)
+  }
+
+  /**
+   * Get items that need attention (low stock or due for reorder).
+   */
+  async getLowStockItems() {
+    const items = await this.items.toArray()
+    return items.filter(item => {
+      if (item.tracking_mode === 'exact') {
+        return (item.current_stock || 0) <= 2
+      } else {
+        // Predictive: check if we're past the reorder day since last purchase
+        if (!item.reorder_day || item.purchase_history.length === 0) return false
+        const lastPurchase = new Date(item.purchase_history[item.purchase_history.length - 1].date)
+        const daysSince = (Date.now() - lastPurchase.getTime()) / (24 * 60 * 60 * 1000)
+        return daysSince >= item.reorder_day
+      }
+    })
   }
 }
 
