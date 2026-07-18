@@ -68,6 +68,9 @@ export default function SettingsPage() {
   const [emergencySheetOpen, setEmergencySheetOpen] = useState(false)
   const [emergencyRestoreLoading, setEmergencyRestoreLoading] = useState(false)
 
+  // V8: Business model label
+  const [businessModelLabel, setBusinessModelLabel] = useState('منتجات جاهزة')
+
   // Report Mode (uses TermsContext for live switching)
   const [reportMode, setReportModeCtx] = useTermsMode()
 
@@ -79,10 +82,13 @@ export default function SettingsPage() {
     checkBackupReminder().then(setBackupReminder)
   }, [])
 
-  // Load closing time + fiscal year (the two settings still not in SettingsContext)
+  // Load closing time + fiscal year + business model
   useEffect(() => {
     db.getClosingTime().then(setClosingTime)
     db.getSetting('fiscal_year_start', 1).then(v => setFiscalYearStart(Number(v) || 1))
+    db.getMeta('business_model', 'ready').then(model => {
+      setBusinessModelLabel(model === 'manufactured' ? 'منتجات أُصنِعَت' : 'منتجات جاهزة')
+    })
   }, [])
 
   // Sync local logo preview + business name input with context values
@@ -441,6 +447,27 @@ export default function SettingsPage() {
                 </button>
               </div>
             )}
+          </div>
+        </section>
+
+        {/* Business Info (V8) */}
+        <section>
+          <h2 className="text-caption font-bold text-primary mb-2 px-1.5">بيانات النشاط</h2>
+          <div className="bg-surface rounded-card shadow-card divide-y divide-divider">
+            <SettingsRow
+              icon="storefront"
+              iconBg="bg-primary-50 text-primary-600"
+              label="اسم المحل"
+              description={businessName || 'متجري'}
+              onClick={() => setBrandingSheetOpen(true)}
+            />
+            <SettingsRow
+              icon="tag"
+              iconBg="bg-accent-50 text-accent-600"
+              label="نوع النشاط"
+              description={businessModelLabel}
+              onClick={() => { hapticLight(); alert('لنوع النشاط: ' + businessModelLabel) }}
+            />
           </div>
         </section>
 
