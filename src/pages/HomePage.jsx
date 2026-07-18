@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useDashboardStats } from '../hooks/useDatabase.js'
 import { useCountUp } from '../hooks/useCountUp.js'
-import { useTerms } from '../context/TermsContext.jsx'
+import { useTerms, useTermsMode } from '../context/TermsContext.jsx'
 import { useSettings2 } from '../context/SettingsContext.jsx'
 import { db } from '../db'
 import { formatAmount, parseNumber, formatLiveInput } from '../utils/format.js'
@@ -19,10 +19,15 @@ import { exportBackup } from '../utils/backup.js'
 import PageHeader from '../components/layout/PageHeader.jsx'
 import { useSubmitGuard } from '../hooks/useSubmitGuard.js'
 import { useExitConfirm } from '../hooks/useBackDismiss.js'
+import DiagnosticCard from '../components/ui/DiagnosticCard.jsx'
+import { computeSnapshot, diagnose } from '../utils/diagnostics.js'
+import rulesJson from '../config/diagnostic_rules.json'
+import { useNavigate } from 'react-router-dom'
 
 export default function HomePage() {
   const stats = useDashboardStats()
   const t = useTerms()
+  const [reportMode] = useTermsMode()
   const { logo, businessName, monthlySummary, hideAmounts } = useSettings2()
   const [sheetOpen, setSheetOpen] = useState(null)
   const [jars, setJars] = useState({ capitalJar: 0, profitJar: 0, totalCash: 0 })
@@ -68,6 +73,41 @@ export default function HomePage() {
 
   // Mask helper for hideAmounts security setting
   const maskAmount = (val) => hideAmounts ? '••••' : formatAmount(val)
+  const navigate = useNavigate()
+
+  // V9: Diagnostic insights
+  const [insights, setInsights] = useState([])
+
+  useEffect(() => {
+    async function computeDiagnostics() {
+      try {
+        const [transactions, orders, receivables] = await Promise.all([
+          db.transactions.toArray(),
+          db.orders.toArray(),
+          db.getReceivables(),
+        ])
+        const data = { transactions, orders, receivables }
+        const metrics = computeSnapshot(data)
+        const level = reportMode || 'simple'
+        const results = diagnose(metrics, rulesJson, level)
+        // Replace {value} in text with actual metric values
+        const processed = results.map(insight => {
+          let text = insight.text
+          // Find which metric the rule uses and substitute {value}
+          for (const [key, metric] of Object.entries(metrics)) {
+            if (text.includes('{value}')) {
+              text = text.replace('{value}', String(metric.value))
+            }
+          }
+          return { ...insight, text }
+        })
+        setInsights(processed)
+      } catch (e) {
+        console.error('Diagnostics failed:', e)
+      }
+    }
+    computeDiagnostics()
+  }, [stats.cashBalance, reportMode])
 
   useEffect(() => {
     db.getTwoJars().then(setJars)
@@ -219,6 +259,26 @@ export default function HomePage() {
           <span className="text-caption text-ink-secondary text-center leading-snug">{t.jars_helper}</span>
         </div>
       </section>
+
+      {/* V9: Diagnostics — SWOT insights */}
+      {insights.length > 0 && (
+        <section className="px-4 mb-6">
+          <h2 className="text-section text-ink mb-3">مهام اليوم وتشخيص مشروعك</h2>
+          <div className="space-y-3">
+            {insights.map(insight => (
+              <DiagnosticCard
+                key={insight.id}
+                insight={insight}
+                onAction={(action) => {
+                  if (action === 'navigate_orders') navigate('/orders')
+                  else if (action === 'navigate_finance') navigate('/finance')
+                  else if (action === 'whatsapp_bulk') navigate('/debts')
+                }}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Today's Income & Expenses */}
       <section className="px-4 mb-6">
