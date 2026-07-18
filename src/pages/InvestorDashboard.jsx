@@ -6,8 +6,10 @@ import { gatherReportData, computeIncomeStatement, computeBalanceSheet, computeK
 import { formatAmount } from '../utils/format.js'
 import { formatArabicDate } from '../utils/date.js'
 import Icon from '../components/ui/Icon.jsx'
-import { hapticLight } from '../utils/haptics.js'
+import { hapticLight, hapticSuccess } from '../utils/haptics.js'
 import { useNavigate } from 'react-router-dom'
+import { jsPDF } from 'jspdf'
+import { sendDebtReminder } from '../utils/whatsapp.js'
 
 /**
  * Investor Dashboard (V10 §13) — Executive read-only panel.
@@ -64,6 +66,116 @@ export default function InvestorDashboard() {
     return `${kpi.value.toLocaleString('en-US')}${kpi.unit || ''}`
   }
 
+  // PDF Export — generates a professional bank-ready report
+  const handleExportPDF = () => {
+    hapticLight()
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+    const pageWidth = 210
+    let y = 20
+
+    // Title
+    doc.setFontSize(20)
+    doc.setFont('helvetica', 'bold')
+    doc.text(businessName || 'متجري', pageWidth / 2, y, { align: 'center' })
+    y += 8
+
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    doc.text(`Financial Report — ${formatArabicDate(new Date())}`, pageWidth / 2, y, { align: 'center' })
+    y += 12
+
+    // Income Statement
+    doc.setFontSize(14)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Income Statement', 20, y)
+    y += 8
+
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    const is = incomeStatement
+    const isRows = [
+      ['Revenue', formatAmount(is.revenue.value)],
+      ['COGS', `(${formatAmount(is.cogs.value)})`],
+      ['Gross Profit', formatAmount(is.grossProfit.value)],
+      ['Operating Expenses', `(${formatAmount(is.opex.value)})`],
+      ['Wastage', `(${formatAmount(is.wastage.value)})`],
+      ['Net Profit', formatAmount(is.netProfit.value)],
+    ]
+    isRows.forEach(([label, value]) => {
+      doc.text(label, 25, y)
+      doc.text(value, pageWidth - 25, y, { align: 'right' })
+      y += 6
+    })
+    y += 8
+
+    // Balance Sheet
+    doc.setFontSize(14)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Balance Sheet', 20, y)
+    y += 8
+
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    const bs = balanceSheet
+    const bsRows = [
+      ['Assets — Cash', formatAmount(bs.assets.cash.value)],
+      ['Assets — Receivables', formatAmount(bs.assets.receivables.value)],
+      ['Assets — Inventory', formatAmount(bs.assets.inventory.value)],
+      ['Total Assets', formatAmount(bs.assets.total.value)],
+      ['Liabilities — Payables', formatAmount(bs.liabilities.payables.value)],
+      ['Equity', formatAmount(bs.equity.value)],
+    ]
+    bsRows.forEach(([label, value]) => {
+      doc.text(label, 25, y)
+      doc.text(value, pageWidth - 25, y, { align: 'right' })
+      y += 6
+    })
+    y += 8
+
+    // Key KPIs
+    doc.setFontSize(14)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Key Performance Indicators', 20, y)
+    y += 8
+
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    const kpiRows = [
+      ['Gross Margin', formatKPI(kpis.grossMargin)],
+      ['Net Profit Margin', formatKPI(kpis.netProfitMargin)],
+      ['ROI', formatKPI(kpis.roi)],
+      ['Runway (days)', formatKPI(kpis.runway)],
+      ['Avg Ticket', formatKPI(kpis.avgTicket)],
+    ]
+    kpiRows.forEach(([label, value]) => {
+      doc.text(label, 25, y)
+      doc.text(value, pageWidth - 25, y, { align: 'right' })
+      y += 6
+    })
+
+    // Save
+    doc.save(`${businessName || 'report'}-${new Date().toISOString().slice(0, 10)}.pdf`)
+    hapticSuccess()
+  }
+
+  // Send WhatsApp reminder for overdue debts
+  const handleSendReminders = async () => {
+    hapticLight()
+    try {
+      const receivables = await db.getReceivables()
+      const overdue = receivables.filter(r => {
+        const remaining = (r.amount || 0) - (r.debtAmountPaid || 0)
+        return remaining > 0
+      })
+      for (const debt of overdue) {
+        await sendDebtReminder(debt)
+      }
+      hapticSuccess()
+    } catch (e) {
+      console.error('WhatsApp reminders failed:', e)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-white">
       {/* Header — stark white with terracotta exit button */}
@@ -73,6 +185,14 @@ export default function InvestorDashboard() {
             <p className="text-caption text-ink-secondary font-medium leading-tight">لوحة المستثمر</p>
             <h1 className="text-title-sm text-ink leading-tight truncate">{businessName || 'متجري'}</h1>
           </div>
+          <button
+            type="button"
+            onClick={handleExportPDF}
+            className="bg-surface text-ink text-caption font-semibold px-4 py-2.5 rounded-12 border border-divider active:scale-95 transition-transform"
+            style={{ minHeight: '40px' }}
+          >
+            PDF
+          </button>
           <button
             type="button"
             onClick={() => { hapticLight(); setReportMode('simple'); navigate('/') }}
@@ -114,12 +234,25 @@ export default function InvestorDashboard() {
             ))}
           </div>
 
-          {/* Bottom: 4 small KPIs */}
+          {/* Bottom: 4 small KPIs — DSO has WhatsApp action */}
           <div className="grid grid-cols-2 gap-3 mt-3">
             {bottomKPIs.map((kpi, i) => (
               <div key={i} className="bg-surface rounded-card p-3 shadow-card border border-divider">
-                <p className="text-caption text-ink-tertiary mb-0.5 leading-tight">{kpi.label}</p>
-                <p className="num text-card-title font-bold text-ink-secondary leading-none">{formatKPI(kpi)}</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-caption text-ink-tertiary leading-tight flex-1 min-w-0">{kpi.label}</p>
+                  {/* WhatsApp action next to DSO */}
+                  {kpi === kpis.dso && kpi.available && kpi.value > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleSendReminders}
+                      className="w-7 h-7 rounded-full bg-income-50 grid place-items-center active:scale-90 transition-transform flex-shrink-0 ml-1"
+                      aria-label="إرسال تذكير واتساب"
+                    >
+                      <Icon name="whatsapp" className="w-3.5 h-3.5 text-income-600" />
+                    </button>
+                  )}
+                </div>
+                <p className="num text-card-title font-bold text-ink-secondary leading-none mt-1">{formatKPI(kpi)}</p>
               </div>
             ))}
           </div>
