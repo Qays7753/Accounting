@@ -1,60 +1,132 @@
+/**
+ * Tailwind Config — Terracotta Warm Identity (SOP v2)
+ * Identity color is FIXED: Terracotta #CC785C. Not user-selectable.
+ * All numeric scales 50-900 are present and DISTINCT (no duplicate shades).
+ *
+ * Semantic palette (SOP §1):
+ *   Primary    = Terracotta #CC785C
+ *   Accent     = Teal       #079FA0
+ *   Income     = Green      #2E7D57
+ *   Expense    = Crimson    #B42318
+ *   Withdrawal = Steel Blue #3E5C76  (NOT orange — semantically cool)
+ *   Returns    = Gold       #B08532
+ * Neutrals are WARM GREIGE (ivory #FAF9F5 / border #EAE6DC / ink #1F1E1D).
+ */
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
       colors: {
-        // ===== Identity: Warm Terracotta (SOP v2) =====
+        // ===== Identity: Warm Terracotta =====
         primary: {
-          50: '#FBF3EF', 100: '#F4E4DB', 200: '#E8C9B8', 300: '#DBAE91',
-          400: '#CC785C', 500: '#CC785C', 600: '#B4613F', 700: '#964E33',
-          800: '#783B28', 900: '#5A2C1D', DEFAULT: '#CC785C',
+          50: '#FBF3EF',
+          100: '#F4E4DB',
+          200: '#E8C9B8',
+          300: '#DBAE91',
+          400: '#D59172',
+          500: '#CC785C',
+          600: '#B4613F',
+          700: '#964E33',
+          800: '#783B28',
+          900: '#5A2C1D',
+          DEFAULT: '#CC785C',
         },
-        // Accent: Teal
+        // ===== Accent: Teal =====
         accent: {
-          50: '#E3F5F5', 100: '#C0EAEA', 200: '#8FD5D6', 300: '#5EC0C1',
-          400: '#2DABAD', 500: '#079FA0', 600: '#057B7C', 700: '#045E5F',
-          800: '#034142', 900: '#022425', DEFAULT: '#079FA0',
-          text: '#057B7C', light: '#E3F5F5',
+          50: '#E3F5F5',
+          100: '#C0EAEA',
+          200: '#8FD5D6',
+          300: '#5EC0C1',
+          400: '#2DABAD',
+          500: '#079FA0',
+          600: '#057B7C',
+          700: '#045E5F',
+          800: '#034142',
+          900: '#022425',
+          DEFAULT: '#079FA0',
+          text: '#057B7C',
+          light: '#E3F5F5',
         },
-        // Semantic: Income (cool green)
+        // ===== Semantic: Income (cool green) =====
         income: {
-          50: '#E4F2EA', 100: '#C9E6D5', 200: '#A7D8BE', 300: '#7FC49E',
-          400: '#57B07E', 500: '#2E7D57', 600: '#256A48', 700: '#1C5739',
-          800: '#13442A', 900: '#0A311B', DEFAULT: '#2E7D57',
-          fill: '#A7D8BE', bg: '#E4F2EA',
+          50: '#E4F2EA',
+          100: '#C9E6D5',
+          200: '#A7D8BE',
+          300: '#7FC49E',
+          400: '#57B07E',
+          500: '#2E7D57',
+          600: '#256A48',
+          700: '#1C5739',
+          800: '#13442A',
+          900: '#0A311B',
+          DEFAULT: '#2E7D57',
+          fill: '#A7D8BE',
+          bg: '#E4F2EA',
         },
-        // Semantic: Expense (crimson)
+        // ===== Semantic: Expense (crimson) =====
         expense: {
-          50: '#FBE7E6', 100: '#F5C9C7', 200: '#EEA19E', 300: '#E47975',
-          400: '#DB514C', 500: '#DC2E2F', 600: '#B42318', 700: '#911C12',
-          800: '#6E150C', 900: '#4B0E06', DEFAULT: '#B42318',
-          fill: '#DC2E2F', bg: '#FBE7E6',
+          50: '#FBE7E6',
+          100: '#F5C9C7',
+          200: '#EEA19E',
+          300: '#E47975',
+          400: '#DB514C',
+          500: '#C9322A',
+          600: '#B42318',
+          700: '#911C12',
+          800: '#6E150C',
+          900: '#4B0E06',
+          DEFAULT: '#B42318',
+          fill: '#DB514C',
+          bg: '#FBE7E6',
         },
-        // Semantic: Withdrawal (steel blue)
+        // ===== Semantic: Withdrawal (steel blue, NOT orange) =====
         withdrawal: {
-          50: '#E8EEF3', 100: '#D1DDE6', 200: '#B0C3D2', 300: '#8AA5B8',
-          400: '#68899E', 500: '#5B7C99', 600: '#3E5C76', 700: '#2F485B',
-          800: '#203340', 900: '#111E25', DEFAULT: '#3E5C76',
-          fill: '#5B7C99', bg: '#E8EEF3',
-          50: '#E8EEF3', 600: '#3E5C76',
+          50: '#E8EEF3',
+          100: '#D1DDE6',
+          200: '#B0C3D2',
+          300: '#8AA5B8',
+          400: '#68899E',
+          500: '#5B7C99',
+          600: '#3E5C76',
+          700: '#2F485B',
+          800: '#203340',
+          900: '#111E25',
+          DEFAULT: '#3E5C76',
+          fill: '#5B7C99',
+          bg: '#E8EEF3',
         },
-        // Semantic: Returns (gold, rare)
+        // ===== Semantic: Returns (gold, rare) =====
         returns: {
-          50: '#F6ECCF', 100: '#EFDAA0', 200: '#E0A200', 300: '#C99100',
-          400: '#B08532', 500: '#E0A200', 600: '#B08532', 700: '#8A6927',
-          800: '#644D1C', 900: '#3E3112', DEFAULT: '#B08532',
-          fill: '#E0A200', bg: '#F6ECCF',
+          50: '#F6ECCF',
+          100: '#EFDAA0',
+          200: '#E2C268',
+          300: '#D6AB38',
+          400: '#C99100',
+          500: '#B08532',
+          600: '#8A6927',
+          700: '#644D1C',
+          800: '#3E3112',
+          900: '#1F1809',
+          DEFAULT: '#B08532',
+          fill: '#D6AB38',
+          bg: '#F6ECCF',
         },
-        // ===== Warm Neutrals (Greige) =====
+        // ===== Warm Neutrals (Greige — SOP §12) =====
         ink: {
-          DEFAULT: '#1F1E1D', strong: '#33322E', secondary: '#6E6A60',
+          DEFAULT: '#1F1E1D',
+          strong: '#33322E',
+          secondary: '#6E6A60',
         },
         text: {
-          primary: '#1F1E1D', secondary: '#6E6A60', tertiary: '#B7B2A6',
+          primary: '#1F1E1D',
+          secondary: '#6E6A60',
+          tertiary: '#B7B2A6',
         },
         txt: {
-          primary: '#1F1E1D', secondary: '#6E6A60', tertiary: '#B7B2A6',
+          primary: '#1F1E1D',
+          secondary: '#6E6A60',
+          tertiary: '#B7B2A6',
         },
         background: '#FAF9F5',
         ivory: '#F0EEE6',
@@ -67,7 +139,7 @@ export default {
         placeholder: '#B7B2A6',
         sub: '#6E6A60',
         altRow: '#FAF9F5',
-        // Legacy aliases for backward compat
+        // Legacy aliases (backward compat for older className references)
         'primary-tint': '#F4E4DB',
         'primary-pill': '#F4E4DB',
         'income-bg': '#E4F2EA',
@@ -78,9 +150,14 @@ export default {
         'amber-bg': '#F6ECCF',
         purple: '#5644d0',
         'purple-bg': '#eeecfb',
-        status: { progress: '#E0A200', ready: '#079FA0', closed: '#B7B2A6' },
-        closed: '#B7B2A6',
-        progress: '#E0A200',
+        // Unified status colors (no duplicates)
+        status: {
+          progress: '#C99100',
+          ready: '#079FA0',
+          closed: '#6E6A60',
+        },
+        closed: '#6E6A60',
+        progress: '#C99100',
       },
       fontFamily: {
         sans: ['IBM Plex Sans Arabic', 'sans-serif'],

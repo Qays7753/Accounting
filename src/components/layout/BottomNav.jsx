@@ -87,7 +87,7 @@ export default function BottomNav({ showQuickPos = true }) {
 
   return (
     <>
-      <nav className="fixed bottom-0 inset-x-0 bg-surface px-3 pt-2 pb-4 flex justify-around items-center z-40 safe-area-bottom" style={{ borderTop: '1px solid #EAE6DC', minHeight: '64px' }} aria-label="التنقل الرئيسي">
+      <nav className="fixed bottom-0 inset-x-0 bg-surface px-3 pt-2 pb-4 flex justify-around items-center z-40 safe-area-bottom border-t border-border" style={{ minHeight: '64px' }} aria-label="التنقل الرئيسي">
         {items.map((item) => (
           <NavLink
             key={item.to}
@@ -100,16 +100,14 @@ export default function BottomNav({ showQuickPos = true }) {
             {({ isActive }) => (
               <>
                 <div
-                  className="w-[52px] h-8 rounded-pill grid place-items-center transition-colors"
-                  style={{ background: isActive ? '#F4E4DB' : 'transparent' }}
+                  className={`w-[52px] h-8 rounded-pill grid place-items-center transition-colors ${isActive ? 'bg-primary-tint' : ''}`}
                 >
-                  <span style={{ color: isActive ? '#CC785C' : '#B7B2A6' }}>
+                  <span className={isActive ? 'text-primary' : 'text-disabled'}>
                     {item.icon(isActive)}
                   </span>
                 </div>
                 <span
-                  className="text-[11px] font-semibold transition-colors"
-                  style={{ color: isActive ? '#CC785C' : '#B7B2A6' }}
+                  className={`text-[11px] font-semibold transition-colors ${isActive ? 'text-primary' : 'text-disabled'}`}
                 >
                   {t[item.label] || item.label}
                 </span>
@@ -126,11 +124,11 @@ export default function BottomNav({ showQuickPos = true }) {
             aria-label="الخروج من وضع المساعد"
           >
             <div className="w-[52px] h-8 rounded-pill grid place-items-center">
-              <svg className="w-6 h-6 text-expense" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="w-6 h-6 text-expense-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
             </div>
-            <span className="text-[11px] font-semibold text-expense">خروج</span>
+            <span className="text-[11px] font-semibold text-expense-600">خروج</span>
           </button>
         )}
       </nav>

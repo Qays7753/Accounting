@@ -6,6 +6,7 @@ import OnboardingPage from './pages/OnboardingPage.jsx'
 import BackupReminderBanner from './components/common/BackupReminderBanner.jsx'
 import { checkBackupReminder } from './utils/backup.js'
 import { HelperModeProvider, useHelperMode } from './context/HelperModeContext.jsx'
+import { TermsProvider } from './context/TermsContext.jsx'
 
 // Lazy-load route components for faster initial load.
 const HomePage = lazy(() => import('./pages/HomePage.jsx'))
@@ -82,11 +83,6 @@ function App() {
             console.error('Recurring transaction processing failed:', e)
           }
 
-          try {
-          } catch (e) {
-            console.error('Theme application failed:', e)
-          }
-
           const reminder = await checkBackupReminder()
           if (!cancelled) setBackupReminder(reminder)
 
@@ -142,7 +138,9 @@ function App() {
 export default function AppWithHelperMode() {
   return (
     <HelperModeProvider>
-      <App />
+      <TermsProvider>
+        <App />
+      </TermsProvider>
     </HelperModeProvider>
   )
 }

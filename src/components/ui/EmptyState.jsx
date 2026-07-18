@@ -7,16 +7,15 @@ import Icon from './Icon.jsx'
 export default function EmptyState({ icon = 'document', title, description, actionLabel, onAction }) {
   return (
     <div className="flex flex-col items-center justify-center py-12 px-4 text-center" role="status">
-      <div className="w-16 h-16 rounded-16 flex items-center justify-center mb-3"
-        style={{ background: '#F4F7F9' }}
+      <div className="w-16 h-16 rounded-16 flex items-center justify-center mb-3 bg-mute"
         aria-hidden="true"
       >
-        <Icon name={icon} className="w-6 h-6" strokeWidth={1.5} />
+        <Icon name={icon} className="w-6 h-6 text-ink-secondary" strokeWidth={1.5} />
         <span className="sr-only">{title}</span>
       </div>
       <h3 className="text-[15px] font-semibold text-ink mb-1">{title}</h3>
       {description && (
-        <p className="text-[13px] max-w-[280px] leading-relaxed" style={{ color: '#647680' }}>{description}</p>
+        <p className="text-[13px] max-w-[280px] leading-relaxed text-ink-secondary">{description}</p>
       )}
       {actionLabel && onAction && (
         <button

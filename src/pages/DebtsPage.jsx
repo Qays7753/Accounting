@@ -202,8 +202,8 @@ export default function DebtsPage() {
               <div className="space-y-2">
                 {Array.from({ length: 2 }).map((_, i) => (
                   <div key={i} className="bg-surface rounded-2xl p-4 shadow-card">
-                    <div className="h-4 w-1/2 #E4EAEE rounded animate-pulse mb-2" />
-                    <div className="h-3 w-1/3 #F4F7F9 rounded animate-pulse" />
+                    <div className="h-4 w-1/2 bg-divider rounded animate-pulse mb-2" />
+                    <div className="h-3 w-1/3 bg-mute rounded animate-pulse" />
                   </div>
                 ))}
               </div>
@@ -237,8 +237,8 @@ export default function DebtsPage() {
               <div className="space-y-2">
                 {Array.from({ length: 1 }).map((_, i) => (
                   <div key={i} className="bg-surface rounded-2xl p-4 shadow-card">
-                    <div className="h-4 w-1/2 #E4EAEE rounded animate-pulse mb-2" />
-                    <div className="h-3 w-1/3 #F4F7F9 rounded animate-pulse" />
+                    <div className="h-4 w-1/2 bg-divider rounded animate-pulse mb-2" />
+                    <div className="h-3 w-1/3 bg-mute rounded animate-pulse" />
                   </div>
                 ))}
               </div>

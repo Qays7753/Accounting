@@ -173,11 +173,10 @@ export default function HomePage() {
       {/* V5 SOP: Two Jars Dashboard */}
       <section className="px-4 mb-3">
         <div
-          className="rounded-16 p-4 text-ink relative overflow-hidden"
-          style={{ background: '#F0EEE6', boxShadow: '0 1px 2px rgba(60,50,40,.06), 0 4px 12px rgba(60,50,40,.06)' }}
+          className="rounded-16 p-4 text-ink relative overflow-hidden bg-mute shadow-card"
         >
           <div className="flex items-center justify-between">
-            <span className="text-[13px] font-medium" style={{ color: '#6E6A60' }}>{t.total_cash}</span>
+            <span className="text-[13px] font-medium text-ink-secondary">{t.total_cash}</span>
             <Icon name="wallet" className="w-5 h-5" strokeWidth={1.5} />
           </div>
           {stats.loading ? (
@@ -191,34 +190,32 @@ export default function HomePage() {
         <div className="grid grid-cols-2 gap-3 mt-3">
           <div className="card">
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-[34px] h-[34px] rounded-12 grid place-items-center" style={{ background: '#E3F5F5' }}>
+              <div className="w-[34px] h-[34px] rounded-12 grid place-items-center bg-primary-100">
                 <Icon name="wallet" className="w-5 h-5" strokeWidth={1.5} />
               </div>
-              <span className="text-[13px] font-semibold" style={{ color: '#023852' }}>{t.shop_equity}</span>
+              <span className="text-[13px] font-semibold text-primary-700">{t.shop_equity}</span>
             </div>
             <div className="num text-[24px] font-semibold text-ink leading-none">
               {formatAmount(animatedCapital)}
             </div>
-            <div className="text-[12px] mt-1" style={{ color: '#647680' }}>{t.shop_equity_desc}</div>
+            <div className="text-[12px] mt-1 text-ink-secondary">{t.shop_equity_desc}</div>
           </div>
           <div className="card">
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-[34px] h-[34px] rounded-12 grid place-items-center" style={{ background: '#E1F3EB' }}>
+              <div className="w-[34px] h-[34px] rounded-12 grid place-items-center bg-income-100">
                 <Icon name="trendingUp" className="w-5 h-5" strokeWidth={1.5} />
               </div>
-              <span className="text-[13px] font-semibold" style={{ color: '#0E8A5F' }}>{t.merchant_equity}</span>
+              <span className="text-[13px] font-semibold text-income-700">{t.merchant_equity}</span>
             </div>
-            <div className="num text-[24px] font-semibold leading-none"
-              style={{ color: animatedProfit >= 0 ? '#0E8A5F' : '#C0272B' }}
-            >
+            <div className="num text-[24px] font-semibold leading-none text-income-600">
               {formatAmount(animatedProfit)}
             </div>
-            <div className="text-[12px] mt-1" style={{ color: '#647680' }}>{t.merchant_equity_desc}</div>
+            <div className="text-[12px] mt-1 text-ink-secondary">{t.merchant_equity_desc}</div>
           </div>
         </div>
         <div className="flex items-center gap-1.5 justify-center mt-2">
           <Icon name="info" className="w-4 h-4" strokeWidth={1.5} />
-          <span className="text-[12px]" style={{ color: '#647680' }}>لا تسحب من {t.shop_equity} إلا لإعادة تعبئة البضاعة</span>
+          <span className="text-[12px] text-ink-secondary">لا تسحب من {t.shop_equity} إلا لإعادة تعبئة البضاعة</span>
         </div>
       </section>
 

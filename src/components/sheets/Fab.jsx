@@ -5,8 +5,9 @@ import { hapticMedium, hapticLight } from '../../utils/haptics.js'
 import Icon from '../ui/Icon.jsx'
 
 /**
- * V5: Rounded-square FAB (One UI style)
- * Fixed bottom-left (in RTL), 60×60, blue, opens Add sheet.
+ * V5 SOP: Rounded-square FAB
+ * Fixed bottom-left (in RTL), 56×56, terracotta, opens Add sheet.
+ * Dual-mode aware — action labels come from useTerms().
  */
 export default function Fab({ onAction }) {
   const t = useTerms()
@@ -24,10 +25,10 @@ export default function Fab({ onAction }) {
   }
 
   const actions = [
-    { id: 'income', label: 'قبض', desc: 'استلام مبلغ', icon: 'arrowDownLeft', color: 'text-income', bg: 'bg-income-bg' },
-    { id: 'expense', label: 'صرف', desc: 'دفع مبلغ', icon: 'arrowUpRight', color: 'text-expense', bg: 'bg-expense-bg' },
-    { id: 'withdrawal', label: 'سحب شخصي', desc: 'لا يؤثر على الربح', icon: 'bank', color: 'text-withdrawal', bg: 'bg-withdraw-bg' },
-    { id: 'order', label: 'طلب جديد', desc: 'إضافة طلب زبون', icon: 'clipboard', color: 'text-primary', bg: 'bg-primary-tint' },
+    { id: 'income',     label: t.income_action,     desc: t.income_desc,     icon: 'arrowDownLeft', color: 'text-income-600',     bg: 'bg-income-bg' },
+    { id: 'expense',    label: t.expense_action,    desc: t.expense_desc,    icon: 'arrowUpRight',  color: 'text-expense-600',    bg: 'bg-expense-bg' },
+    { id: 'withdrawal', label: t.withdrawal_action, desc: t.withdrawal_desc, icon: 'bank',          color: 'text-withdrawal-600', bg: 'bg-withdraw-bg' },
+    { id: 'order',      label: t.new_order,         desc: t.order_desc,      icon: 'clipboard',     color: 'text-primary-600',    bg: 'bg-primary-tint' },
   ]
 
   return (
@@ -35,29 +36,28 @@ export default function Fab({ onAction }) {
       <button
         type="button"
         onClick={handleOpen}
-        className="press fixed bottom-[80px] left-4 w-[56px] h-[56px] rounded-12 grid place-items-center z-30"
-        style={{ background: '#CC785C', boxShadow: '0 16px 40px rgba(60,50,40,.16)', marginBottom: 'env(safe-area-inset-bottom)' }}
-        aria-label="إضافة"
+        className="press fixed bottom-[80px] left-4 w-[56px] h-[56px] rounded-12 grid place-items-center z-30 bg-primary shadow-fab"
+        style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+        aria-label={t.add_new}
       >
         <Icon name="plus" className="w-6 h-6 text-white" strokeWidth={1.5} />
       </button>
 
-      <BottomSheet open={open} onClose={() => setOpen(false)} title="{t.add_new}">
+      <BottomSheet open={open} onClose={() => setOpen(false)} title={t.add_new}>
         <div className="grid grid-cols-2 gap-3 pb-4">
           {actions.map((action) => (
             <button
               key={action.id}
               type="button"
               onClick={() => handleSelect(action.id)}
-              className="press flex flex-col items-start gap-3 rounded-card p-4 text-right"
-              style={{ background: getBgColor(action.bg) }}
+              className={`press flex flex-col items-start gap-3 rounded-card p-4 text-right ${action.bg}`}
             >
               <div className="w-12 h-12 rounded-[15px] bg-white grid place-items-center">
                 <Icon name={action.icon} className={`w-6 h-6 ${action.color}`} strokeWidth={2} />
               </div>
               <div>
                 <div className="text-[16px] font-bold text-ink">{action.label}</div>
-                <div className="text-[12px] text-faint">{action.desc}</div>
+                <div className="text-[12px] text-ink-secondary">{action.desc}</div>
               </div>
             </button>
           ))}
@@ -65,14 +65,4 @@ export default function Fab({ onAction }) {
       </BottomSheet>
     </>
   )
-}
-
-function getBgColor(bgClass) {
-  const map = {
-    'bg-income-bg': '#e7f8ee',
-    'bg-expense-bg': '#fdecec',
-    'bg-withdraw-bg': '#fbf1e2',
-    'bg-primary-tint': '#e7f0ff',
-  }
-  return map[bgClass] || '#eceef1'
 }

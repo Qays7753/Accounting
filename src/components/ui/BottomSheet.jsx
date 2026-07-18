@@ -113,7 +113,7 @@ export default function BottomSheet({ open, onClose, title, children, maxHeight 
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
         >
-          <div className="w-9 h-[5px] rounded-full mx-auto" style={{ background: '#DAD5C8' }} />
+          <div className="w-9 h-[5px] rounded-full mx-auto bg-divider" />
           {!expanded && (
             <div className="text-center text-[10px] text-placeholder mt-1.5 transition-opacity">
               ↑ اسحب للأعلى للتوسّع
@@ -128,7 +128,7 @@ export default function BottomSheet({ open, onClose, title, children, maxHeight 
             <button
               type="button"
               onClick={() => { hapticMedium(); onClose?.() }}
-              className="press w-11 h-11 rounded-12 grid place-items-center" style={{ background: '#F0EEE6' }}
+              className="press w-11 h-11 rounded-12 grid place-items-center bg-mute"
               aria-label="إغلاق"
             >
               <Icon name="close" className="w-5 h-5 text-sub" />

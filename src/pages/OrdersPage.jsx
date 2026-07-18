@@ -202,10 +202,10 @@ export default function OrdersPage() {
             Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="bg-surface rounded-2xl p-4 ">
                 <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-xl #E4EAEE animate-pulse" />
+                  <div className="w-11 h-11 rounded-xl bg-divider animate-pulse" />
                   <div className="flex-1 space-y-2">
-                    <div className="h-4 w-3/4 #E4EAEE rounded animate-pulse" />
-                    <div className="h-3 w-1/2 #F4F7F9 rounded animate-pulse" />
+                    <div className="h-4 w-3/4 bg-divider rounded animate-pulse" />
+                    <div className="h-3 w-1/2 bg-mute rounded animate-pulse" />
                   </div>
                 </div>
               </div>
@@ -277,7 +277,7 @@ export default function OrdersPage() {
 const PAYMENT_BADGE = {
   cash: { label: 'مدفوع', class: 'bg-income-50 text-income-600' },
   credit: { label: 'أجل', class: 'bg-withdrawal-50 text-withdrawal-600' },
-  done: { label: 'تتبع', class: '#F4F7F9 text-text-secondary' },
+  done: { label: 'تتبع', class: 'bg-mute text-ink-secondary' },
 }
 
 function OrderCard({ order, onClick }) {
