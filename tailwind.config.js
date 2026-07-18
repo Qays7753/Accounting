@@ -1,62 +1,85 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
       colors: {
-        // === SOP Design Tokens ===
-        // Identity
-        primary: { DEFAULT: '#023852', dark: '#012A3E' },
-        accent: { DEFAULT: '#079FA0', text: '#057B7C', light: '#E3F5F5' },
-        // Semantic
-        income: { DEFAULT: '#0E8A5F', fill: '#9FDBC5', bg: '#E1F3EB' },
-        returns: { DEFAULT: '#B07E00', fill: '#E0A200', bg: '#FBF1CF' },
-        withdraw: { DEFAULT: '#C96A00', fill: '#FE8801', bg: '#FFF0DD' },
-        expense: { DEFAULT: '#C0272B', fill: '#DC2E2F', bg: '#FBE7E7' },
-        // Neutrals (blue-gray)
-        surface: '#FFFFFF',
-        altRow: '#FBFCFD',
-        background: '#F4F7F9',
-        border: '#E4EAEE',
-        divider: '#CBD5DB',
-        disabled: '#93A4AE',
-        // Text
-        ink: { DEFAULT: '#023852', strong: '#2C3E47', secondary: '#647680' },
-        // Legacy aliases for backward compat
+        // ===== Identity: Warm Terracotta (SOP v2) =====
+        primary: {
+          50: '#FBF3EF', 100: '#F4E4DB', 200: '#E8C9B8', 300: '#DBAE91',
+          400: '#CC785C', 500: '#CC785C', 600: '#B4613F', 700: '#964E33',
+          800: '#783B28', 900: '#5A2C1D', DEFAULT: '#CC785C',
+        },
+        // Accent: Teal
+        accent: {
+          50: '#E3F5F5', 100: '#C0EAEA', 200: '#8FD5D6', 300: '#5EC0C1',
+          400: '#2DABAD', 500: '#079FA0', 600: '#057B7C', 700: '#045E5F',
+          800: '#034142', 900: '#022425', DEFAULT: '#079FA0',
+          text: '#057B7C', light: '#E3F5F5',
+        },
+        // Semantic: Income (cool green)
+        income: {
+          50: '#E4F2EA', 100: '#C9E6D5', 200: '#A7D8BE', 300: '#7FC49E',
+          400: '#57B07E', 500: '#2E7D57', 600: '#256A48', 700: '#1C5739',
+          800: '#13442A', 900: '#0A311B', DEFAULT: '#2E7D57',
+          fill: '#A7D8BE', bg: '#E4F2EA',
+        },
+        // Semantic: Expense (crimson)
+        expense: {
+          50: '#FBE7E6', 100: '#F5C9C7', 200: '#EEA19E', 300: '#E47975',
+          400: '#DB514C', 500: '#DC2E2F', 600: '#B42318', 700: '#911C12',
+          800: '#6E150C', 900: '#4B0E06', DEFAULT: '#B42318',
+          fill: '#DC2E2F', bg: '#FBE7E6',
+        },
+        // Semantic: Withdrawal (steel blue)
+        withdrawal: {
+          50: '#E8EEF3', 100: '#D1DDE6', 200: '#B0C3D2', 300: '#8AA5B8',
+          400: '#68899E', 500: '#5B7C99', 600: '#3E5C76', 700: '#2F485B',
+          800: '#203340', 900: '#111E25', DEFAULT: '#3E5C76',
+          fill: '#5B7C99', bg: '#E8EEF3',
+          50: '#E8EEF3', 600: '#3E5C76',
+        },
+        // Semantic: Returns (gold, rare)
+        returns: {
+          50: '#F6ECCF', 100: '#EFDAA0', 200: '#E0A200', 300: '#C99100',
+          400: '#B08532', 500: '#E0A200', 600: '#B08532', 700: '#8A6927',
+          800: '#644D1C', 900: '#3E3112', DEFAULT: '#B08532',
+          fill: '#E0A200', bg: '#F6ECCF',
+        },
+        // ===== Warm Neutrals (Greige) =====
+        ink: {
+          DEFAULT: '#1F1E1D', strong: '#33322E', secondary: '#6E6A60',
+        },
         text: {
-          primary: '#023852',
-          secondary: '#647680',
-          tertiary: '#93A4AE',
+          primary: '#1F1E1D', secondary: '#6E6A60', tertiary: '#B7B2A6',
         },
         txt: {
-          primary: '#023852',
-          secondary: '#647680',
-          tertiary: '#93A4AE',
+          primary: '#1F1E1D', secondary: '#6E6A60', tertiary: '#B7B2A6',
         },
-        faint: '#647680',
-        mute: '#F4F7F9',
-        placeholder: '#93A4AE',
-        // Status (legacy compat)
-        status: {
-          progress: '#E0A200',
-          ready: '#079FA0',
-          closed: '#93A4AE',
-        },
-        amber: '#B07E00',
-        'amber-bg': '#FBF1CF',
+        background: '#FAF9F5',
+        ivory: '#F0EEE6',
+        surface: '#FFFFFF',
+        mute: '#F0EEE6',
+        border: '#EAE6DC',
+        divider: '#DAD5C8',
+        disabled: '#B7B2A6',
+        faint: '#6E6A60',
+        placeholder: '#B7B2A6',
+        sub: '#6E6A60',
+        altRow: '#FAF9F5',
+        // Legacy aliases for backward compat
+        'primary-tint': '#F4E4DB',
+        'primary-pill': '#F4E4DB',
+        'income-bg': '#E4F2EA',
+        'expense-bg': '#FBE7E6',
+        'withdraw-bg': '#E8EEF3',
+        'withdrawal-bg': '#E8EEF3',
+        amber: '#B08532',
+        'amber-bg': '#F6ECCF',
         purple: '#5644d0',
         'purple-bg': '#eeecfb',
-        'primary-tint': '#E3F5F5',
-        'primary-pill': '#E3F5F5',
-        'income-bg': '#E1F3EB',
-        'expense-bg': '#FBE7E7',
-        'withdraw-bg': '#FFF0DD',
-        withdrawal: { DEFAULT: '#C96A00', 50: '#FFF0DD', 600: '#C96A00' },
-        income_legacy: { DEFAULT: '#0E8A5F', 50: '#E1F3EB', 600: '#0E8A5F' },
-        closed: '#93A4AE',
+        status: { progress: '#E0A200', ready: '#079FA0', closed: '#B7B2A6' },
+        closed: '#B7B2A6',
         progress: '#E0A200',
       },
       fontFamily: {
@@ -66,34 +89,26 @@ export default {
         ibm: ['IBM Plex Sans Arabic', 'sans-serif'],
       },
       borderRadius: {
-        '12': '12px',
-        '16': '16px',
-        '20': '20px',
-        'card': '16px',
-        'sheet': '20px',
-        'pill': '9999px',
-        'xl': '12px',
-        '2xl': '16px',
-        '3xl': '20px',
+        '12': '12px', '16': '16px', '20': '20px',
+        card: '16px', sheet: '20px', pill: '9999px',
+        xl: '12px', '2xl': '16px', '3xl': '20px',
       },
       boxShadow: {
-        'card': '0 8px 24px -18px rgba(2,56,82,.35)',
-        'sheet': '0 16px 40px -24px rgba(2,56,82,.45)',
-        'nav': '0 -2px 12px -8px rgba(2,56,82,.2)',
-        'sm': '0 2px 8px -4px rgba(2,56,82,.15)',
-        'md': '0 4px 12px -6px rgba(2,56,82,.2)',
-        'lg': '0 8px 24px -12px rgba(2,56,82,.3)',
-        'fab': '0 8px 20px -8px rgba(2,56,82,.4)',
-        'hero': '0 8px 24px -18px rgba(2,56,82,.35)',
+        'e1': '0 1px 2px rgba(60,50,40,.06), 0 4px 12px rgba(60,50,40,.06)',
+        'e2': '0 6px 20px rgba(60,50,40,.10)',
+        'e3': '0 16px 40px rgba(60,50,40,.16)',
+        'card': '0 1px 2px rgba(60,50,40,.06), 0 4px 12px rgba(60,50,40,.06)',
+        'sheet': '0 6px 20px rgba(60,50,40,.10)',
+        'header': '0 6px 20px rgba(60,50,40,.10)',
+        'fab': '0 16px 40px rgba(60,50,40,.16)',
+        'sm': '0 1px 2px rgba(60,50,40,.04)',
+        'nav': '0 -2px 12px -8px rgba(60,50,40,.15)',
+        'lg': '0 6px 20px rgba(60,50,40,.10)',
+        'xl': '0 16px 40px rgba(60,50,40,.16)',
       },
       spacing: {
-        '1': '4px',
-        '2': '8px',
-        '3': '12px',
-        '4': '16px',
-        '5': '20px',
-        '6': '24px',
-        '7': '32px',
+        '1': '4px', '2': '8px', '3': '12px', '4': '16px',
+        '5': '20px', '6': '24px', '7': '32px',
       },
       animation: {
         'slide-up': 'slideUp 0.34s cubic-bezier(0.16,1,0.3,1)',

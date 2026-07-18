@@ -7,7 +7,6 @@ import { hapticLight, hapticMedium, hapticSuccess } from '../utils/haptics.js'
 import { getWhatsAppTemplate, setWhatsAppTemplate, WHATSAPP_PLACEHOLDERS } from '../utils/whatsapp.js'
 import { exportBackup, importBackup, checkBackupReminder, markBackupDone } from '../utils/backup.js'
 import { requestNotificationPermission, sendTestNotification } from '../utils/notifications.js'
-import { THEME_PRESETS, setAndApplyTheme, applyTheme, generateShades } from '../utils/theme.js'
 import { useHelperMode } from '../context/HelperModeContext.jsx'
 
 export default function SettingsPage() {
@@ -19,10 +18,6 @@ export default function SettingsPage() {
   const [backupReminder, setBackupReminder] = useState(null)
 
   // V2: Theme & Branding state
-  const [themeSheetOpen, setThemeSheetOpen] = useState(false)
-  const [currentThemeColor, setCurrentThemeColor] = useState('#1F6FE8')
-  const [selectedPreset, setSelectedPreset] = useState('#1F6FE8')
-  const [customHex, setCustomHex] = useState('#1F6FE8')
   const [brandingSheetOpen, setBrandingSheetOpen] = useState(false)
   const [logoPreview, setLogoPreview] = useState(null)
   const [businessNameInput, setBusinessNameInput] = useState('')
@@ -146,40 +141,6 @@ export default function SettingsPage() {
   const insertPlaceholder = (token) => {
     hapticLight()
     setTemplateText((prev) => prev + ' ' + token)
-  }
-
-  // V2: Theme color handlers
-  const handleOpenThemeSheet = async () => {
-    hapticLight()
-    const color = await db.getThemeColor()
-    setSelectedPreset(color)
-    setCustomHex(color)
-    setThemeSheetOpen(true)
-  }
-
-  const handleSelectPreset = (hex) => {
-    hapticLight()
-    setSelectedPreset(hex)
-    setCustomHex(hex)
-    // Preview the theme immediately (not saved yet)
-    applyTheme(hex)
-  }
-
-  const handleCustomHexChange = (e) => {
-    const val = e.target.value
-    setCustomHex(val)
-    // Only apply if valid hex
-    if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
-      setSelectedPreset(val)
-      applyTheme(val)
-    }
-  }
-
-  const handleSaveTheme = async () => {
-    hapticSuccess()
-    await setAndApplyTheme(selectedPreset)
-    setCurrentThemeColor(selectedPreset)
-    setThemeSheetOpen(false)
   }
 
   // V2: Logo & branding handlers
@@ -327,19 +288,6 @@ export default function SettingsPage() {
         <section>
           <h2 className="text-[12px] font-bold text-primary mb-2 px-1.5">المظهر</h2>
           <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
-            <SettingsRow
-              icon="info"
-              iconBg="bg-primary-50 text-primary-600"
-              label="اللون الرئيسي"
-              description="تخصيص لون التطبيق"
-              onClick={handleOpenThemeSheet}
-              trailing={
-                <div
-                  className="w-6 h-6 rounded-full border-2 border-white shadow"
-                  style={{ backgroundColor: currentThemeColor }}
-                />
-              }
-            />
             <SettingsRow
               icon="user"
               iconBg="bg-withdrawal-50 text-withdrawal-600"
@@ -543,80 +491,6 @@ export default function SettingsPage() {
           <p className="text-xs text-text-tertiary text-center">
             بعد التثبيت، يعمل التطبيق بدون إنترنت تماماً مثل التطبيقات الأصلية
           </p>
-        </div>
-      </BottomSheet>
-
-      {/* V2: Theme Color Picker Sheet */}
-      <BottomSheet open={themeSheetOpen} onClose={() => { setThemeSheetOpen(false); applyTheme(currentThemeColor) }} title="اللون الرئيسي">
-        <div className="space-y-5 pb-4">
-          {/* Preset palette */}
-          <div>
-            <label className="block text-sm font-semibold text-text-secondary mb-3">ألوان جاهزة</label>
-            <div className="grid grid-cols-4 gap-3">
-              {THEME_PRESETS.map((preset) => (
-                <button
-                  key={preset.hex}
-                  type="button"
-                  onClick={() => handleSelectPreset(preset.hex)}
-                  className={`aspect-square rounded-2xl transition-all active:scale-95 ${
-                    selectedPreset === preset.hex ? 'ring-4 ring-offset-2' : ''
-                  }`}
-                  style={{
-                    backgroundColor: preset.hex,
-                    // Use the same color for the ring with some opacity
-                    boxShadow: selectedPreset === preset.hex ? `0 0 0 2px ${preset.hex}` : 'none',
-                  }}
-                  aria-label={preset.name}
-                  title={preset.name}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Custom hex input */}
-          <div>
-            <label className="block text-sm font-semibold text-text-secondary mb-2">لون مخصص (Hex)</label>
-            <input
-              type="text"
-              value={customHex}
-              onChange={handleCustomHexChange}
-              placeholder="#1F6FE8"
-              className="input-field text-center font-mono"
-              dir="ltr"
-            />
-          </div>
-
-          {/* Live preview */}
-          <div className="bg-background rounded-2xl p-4">
-            <p className="text-xs text-txt-secondary mb-3">معاينة</p>
-            <button
-              type="button"
-              className="w-full bg-primary text-white font-bold rounded-2xl py-3.5 active:scale-[0.98] transition-transform"
-              style={{ backgroundColor: selectedPreset }}
-            >
-              زر رئيسي
-            </button>
-            <div className="grid grid-cols-3 gap-2 mt-3">
-              <div className="rounded-xl p-2 text-center" style={{ backgroundColor: selectedPreset }}>
-                <p className="text-[10px] text-white">500</p>
-              </div>
-              <div className="rounded-xl p-2 text-center" style={{ backgroundColor: generateShades(selectedPreset)[600] }}>
-                <p className="text-[10px] text-white">600</p>
-              </div>
-              <div className="rounded-xl p-2 text-center" style={{ backgroundColor: generateShades(selectedPreset)[50] }}>
-                <p className="text-[10px]" style={{ color: selectedPreset }}>50</p>
-              </div>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleSaveTheme}
-            className="w-full btn-primary"
-            style={{ backgroundColor: selectedPreset }}
-          >
-            حفظ
-          </button>
         </div>
       </BottomSheet>
 

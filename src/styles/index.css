@@ -15,7 +15,7 @@
   }
 
   body {
-    @apply bg-background text-ink font-sans antialiased;
+    @apply bg-background text-ink-strong font-sans antialiased;
     margin: 0;
     padding: 0;
     overscroll-behavior-y: none;
@@ -27,7 +27,6 @@
 
   [dir="rtl"] { text-align: right; }
 
-  /* Hide scrollbar */
   .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   .hide-scrollbar::-webkit-scrollbar { display: none; }
   .scroll::-webkit-scrollbar { width: 0; height: 0; }
@@ -42,73 +41,69 @@
   .tnum { font-variant-numeric: tabular-nums; }
   .press { transition: transform .12s ease; }
   .press:active { transform: scale(.97); }
-
-  /* Numeric font for all monetary displays */
   .num { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
 }
 
 @layer components {
-  /* SOP §5.8: Card — white bg, 16px radius, 1px border, soft shadow */
+  /* SOP §7.6: Card — white bg, 16px radius, e1 shadow, NO border */
   .card {
     @apply bg-surface rounded-16 p-4;
-    border: 1px solid #E4EAEE;
-    box-shadow: 0 8px 24px -18px rgba(2,56,82,.35);
+    box-shadow: 0 1px 2px rgba(60,50,40,.06), 0 4px 12px rgba(60,50,40,.06);
   }
 
-  /* SOP §5.7: Bottom Sheet — 20px top radius, 36px drag handle */
+  /* SOP §7.5: Bottom Sheet */
   .bottom-sheet {
     @apply fixed inset-x-0 bottom-0 bg-surface rounded-t-20 z-50;
-    box-shadow: 0 16px 40px -24px rgba(2,56,82,.45);
+    box-shadow: 0 6px 20px rgba(60,50,40,.10);
   }
-
   .bottom-sheet-overlay {
     @apply fixed inset-0 z-40;
-    background: rgba(2,56,82,0.4);
+    background: rgba(31,30,29,0.4);
     animation: fadeIn 0.2s ease-out;
   }
 
-  /* SOP §5.3: Primary button — #023852 bg, white text, 48px height, 12px radius */
+  /* SOP §7.1: Primary button — terracotta #CC785C */
   .btn-primary {
     @apply bg-primary text-white font-semibold rounded-12 py-3 px-6 press;
     min-height: 48px;
   }
-  .btn-primary:active { background-color: #012A3E; }
+  .btn-primary:active { background-color: #B4613F; }
 
-  /* SOP §5.3: Secondary button — accent #079FA0 */
+  /* SOP §7.1: Secondary button — teal #079FA0 */
   .btn-secondary {
     @apply bg-accent text-white font-semibold rounded-12 py-3 px-6 press;
     min-height: 48px;
   }
 
-  /* SOP §5.3: Outline button */
+  /* SOP §7.1: Outline button */
   .btn-outline {
-    @apply bg-surface text-primary font-semibold rounded-12 py-3 px-6 press;
-    border: 1px solid #CBD5DB;
+    @apply bg-surface text-ink font-semibold rounded-12 py-3 px-6 press;
+    border: 1px solid #DAD5C8;
     min-height: 48px;
   }
 
-  /* SOP §5.3: Ghost button */
+  /* SOP §7.1: Ghost button */
   .btn-ghost {
-    @apply bg-transparent text-accent-text font-semibold rounded-12 py-3 px-6 press;
+    @apply bg-transparent text-accent-600 font-semibold rounded-12 py-3 px-6 press;
     min-height: 48px;
   }
 
-  /* SOP §5.3: Destructive button */
+  /* SOP §7.1: Destructive button */
   .btn-destructive {
-    @apply bg-expense-fill text-white font-semibold rounded-12 py-3 px-6 press;
+    @apply bg-expense-500 text-white font-semibold rounded-12 py-3 px-6 press;
     min-height: 48px;
   }
 
-  /* SOP §5.4: Search/Input — 48px height, #fff bg, 1px #E4EAEE border, 12px radius */
+  /* SOP §7.2: Search/Input — 48px, white bg, 1px border, 12px radius */
   .input-field {
     @apply w-full bg-surface rounded-12 px-3 py-3 text-ink text-[15px] outline-none;
-    border: 1px solid #E4EAEE;
+    border: 1px solid #EAE6DC;
     min-height: 48px;
     transition: border-color 0.15s ease;
   }
   .input-field:focus { border-color: #079FA0; }
 
-  /* SOP §5.5: Filter chips — 36px height, 999px radius */
+  /* SOP §7.3: Filter chips — 36px, pill, terracotta selected */
   .chip {
     @apply rounded-pill py-2 px-3 text-[13px] font-medium press;
     min-height: 36px;
@@ -116,40 +111,52 @@
   }
   .chip-inactive {
     @apply bg-surface text-ink-secondary;
-    border: 1px solid #CBD5DB;
+    border: 1px solid #DAD5C8;
   }
   .chip-active {
     @apply bg-primary text-white;
-    border: 1px solid #023852;
+    border: 1px solid #CC785C;
   }
 
-  /* SOP §5.10: Bottom nav */
-  .nav-active { color: #079FA0; }
-  .nav-inactive { color: #93A4AE; }
-
-  /* SOP §5.11: Tags */
+  /* SOP §7.9: Tags/badges */
   .tag {
     @apply rounded-pill py-1 px-3 text-[12px] font-semibold;
   }
 
-  /* SOP §5.8: KPI Card — dark bg */
+  /* SOP: Status badges */
+  .badge-progress {
+    @apply rounded-pill px-2 py-0.5 text-[11px] font-semibold;
+    background: #F6ECCF;
+    color: #B08532;
+  }
+  .badge-ready {
+    @apply rounded-pill px-2 py-0.5 text-[11px] font-semibold;
+    background: #E3F5F5;
+    color: #057B7C;
+  }
+  .badge-closed {
+    @apply rounded-pill px-2 py-0.5 text-[11px] font-semibold;
+    background: #F0EEE6;
+    color: #6E6A60;
+  }
+
+  .nav-active { color: #CC785C; }
+  .nav-inactive { color: #B7B2A6; }
+
+  /* SOP §7.6: KPI Card — ivory tinted with inset white */
   .kpi-card-dark {
-    @apply bg-primary text-white rounded-16 p-4;
-    box-shadow: 0 8px 24px -18px rgba(2,56,82,.35);
+    @apply rounded-16 p-4;
+    background: #F0EEE6;
+    box-shadow: 0 1px 2px rgba(60,50,40,.06), 0 4px 12px rgba(60,50,40,.06);
   }
 
-  /* Ghost card animation for deletion */
-  .ghost-card {
-    animation: ghostOut 0.3s ease-out forwards;
-    overflow: hidden;
-  }
+  .ghost-card { animation: ghostOut 0.3s ease-out forwards; overflow: hidden; }
 
-  /* Sticky header with blur */
   .sticky-header {
     @apply sticky top-0 z-20;
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    background: rgba(244,247,249,0.85);
+    background: rgba(250,249,245,0.88);
   }
 }
 
@@ -161,4 +168,4 @@
   .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
 }
 
-.skeleton { @apply bg-border rounded-12; animation: skeleton 1.5s ease-in-out infinite; }
+.skeleton { @apply rounded-12; background: #F0EEE6; animation: skeleton 1.5s ease-in-out infinite; }

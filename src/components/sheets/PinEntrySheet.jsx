@@ -61,7 +61,7 @@ export default function PinEntrySheet({ open, onClose, onVerify }) {
             <div
               key={i}
               className={`w-4 h-4 rounded-full transition-colors ${
-                error ? 'bg-expense-500' : pin.length > i ? 'bg-primary' : '#E4EAEE'
+                error ? 'bg-expense-500' : pin.length > i ? 'bg-primary' : 'bg-border'
               }`}
             />
           ))}

@@ -11,9 +11,9 @@ import OrderDetailSheet from '../components/sheets/OrderDetailSheet.jsx'
 import { hapticLight } from '../utils/haptics.js'
 
 const STATUS_CONFIG = {
-  in_progress: { label: 'قيد التنفيذ', color: 'bg-status-progress', text: 'text-status-progress', badge: 'badge-progress', dot: 'bg-status-progress', bar: 'border-[#f5a623]' },
+  in_progress: { label: 'قيد التنفيذ', color: 'bg-status-progress', text: 'text-status-progress', badge: 'badge-progress', dot: 'bg-status-progress', bar: 'border-returns-500' },
   ready: { label: 'جاهز', color: 'bg-primary', text: 'text-primary-600', badge: 'badge-ready', dot: 'bg-primary', bar: 'border-primary' },
-  closed: { label: 'مغلق', color: 'bg-status-closed', text: 'text-text-secondary', badge: 'badge-closed', dot: 'bg-status-closed', bar: 'border-[#b0b6c3]' },
+  closed: { label: 'مغلق', color: 'bg-status-closed', text: 'text-text-secondary', badge: 'badge-closed', dot: 'bg-status-closed', bar: 'border-divider' },
 }
 
 // V5: Underline tabs + status-colored count badges

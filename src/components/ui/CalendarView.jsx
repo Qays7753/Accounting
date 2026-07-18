@@ -151,7 +151,7 @@ export default function CalendarView({ onOrderClick }) {
                       <div
                         key={i}
                         className={`w-1.5 h-1.5 rounded-full ${
-                          selected ? 'bg-white' : STATUS_CONFIG[status]?.color || '#93A4AE'
+                          selected ? 'bg-white' : STATUS_CONFIG[status]?.color || 'bg-disabled'
                         }`}
                       />
                     ))}

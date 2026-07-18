@@ -1,7 +1,7 @@
 import { hapticLight } from '../../utils/haptics.js'
 
 /**
- * Icon component using outlined SVG icons (One UI style)
+ * Icon component using outlined SVG icons (SOP style)
  * Thin lines, professional, no cartoons.
  */
 export default function Icon({ name, className = 'w-6 h-6', strokeWidth = 1.8, onClick }) {

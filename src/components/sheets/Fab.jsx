@@ -34,7 +34,7 @@ export default function Fab({ onAction }) {
         type="button"
         onClick={handleOpen}
         className="press fixed bottom-[80px] left-4 w-[56px] h-[56px] rounded-12 grid place-items-center z-30"
-        style={{ background: '#023852', boxShadow: '0 8px 20px -8px rgba(2,56,82,.4)', marginBottom: 'env(safe-area-inset-bottom)' }}
+        style={{ background: '#CC785C', boxShadow: '0 16px 40px rgba(60,50,40,.16)', marginBottom: 'env(safe-area-inset-bottom)' }}
         aria-label="إضافة"
       >
         <Icon name="plus" className="w-6 h-6 text-white" strokeWidth={1.5} />

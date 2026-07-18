@@ -5,7 +5,6 @@ import AppLayout from './components/layout/AppLayout.jsx'
 import OnboardingPage from './pages/OnboardingPage.jsx'
 import BackupReminderBanner from './components/common/BackupReminderBanner.jsx'
 import { checkBackupReminder } from './utils/backup.js'
-import { applyThemeFromDB } from './utils/theme.js'
 import { HelperModeProvider, useHelperMode } from './context/HelperModeContext.jsx'
 
 // Lazy-load route components for faster initial load.
@@ -84,7 +83,6 @@ function App() {
           }
 
           try {
-            await applyThemeFromDB()
           } catch (e) {
             console.error('Theme application failed:', e)
           }

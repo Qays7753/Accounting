@@ -171,11 +171,11 @@ export default function HomePage() {
       {/* V5 SOP: Two Jars Dashboard */}
       <section className="px-4 mb-3">
         <div
-          className="rounded-16 p-4 text-white relative overflow-hidden"
-          style={{ background: '#023852', boxShadow: '0 8px 24px -18px rgba(2,56,82,.35)', border: '1px solid #E4EAEE' }}
+          className="rounded-16 p-4 text-ink relative overflow-hidden"
+          style={{ background: '#F0EEE6', boxShadow: '0 1px 2px rgba(60,50,40,.06), 0 4px 12px rgba(60,50,40,.06)' }}
         >
           <div className="flex items-center justify-between">
-            <span className="text-[13px] font-medium" style={{ color: '#9FDBC5' }}>إجمالي النقد المتاح</span>
+            <span className="text-[13px] font-medium" style={{ color: '#6E6A60' }}>إجمالي النقد المتاح</span>
             <Icon name="wallet" className="w-5 h-5" strokeWidth={1.5} />
           </div>
           {stats.loading ? (
@@ -387,7 +387,7 @@ export default function HomePage() {
             <button
               type="button"
               onClick={handleBackupNow}
-              className="w-full bg-primary text-white font-semibold rounded-xl py-2.5 active:scale-95 transition-transform text-sm flex items-center justify-center gap-2"
+              className="w-full bg-primary text-ink font-semibold rounded-xl py-2.5 active:scale-95 transition-transform text-sm flex items-center justify-center gap-2"
             >
               <Icon name="whatsapp" className="w-4 h-4" />
               إرسال نسخة احتياطية عبر واتساب
@@ -423,7 +423,7 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={() => { hapticLight(); setOpeningBalanceSheetOpen(true) }}
-                className="flex-1 bg-income-500 text-white font-semibold rounded-xl py-2.5 active:scale-95 transition-transform text-sm"
+                className="flex-1 bg-income-500 text-ink font-semibold rounded-xl py-2.5 active:scale-95 transition-transform text-sm"
               >
                 إدخال الرصيد
               </button>
