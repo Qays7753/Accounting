@@ -18,6 +18,7 @@ import { hapticLight, hapticSuccess, hapticMedium } from '../utils/haptics.js'
 import { exportBackup } from '../utils/backup.js'
 import PageHeader from '../components/layout/PageHeader.jsx'
 import { useSubmitGuard } from '../hooks/useSubmitGuard.js'
+import { useExitConfirm } from '../hooks/useBackDismiss.js'
 
 export default function HomePage() {
   const stats = useDashboardStats()
@@ -25,6 +26,25 @@ export default function HomePage() {
   const { logo, businessName, monthlySummary, hideAmounts } = useSettings2()
   const [sheetOpen, setSheetOpen] = useState(null)
   const [jars, setJars] = useState({ capitalJar: 0, profitJar: 0, totalCash: 0 })
+
+  // N1: Exit confirm — "press back again to exit" on home route
+  const [exitToast, setExitToast] = useState(false)
+  useExitConfirm(
+    true, // always active on home page
+    () => setExitToast(true),  // first back: show toast
+    () => {
+      // second back: actually exit
+      setExitToast(false)
+      window.history.back()
+    },
+    2000
+  )
+  // Auto-hide exit toast after 2s
+  useEffect(() => {
+    if (!exitToast) return
+    const timer = setTimeout(() => setExitToast(false), 2000)
+    return () => clearTimeout(timer)
+  }, [exitToast])
 
   // Z-Report
   const [showZReportCard, setShowZReportCard] = useState(false)
@@ -549,6 +569,13 @@ export default function HomePage() {
           </button>
         </div>
       </BottomSheet>
+
+      {/* N1: Exit confirmation toast */}
+      {exitToast && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-ink text-surface text-sm font-semibold px-5 py-3 rounded-pill shadow-e3 animate-fade-in">
+          اضغط مرّة أخرى للخروج
+        </div>
+      )}
     </div>
   )
 }

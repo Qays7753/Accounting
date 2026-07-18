@@ -111,7 +111,6 @@ export default function PageHeader({
                 <div className="min-w-0">
                   <p className="text-caption text-faint font-medium leading-tight">{getGreeting()}</p>
                   <h1 className="text-title-sm text-ink leading-tight truncate">{businessName || t.onboarding_welcome}</h1>
-                  <p className="text-caption text-faint mt-0.5 leading-tight num">{formatArabicDate(new Date())}</p>
                 </div>
               </>
             ) : (
@@ -187,12 +186,17 @@ export default function PageHeader({
       </header>
 
       {/* Subheader — scrolls with content (NOT sticky). Used for segmented
-          controls, net-summary cards, secondary filters. */}
-      {subheader && (
+          controls, net-summary cards, secondary filters.
+          N5: For variant="home", date appears here as a small chip. */}
+      {subheader ? (
         <div className="px-4 pt-3 pb-3">
           {subheader}
         </div>
-      )}
+      ) : variant === 'home' ? (
+        <div className="px-4 pt-2 pb-1">
+          <p className="text-caption text-faint num">{formatArabicDate(new Date())}</p>
+        </div>
+      ) : null}
     </>
   )
 }

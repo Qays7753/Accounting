@@ -107,6 +107,7 @@ export default function BottomNav({ showQuickPos = true }) {
           <NavLink
             key={item.to}
             to={item.to}
+            replace
             end={item.to === '/'}
             onClick={() => hapticLight()}
             aria-label={item.label}
