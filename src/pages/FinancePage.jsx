@@ -41,13 +41,13 @@ export default function FinancePage() {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
   const [snackbar, setSnackbar] = useState(null) // { message, actionLabel, onAction }
-  const [editTransaction, setEditTransaction] = useState(null) // V2: transaction being edited
+  const [editTransaction, setEditTransaction] = useState(null) // transaction being edited
   const [editSheetOpen, setEditSheetOpen] = useState(false)
 
   // Debounce search to prevent query thrash on every keystroke
   const debouncedSearch = useDebounce(search, 300)
 
-  // V5: Monthly net for the "{t.net_this_month}" card (net = income − expense; withdrawal excluded)
+  // Monthly net for the "{t.net_this_month}" card (net = income − expense; withdrawal excluded)
   const stats = useDashboardStats()
 
   // Load the full ledger (all dates) so it can be grouped by day; type filtering is applied below.
@@ -96,14 +96,14 @@ export default function FinancePage() {
     })
   }, [refresh])
 
-  // V2: Open the transaction form in edit mode
+  // Open the transaction form in edit mode
   const handleEdit = useCallback((transaction) => {
     hapticLight()
     setEditTransaction(transaction)
     setEditSheetOpen(true)
   }, [])
 
-  // V2: Called when edit form is saved
+  // Called when edit form is saved
   const handleEditSaved = useCallback(() => {
     refresh()
     setEditSheetOpen(false)
@@ -164,12 +164,12 @@ export default function FinancePage() {
               </div>
               <div className="flex gap-4 text-center">
                 <div>
-                  <div className="text-[11px] text-faint">{t.total_income}</div>
+                  <div className="text-caption text-faint">{t.total_income}</div>
                   <div className="tnum text-card-title font-bold text-income-600 num">{formatAmount(stats.monthIncome)}</div>
                 </div>
                 <div className="w-px bg-divider" />
                 <div>
-                  <div className="text-[11px] text-faint">{t.total_expense}</div>
+                  <div className="text-caption text-faint">{t.total_expense}</div>
                   <div className="tnum text-card-title font-bold text-expense-600 num">{formatAmount(stats.monthExpense)}</div>
                 </div>
               </div>
@@ -196,7 +196,7 @@ export default function FinancePage() {
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-card-title font-bold text-ink">{t.debts_title}</div>
-            <div className="text-[11px] text-faint">{t.receivables_tab} {t.payables_tab}</div>
+            <div className="text-caption text-faint">{t.receivables_tab} {t.payables_tab}</div>
           </div>
           <Icon name="chevronLeft" className="w-4 h-4 text-disabled flex-none" />
         </Link>
@@ -206,7 +206,7 @@ export default function FinancePage() {
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-card-title font-bold text-ink">{t.reports_title}</div>
-            <div className="text-[11px] text-faint">{t.report_profit_label}</div>
+            <div className="text-caption text-faint">{t.report_profit_label}</div>
           </div>
           <Icon name="chevronLeft" className="w-4 h-4 text-disabled flex-none" />
         </Link>
@@ -240,8 +240,8 @@ export default function FinancePage() {
           dayGroups.map((group) => (
             <div key={group.key} className="mb-1.5">
               <div className="flex items-center justify-between mt-2 mb-2.5 px-0.5">
-                <span className="text-[13px] font-bold text-sub">{group.label}</span>
-                <span className="tnum text-[12px] text-faint">
+                <span className="text-sm font-bold text-sub">{group.label}</span>
+                <span className="tnum text-caption text-faint">
                   {t.net_for_day} {group.net >= 0 ? '+' : '−'}{formatAmount(Math.abs(group.net))}
                 </span>
               </div>
@@ -354,12 +354,12 @@ function TransactionCard({ transaction, onDelete, onEdit }) {
               {transaction.description || c.label}
             </p>
             {transaction.edited && (
-              <span className="text-[10px] text-withdrawal-600 bg-withdrawal-50 px-1.5 py-0.5 rounded-full flex-shrink-0">
+              <span className="text-caption text-withdrawal-600 bg-withdrawal-50 px-1.5 py-0.5 rounded-full flex-shrink-0">
                 {t.update}
               </span>
             )}
             {transaction.isRecurring && (
-              <span className="text-[10px] text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded-full flex-shrink-0">
+              <span className="text-caption text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded-full flex-shrink-0">
                 {t.recurring}
               </span>
             )}

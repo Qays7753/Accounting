@@ -36,7 +36,7 @@ export default function Fab({ onAction }) {
       <button
         type="button"
         onClick={handleOpen}
-        className="press fixed bottom-[80px] left-4 w-[56px] h-[56px] rounded-12 grid place-items-center z-30 bg-primary shadow-fab"
+        className="press fixed bottom-20 left-4 w-14 h-14 rounded-12 grid place-items-center z-30 bg-primary shadow-fab"
         style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
         aria-label={t.add_new}
       >
@@ -52,12 +52,12 @@ export default function Fab({ onAction }) {
               onClick={() => handleSelect(action.id)}
               className={`press flex flex-col items-start gap-3 rounded-card p-4 text-right ${action.bg}`}
             >
-              <div className="w-12 h-12 rounded-[15px] bg-white grid place-items-center">
+              <div className="w-12 h-12 rounded-card bg-white grid place-items-center">
                 <Icon name={action.icon} className={`w-6 h-6 ${action.color}`} strokeWidth={2} />
               </div>
               <div>
-                <div className="text-[16px] font-bold text-ink">{action.label}</div>
-                <div className="text-[12px] text-ink-secondary">{action.desc}</div>
+                <div className="text-base font-bold text-ink">{action.label}</div>
+                <div className="text-caption text-ink-secondary">{action.desc}</div>
               </div>
             </button>
           ))}

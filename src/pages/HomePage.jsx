@@ -25,22 +25,22 @@ export default function HomePage() {
   const [sheetOpen, setSheetOpen] = useState(null)
   const [jars, setJars] = useState({ capitalJar: 0, profitJar: 0, totalCash: 0 })
 
-  // V4 Phase 2: Z-Report
+  // Z-Report
   const [showZReportCard, setShowZReportCard] = useState(false)
   const [zReportSheetOpen, setZReportSheetOpen] = useState(false)
   const [expectedCash, setExpectedCash] = useState(0)
   const [countedCash, setCountedCash] = useState('')
   const [zReportSaved, setZReportSaved] = useState(false)
 
-  // V4 Phase 2: Weekly Backup Reminder
+  // Weekly Backup Reminder
   const [showBackupPrompt, setShowBackupPrompt] = useState(false)
 
-  // V4 Phase 3: Opening Balance Prompt (dismissible card)
+  // Opening Balance Prompt (dismissible card)
   const [showOpeningBalanceCard, setShowOpeningBalanceCard] = useState(false)
   const [openingBalanceSheetOpen, setOpeningBalanceSheetOpen] = useState(false)
   const [openingCash, setOpeningCash] = useState(0)
 
-  // V5: Animated count-up for financial numbers
+  // Animated count-up for financial numbers
   const animatedTotal = useCountUp(jars.totalCash)
   const animatedCapital = useCountUp(jars.capitalJar)
   const animatedProfit = useCountUp(jars.profitJar)
@@ -51,10 +51,10 @@ export default function HomePage() {
   useEffect(() => {
     db.getTwoJars().then(setJars)
 
-    // V4 Phase 2: Check if Z-Report reminder should show
+    // Check if Z-Report reminder should show
     db.shouldShowZReportReminder().then(setShowZReportCard)
 
-    // V4 Phase 2: Check if weekly backup prompt should show
+    // Check if weekly backup prompt should show
     db.shouldShowBackupReminder().then(should => {
       if (should) {
         setShowBackupPrompt(true)
@@ -62,7 +62,7 @@ export default function HomePage() {
       }
     })
 
-    // V4 Phase 3: Check if opening balance prompt should show
+    // Check if opening balance prompt should show
     db.getMeta('opening_balance_prompted', false).then(prompted => {
       if (!prompted) {
         setShowOpeningBalanceCard(true)
@@ -80,7 +80,7 @@ export default function HomePage() {
     db.getTwoJars().then(setJars)
   }
 
-  // V4 Phase 2: Z-Report handlers
+  // Z-Report handlers
   const handleOpenZReport = async () => {
     hapticLight()
     const expected = await db.getExpectedCash()
@@ -98,7 +98,7 @@ export default function HomePage() {
     setShowZReportCard(false)
   }
 
-  // V4 Phase 2: Weekly backup handler
+  // Weekly backup handler
   const handleBackupNow = async () => {
     hapticMedium()
     try {
@@ -111,7 +111,7 @@ export default function HomePage() {
     }
   }
 
-  // V4 Phase 3: Opening Balance handlers
+  // Opening Balance handlers
   const handleDismissOpeningBalance = async () => {
     hapticLight()
     await db.setMeta('opening_balance_prompted', true)
@@ -153,13 +153,13 @@ export default function HomePage() {
           className="rounded-16 p-4 text-ink relative overflow-hidden bg-mute shadow-card"
         >
           <div className="flex items-center justify-between">
-            <span className="text-[13px] font-medium text-ink-secondary">{t.total_cash}</span>
+            <span className="text-sm font-medium text-ink-secondary">{t.total_cash}</span>
             <Icon name="wallet" className="w-5 h-5" strokeWidth={1.5} />
           </div>
           {stats.loading ? (
             <div className="h-8 w-40 bg-white/20 rounded-lg animate-pulse mt-2" />
           ) : (
-            <div className="num text-[28px] font-semibold mt-1 leading-none">
+            <div className="num text-title font-semibold mt-1 leading-none">
               {maskAmount(animatedTotal)}
             </div>
           )}
@@ -167,32 +167,32 @@ export default function HomePage() {
         <div className="grid grid-cols-2 gap-3 mt-3">
           <div className="card">
             <div className="flex items-center gap-2 mb-2 min-w-0">
-              <div className="w-[34px] h-[34px] rounded-12 grid place-items-center bg-primary-100 flex-shrink-0">
+              <div className="w-9 h-9 rounded-12 grid place-items-center bg-primary-100 flex-shrink-0">
                 <Icon name="wallet" className="w-5 h-5" strokeWidth={1.5} />
               </div>
-              <span className="text-[13px] font-semibold text-primary-700 truncate">{t.shop_equity}</span>
+              <span className="text-sm font-semibold text-primary-700 truncate">{t.shop_equity}</span>
             </div>
-            <div className="num text-[24px] font-semibold text-ink leading-none">
+            <div className="num text-title-sm font-semibold text-ink leading-none">
               {maskAmount(animatedCapital)}
             </div>
-            <div className="text-[12px] mt-1 text-ink-secondary leading-snug">{t.shop_equity_desc}</div>
+            <div className="text-caption mt-1 text-ink-secondary leading-snug">{t.shop_equity_desc}</div>
           </div>
           <div className="card">
             <div className="flex items-center gap-2 mb-2 min-w-0">
-              <div className="w-[34px] h-[34px] rounded-12 grid place-items-center bg-income-100 flex-shrink-0">
+              <div className="w-9 h-9 rounded-12 grid place-items-center bg-income-100 flex-shrink-0">
                 <Icon name="trendingUp" className="w-5 h-5" strokeWidth={1.5} />
               </div>
-              <span className="text-[13px] font-semibold text-income-700 truncate">{t.merchant_equity}</span>
+              <span className="text-sm font-semibold text-income-700 truncate">{t.merchant_equity}</span>
             </div>
-            <div className="num text-[24px] font-semibold leading-none text-income-600">
+            <div className="num text-title-sm font-semibold leading-none text-income-600">
               {maskAmount(animatedProfit)}
             </div>
-            <div className="text-[12px] mt-1 text-ink-secondary leading-snug">{t.merchant_equity_desc}</div>
+            <div className="text-caption mt-1 text-ink-secondary leading-snug">{t.merchant_equity_desc}</div>
           </div>
         </div>
         <div className="flex items-center gap-1.5 justify-center mt-2 px-2">
           <Icon name="info" className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
-          <span className="text-[12px] text-ink-secondary text-center leading-snug">{t.jars_helper}</span>
+          <span className="text-caption text-ink-secondary text-center leading-snug">{t.jars_helper}</span>
         </div>
       </section>
 

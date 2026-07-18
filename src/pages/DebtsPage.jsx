@@ -25,7 +25,7 @@ export default function DebtsPage() {
   const [payables, setPayables] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // V4 Phase 1: Active tab ('receivables' = لهم عندي | 'payables' = عندي لهم)
+  // Active tab ('receivables' = لهم عندي | 'payables' = عندي لهم)
   const [activeTab, setActiveTab] = useState('receivables')
 
   // Form states
@@ -90,13 +90,13 @@ export default function DebtsPage() {
     setDetailSheetOpen(true)
   }
 
-  // V4 Phase 1: Send polite WhatsApp debt reminder (uses settings template)
+  // Send polite WhatsApp debt reminder (uses settings template)
   const handleSendReminder = async (debt) => {
     hapticLight()
     await sendDebtReminder(debt)
   }
 
-  // V4 Phase 1: Switch tab
+  // Switch tab
   const handleTabChange = (tab) => {
     hapticLight()
     setActiveTab(tab)

@@ -20,7 +20,7 @@ const STATUS_CONFIG = {
   closed: { color: 'bg-status-closed', text: 'text-text-secondary', badge: 'badge-closed', dot: 'bg-status-closed', bar: 'border-divider', labelKey: 'status_closed' },
 }
 
-// V5: Underline tabs + status-colored count badges
+// Underline tabs + status-colored count badges
 const FILTER_TABS = [
   { id: 'all', labelKey: 'status_all', badge: 'text-primary bg-primary-tint' },
   { id: 'in_progress', labelKey: 'status_in_progress', badge: 'text-amber bg-amber-bg' },
@@ -42,7 +42,7 @@ export default function OrdersPage() {
   // Debounce search to prevent query thrash
   const debouncedSearch = useDebounce(search, 300)
 
-  // V5: Per-status counts for the underline-tab badges (global, independent of the active filter)
+  // Per-status counts for the underline-tab badges (global, independent of the active filter)
   useEffect(() => {
     let cancelled = false
     Promise.all([
@@ -220,7 +220,7 @@ export default function OrdersPage() {
   )
 }
 
-// V3: Payment status config for order cards — labels now driven by terms
+// Payment status config for order cards — labels now driven by terms
 function usePaymentBadges() {
   const t = useTerms()
   return {
@@ -264,7 +264,7 @@ function OrderCard({ order, onClick }) {
           </span>
           {/* V3: Payment status badge */}
           {payment && (
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${payment.class}`}>
+            <span className={`px-2 py-0.5 rounded-full text-caption font-semibold ${payment.class}`}>
               {payment.label}
             </span>
           )}

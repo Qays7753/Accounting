@@ -42,7 +42,7 @@ export default function OrderFormSheet({ open, onClose, editData = null, onSaved
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
 
-  // V3: BOM components (analytical only)
+  // BOM components (analytical only)
   const [components, setComponents] = useState([]) // [{ materialId, name, unit_type, qty, unit_cost }]
   const [materials, setMaterials] = useState([])
   const [showBOM, setShowBOM] = useState(false)
@@ -84,7 +84,7 @@ export default function OrderFormSheet({ open, onClose, editData = null, onSaved
     }
   }, [open, editData])
 
-  // V3: BOM calculations (analytical only)
+  // BOM calculations (analytical only)
   const totalCost = db.calculateBOMCost(components)
   const expectedProfit = (Number(amount) || 0) - totalCost
   const profitMargin = (Number(amount) || 0) > 0 ? (expectedProfit / (Number(amount) || 0)) * 100 : 0
@@ -134,7 +134,7 @@ export default function OrderFormSheet({ open, onClose, editData = null, onSaved
         amount: Number(amount),
         status,
         notes: notes.trim(),
-        // V3: BOM (analytical only, does NOT affect finance)
+        // BOM (analytical only, does NOT affect finance)
         components_used: components,
         total_cost: totalCost,
       }
@@ -143,7 +143,7 @@ export default function OrderFormSheet({ open, onClose, editData = null, onSaved
         await db.updateOrder(editData.id, payload)
       } else {
         await db.addOrder(payload)
-        // V3: Auto-create customer if phone provided
+        // Auto-create customer if phone provided
         if (phone.trim()) {
           await db.addCustomer({ name: customerName.trim(), phone: phone.trim() })
         }

@@ -47,7 +47,7 @@ export default function ReportsPage() {
   const [topDebtors, setTopDebtors] = useState([])
   const [dailyBreakdown, setDailyBreakdown] = useState([])
 
-  // V5: active period preset (drives the sliding segmented control)
+  // active period preset (drives the sliding segmented control)
   const [activePreset, setActivePreset] = useState('month')
 
   // Count-up animations for the hero numbers (preserved in BOTH modes)
@@ -269,7 +269,7 @@ export default function ReportsPage() {
                             }}
                           />
                           {d.day % 5 === 0 && (
-                            <span className="text-[8px] text-text-tertiary">{d.day}</span>
+                            <span className="text-caption text-text-tertiary">{d.day}</span>
                           )}
                         </div>
                       ))}

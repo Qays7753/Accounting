@@ -5,7 +5,7 @@ import { useHelperMode } from '../../context/HelperModeContext.jsx'
 import { useTerms } from '../../context/TermsContext.jsx'
 import PinEntrySheet from '../sheets/PinEntrySheet.jsx'
 
-// V5: 4 tabs by default. When showQuickPos=true, a 5th "Quick POS" tab is appended.
+// 4 tabs by default. When showQuickPos=true, a 5th "Quick POS" tab is appended.
 const navItems = [
   {
     to: '/',
@@ -115,14 +115,14 @@ export default function BottomNav({ showQuickPos = true }) {
             {({ isActive }) => (
               <>
                 <div
-                  className={`w-[52px] h-8 rounded-pill grid place-items-center transition-colors ${isActive ? 'bg-primary-tint' : ''}`}
+                  className={`w-13 h-8 rounded-pill grid place-items-center transition-colors ${isActive ? 'bg-primary-tint' : ''}`}
                 >
                   <span className={isActive ? 'text-primary' : 'text-disabled'}>
                     {item.icon(isActive)}
                   </span>
                 </div>
                 <span
-                  className={`text-[11px] font-semibold transition-colors ${isActive ? 'text-primary' : 'text-disabled'}`}
+                  className={`text-caption font-semibold transition-colors ${isActive ? 'text-primary' : 'text-disabled'}`}
                 >
                   {t[item.label] || item.label}
                 </span>
@@ -138,12 +138,12 @@ export default function BottomNav({ showQuickPos = true }) {
             className="flex flex-col items-center gap-1 w-16"
             aria-label="الخروج من وضع المساعد"
           >
-            <div className="w-[52px] h-8 rounded-pill grid place-items-center">
+            <div className="w-13 h-8 rounded-pill grid place-items-center">
               <svg className="w-6 h-6 text-expense-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
             </div>
-            <span className="text-[11px] font-semibold text-expense-600">خروج</span>
+            <span className="text-caption font-semibold text-expense-600">خروج</span>
           </button>
         )}
       </nav>

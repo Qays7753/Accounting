@@ -305,7 +305,7 @@ function ProductManageSheet({ open, editData, onClose, onSave }) {
   const t = useTerms()
   const [name, setName] = useState('')
   const [price, setPrice] = useState(0)
-  // V4 Phase 3: Cost price for profit hint
+  // Cost price for profit hint
   const [costPrice, setCostPrice] = useState(0)
 
   useEffect(() => {
@@ -327,7 +327,7 @@ function ProductManageSheet({ open, editData, onClose, onSave }) {
     onSave({ name: name.trim(), price: Number(price) })
   }
 
-  // V4 Phase 3: Profit hint calculation
+  // Profit hint calculation
   const profit = Number(price) - Number(costPrice)
   const showHint = Number(costPrice) > 0 && Number(price) > 0
 

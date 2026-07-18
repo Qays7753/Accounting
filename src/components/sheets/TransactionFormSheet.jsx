@@ -28,16 +28,16 @@ export default function TransactionFormSheet({ open, onClose, type = 'income', e
     return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
   })
   const [saving, setSaving] = useState(false)
-  // V2: Recurring frequency state
+  // Recurring frequency state
   const [frequency, setFrequency] = useState('none') // 'none' | 'daily' | 'weekly' | 'monthly'
-  // V2: Track saved transaction for receipt sharing (Agent 4)
+  // Track saved transaction for receipt sharing (Agent 4)
   const [savedTransaction, setSavedTransaction] = useState(null)
 
-  // V4 Phase 1: Cost of Goods (for income Two Jars split)
+  // Cost of Goods (for income Two Jars split)
   const [costOfGoods, setCostOfGoods] = useState(0)
   const [showCOGS, setShowCOGS] = useState(false)
 
-  // V4 Phase 1: Capital Protection Warning (for withdrawal)
+  // Capital Protection Warning (for withdrawal)
   const [capitalWarning, setCapitalWarning] = useState(false)
   const [profitJarBalance, setProfitJarBalance] = useState(0)
 
@@ -79,9 +79,9 @@ export default function TransactionFormSheet({ open, onClose, type = 'income', e
         const d = new Date(editData.date)
         setDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`)
         setTime(`${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`)
-        // V2: Restore recurring state when editing
+        // Restore recurring state when editing
         setFrequency(editData.isRecurring ? (editData.frequency || 'monthly') : 'none')
-        // V4: Restore COGS when editing
+        // Restore COGS when editing
         setCostOfGoods(editData.cost_of_goods || 0)
         setShowCOGS(!!(editData.cost_of_goods && editData.cost_of_goods > 0))
       } else {
@@ -98,7 +98,7 @@ export default function TransactionFormSheet({ open, onClose, type = 'income', e
       setSavedTransaction(null)
       setCapitalWarning(false)
 
-      // V4: For withdrawals, load current profit jar balance for capital protection check
+      // For withdrawals, load current profit jar balance for capital protection check
       if (type === 'withdrawal' && !editData) {
         db.getTwoJars().then(jars => setProfitJarBalance(jars.profitJar))
       }
@@ -111,7 +111,7 @@ export default function TransactionFormSheet({ open, onClose, type = 'income', e
       return
     }
 
-    // V4 Phase 1: Capital Protection Warning for withdrawals
+    // Capital Protection Warning for withdrawals
     // If withdrawal amount > profit jar (حق التاجر), show blocking warning
     if (type === 'withdrawal' && !overrideCapitalWarning) {
       if (Number(amount) > profitJarBalance && profitJarBalance !== 0) {
@@ -131,12 +131,12 @@ export default function TransactionFormSheet({ open, onClose, type = 'income', e
         description: description.trim(),
         category: category.trim(),
         date: dateObj.toISOString(),
-        // V2: Recurring fields
+        // Recurring fields
         isRecurring,
         frequency: isRecurring ? frequency : null,
       }
 
-      // V4 Phase 1: Include cost_of_goods for income transactions
+      // Include cost_of_goods for income transactions
       if (type === 'income') {
         payload.cost_of_goods = Number(costOfGoods) || 0
       }
@@ -161,7 +161,7 @@ export default function TransactionFormSheet({ open, onClose, type = 'income', e
     }
   }
 
-  // V2 (Agent 4): Share receipt via WhatsApp
+  // Share receipt via WhatsApp
   const handleShareReceipt = async (transaction) => {
     try {
       await shareReceipt(transaction)

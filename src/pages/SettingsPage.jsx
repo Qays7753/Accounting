@@ -21,18 +21,18 @@ export default function SettingsPage() {
   const [installOpen, setInstallOpen] = useState(false)
   const [backupReminder, setBackupReminder] = useState(null)
 
-  // V2: Branding sheet state (the actual logo/name now live in SettingsContext)
+  // Branding sheet state (the actual logo/name now live in SettingsContext)
   const [brandingSheetOpen, setBrandingSheetOpen] = useState(false)
   const [logoPreview, setLogoPreview] = useState(null)  // local preview before save
   const [businessNameInput, setBusinessNameInput] = useState('')
   const fileInputRef = useRef(null)
 
-  // V4 Phase 2: Helper Mode PIN entry sheet
+  // Helper Mode PIN entry sheet
   const [helperPinSheetOpen, setHelperPinSheetOpen] = useState(false)
   const [helperPinInput, setHelperPinInput] = useState('')
   const { isHelperMode, enterHelperMode, helperModeEnabled } = useHelperMode()
 
-  // V6: Live UI settings from SettingsContext (propagate to whole app instantly)
+  // Live UI settings from SettingsContext (propagate to whole app instantly)
   const {
     showQuickPos, setShowQuickPos,
     logo, setLogo,
@@ -50,7 +50,7 @@ export default function SettingsPage() {
   // Local copy of fiscal year start (not yet consumed by reports)
   const [fiscalYearStart, setFiscalYearStart] = useState(1)
 
-  // V7: PWA install + clear-data confirmation sheet
+  // PWA install + clear-data confirmation sheet
   const [installAvailable, setInstallAvailable] = useState(false)
   const [standalone] = useState(() => isStandalone())
   const [installing, setInstalling] = useState(false)
@@ -58,7 +58,7 @@ export default function SettingsPage() {
   const [clearDataSheetOpen, setClearDataSheetOpen] = useState(false)
   const [clearConfirmText, setClearConfirmText] = useState('')
 
-  // V4 Phase 3: Report Mode (uses TermsContext for live switching)
+  // Report Mode (uses TermsContext for live switching)
   const [reportMode, setReportModeCtx] = useTermsMode()
 
   useEffect(() => {
@@ -156,7 +156,7 @@ export default function SettingsPage() {
     await db.setSetting('closing_time', val)
   }
 
-  // V6: All handlers now delegate to SettingsContext (instant UI propagation)
+  // All handlers now delegate to SettingsContext (instant UI propagation)
   const handleAutoLockChange = async (val) => {
     hapticLight()
     await setAutoLock(val)
@@ -250,7 +250,7 @@ export default function SettingsPage() {
     setTemplateText((prev) => prev + ' ' + token)
   }
 
-  // V2: Logo & branding handlers
+  // Logo & branding handlers
   const handleLogoUpload = (e) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -312,7 +312,7 @@ export default function SettingsPage() {
 
         {/* Data Management */}
         <section>
-          <h2 className="text-[12px] font-bold text-primary mb-2 px-1.5">{t.data_management}</h2>
+          <h2 className="text-caption font-bold text-primary mb-2 px-1.5">{t.data_management}</h2>
           <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
             <SettingsRow
               icon="download"
@@ -353,7 +353,7 @@ export default function SettingsPage() {
 
         {/* WhatsApp */}
         <section>
-          <h2 className="text-[12px] font-bold text-primary mb-2 px-1.5">{t.whatsapp_section}</h2>
+          <h2 className="text-caption font-bold text-primary mb-2 px-1.5">{t.whatsapp_section}</h2>
           <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
             <SettingsRow
               icon="whatsapp"
@@ -367,7 +367,7 @@ export default function SettingsPage() {
 
         {/* V4 Phase 3: Report Display Mode */}
         <section>
-          <h2 className="text-[12px] font-bold text-primary mb-2 px-1.5">{t.report_display}</h2>
+          <h2 className="text-caption font-bold text-primary mb-2 px-1.5">{t.report_display}</h2>
           <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
             <div className="w-full p-4">
               <div className="flex items-center gap-3 mb-3">
@@ -405,7 +405,7 @@ export default function SettingsPage() {
 
         {/* V6: Security (auto-lock + hide amounts) */}
         <section>
-          <h2 className="text-[12px] font-bold text-primary mb-2 px-1.5">{t.security_section}</h2>
+          <h2 className="text-caption font-bold text-primary mb-2 px-1.5">{t.security_section}</h2>
           <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
             {/* Auto-lock segmented control */}
             <div className="w-full p-4 text-right">
@@ -429,7 +429,7 @@ export default function SettingsPage() {
                     key={opt.v}
                     type="button"
                     onClick={() => handleAutoLockChange(opt.v)}
-                    className={`py-2.5 rounded-xl text-[12px] font-semibold transition-all active:scale-95 ${
+                    className={`py-2.5 rounded-xl text-caption font-semibold transition-all active:scale-95 ${
                       autoLock === opt.v ? 'bg-primary text-white' : 'bg-background text-text-secondary border border-divider'
                     }`}
                   >
@@ -452,7 +452,7 @@ export default function SettingsPage() {
 
         {/* V6: Display (font size + list density) */}
         <section>
-          <h2 className="text-[12px] font-bold text-primary mb-2 px-1.5">{t.display_section}</h2>
+          <h2 className="text-caption font-bold text-primary mb-2 px-1.5">{t.display_section}</h2>
           <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
             {/* Font size segmented control */}
             <div className="w-full p-4 text-right">
@@ -478,7 +478,7 @@ export default function SettingsPage() {
                 <button
                   type="button"
                   onClick={() => handleFontSizeChange('large')}
-                  className={`py-3 rounded-xl text-[16px] font-semibold transition-all active:scale-95 ${
+                  className={`py-3 rounded-xl text-base font-semibold transition-all active:scale-95 ${
                     fontSize === 'large' ? 'bg-primary text-white' : 'bg-background text-text-secondary border border-divider'
                   }`}
                 >
@@ -531,7 +531,7 @@ export default function SettingsPage() {
 
         {/* V4 Phase 2: Operations (Quick POS + Helper Mode + Closing Time) */}
         <section>
-          <h2 className="text-[12px] font-bold text-primary mb-2 px-1.5">{t.operations_security}</h2>
+          <h2 className="text-caption font-bold text-primary mb-2 px-1.5">{t.operations_security}</h2>
           <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
             {/* Quick POS Toggle — now propagates to BottomNav instantly via SettingsContext */}
             <SettingsToggle
@@ -572,7 +572,7 @@ export default function SettingsPage() {
 
         {/* App Info */}
         <section>
-          <h2 className="text-[12px] font-bold text-primary mb-2 px-1.5">{t.app_section}</h2>
+          <h2 className="text-caption font-bold text-primary mb-2 px-1.5">{t.app_section}</h2>
           <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
             {/* Notifications — real toggle now */}
             <SettingsToggle
@@ -718,7 +718,7 @@ export default function SettingsPage() {
           {/* Manual instructions (always shown as fallback) */}
           <div className="bg-background rounded-2xl p-4">
             <p className="font-semibold mb-2">{t.install_android_title}</p>
-            <ol className="list-decimal list-inside space-y-1 text-text-secondary text-[13px]">
+            <ol className="list-decimal list-inside space-y-1 text-text-secondary text-sm">
               <li>{t.install_android_step1}</li>
               <li>{t.install_android_step2}</li>
               <li>{t.install_android_step3}</li>
@@ -728,7 +728,7 @@ export default function SettingsPage() {
 
           <div className="bg-background rounded-2xl p-4">
             <p className="font-semibold mb-2">{t.install_ios_title}</p>
-            <ol className="list-decimal list-inside space-y-1 text-text-secondary text-[13px]">
+            <ol className="list-decimal list-inside space-y-1 text-text-secondary text-sm">
               <li>{t.install_ios_step1}</li>
               <li>{t.install_ios_step2}</li>
               <li>{t.install_ios_step3}</li>

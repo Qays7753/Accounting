@@ -196,6 +196,10 @@ export default {
       spacing: {
         '1': '4px', '2': '8px', '3': '12px', '4': '16px',
         '5': '20px', '6': '24px', '7': '32px',
+        // §7.8 nav pill width (52px = 13×4)
+        '13': '52px',
+        // §4.1 FAB size (56px = 14×4)
+        '14': '56px',
       },
       animation: {
         'slide-up': 'slideUp 0.34s cubic-bezier(0.16,1,0.3,1)',

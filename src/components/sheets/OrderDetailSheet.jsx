@@ -19,7 +19,7 @@ const STATUS_OPTIONS = [
   { value: 'closed', label: 'مغلق' },
 ]
 
-// V3: Payment status config
+// Payment status config
 const PAYMENT_CONFIG = {
   cash: { label: 'مدفوع نقداً', badge: 'bg-income-50 text-income-600', icon: 'checkCircle' },
   credit: { label: 'بيع بالأجل', badge: 'bg-withdrawal-50 text-withdrawal-600', icon: 'userMinus' },
@@ -32,7 +32,7 @@ export default function OrderDetailSheet({ order, open, onClose, onEdit, onUpdat
   const [confirmDelete, setConfirmDelete] = useState(false)
   const confirmResetTimer = useRef(null)
 
-  // V3: Complete & Sell sheet state
+  // Complete & Sell sheet state
   const [completeSheetOpen, setCompleteSheetOpen] = useState(false)
 
   useEffect(() => {
@@ -82,7 +82,7 @@ export default function OrderDetailSheet({ order, open, onClose, onEdit, onUpdat
     await shareOrderViaWhatsApp(order)
   }
 
-  // V3: Complete & Sell handler
+  // Complete & Sell handler
   const handleComplete = async (paymentType) => {
     hapticLight()
     setCompleteSheetOpen(false)

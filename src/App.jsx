@@ -30,7 +30,7 @@ function AppRoutes() {
   const { isHelperMode } = useHelperMode()
   const navigate = useNavigate()
 
-  // V4 Phase 2: Helper Mode restricts navigation
+  // Helper Mode restricts navigation
   // Staff can only access Quick POS and Orders (add only, no edit/delete)
   if (isHelperMode) {
     return (

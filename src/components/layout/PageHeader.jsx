@@ -111,7 +111,7 @@ export default function PageHeader({
                 <div className="min-w-0">
                   <p className="text-caption text-faint font-medium leading-tight">{getGreeting()}</p>
                   <h1 className="text-title-sm text-ink leading-tight truncate">{businessName || t.onboarding_welcome}</h1>
-                  <p className="text-[11px] text-faint mt-0.5 leading-tight num">{formatArabicDate(new Date())}</p>
+                  <p className="text-caption text-faint mt-0.5 leading-tight num">{formatArabicDate(new Date())}</p>
                 </div>
               </>
             ) : (
