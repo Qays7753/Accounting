@@ -1675,7 +1675,17 @@ class AccountingDatabase extends Dexie {
    * @param {Array} items — [{ id, name, theoretical, actual, gap }]
    */
   async saveReconciliation(items) {
-    const totalGap = items.reduce((sum, i) => sum + Math.abs(i.gap || 0), 0)
+    // Only negative gaps (missing items) are wastage. Positive gaps (surplus)
+    // just adjust the theoretical quantity without logging an expense.
+    const wastageTotal = items.reduce((sum, i) => {
+      const gap = i.gap || 0
+      return gap < 0 ? sum + Math.abs(gap) : sum
+    }, 0)
+    const surplusTotal = items.reduce((sum, i) => {
+      const gap = i.gap || 0
+      return gap > 0 ? sum + gap : sum
+    }, 0)
+
     await this.setMeta('last_inventory_update', Date.now())
     // Update each item's current_qty to the actual count
     for (const item of items) {
@@ -1686,17 +1696,17 @@ class AccountingDatabase extends Dexie {
         })
       }
     }
-    // If there's a significant gap, log it as a wastage expense
-    if (totalGap > 0) {
+    // Log only wastage (missing items) as an expense
+    if (wastageTotal > 0) {
       await this.addTransaction({
         type: 'expense',
-        amount: totalGap,
+        amount: wastageTotal,
         description: 'هدر/فقدان مخزون (تسوية أسبوعية)',
         category: 'هدر',
         date: new Date().toISOString(),
       })
     }
-    return { totalGap, itemCount: items.length }
+    return { wastageTotal, surplusTotal, itemCount: items.length }
   }
 }
 

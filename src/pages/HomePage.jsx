@@ -88,7 +88,7 @@ export default function HomePage() {
         .filter(p => (p.amount || 0) - (p.debtAmountPaid || 0) > 0)
         .reduce((sum, p) => sum + ((p.amount || 0) - (p.debtAmountPaid || 0)), 0)
       setUnsettledPayables(total)
-    }).catch(() => {})
+    }).catch(() => {}) // Non-critical — defaults to 0
   }, [stats.cashBalance])
 
   // Mask helper for hideAmounts security setting
@@ -193,8 +193,10 @@ export default function HomePage() {
       setReconciliationSheetOpen(false)
       setShowInventoryReminder(false)
       stats.refresh()
-      if (result.totalGap > 0) {
-        alert(`تم تحديث المخزون. الفرق الإجمالي: ${result.totalGap} دينار (سُجّل كمصروف هدر)`)
+      if (result.wastageTotal > 0) {
+        alert(`تم تحديث المخزون. الهدر: ${result.wastageTotal} دينار (سُجّل كمصروف)${result.surplusTotal > 0 ? `\nالفائض: ${result.surplusTotal} (عُدِّلت الكمية بدون مصروف)` : ''}`)
+      } else if (result.surplusTotal > 0) {
+        alert(`تم تحديث المخزون. فائض ${result.surplusTotal} — عُدِّلت الكمية بدون تسجيل مصروف.`)
       } else {
         alert('تم تحديث المخزون. لا يوجد فرق.')
       }
