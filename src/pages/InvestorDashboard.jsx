@@ -9,9 +9,13 @@ import Icon from '../components/ui/Icon.jsx'
 import { hapticLight, hapticSuccess } from '../utils/haptics.js'
 import { useNavigate } from 'react-router-dom'
 import { sendDebtReminder } from '../utils/whatsapp.js'
+import BottomSheet from '../components/ui/BottomSheet.jsx'
+import AmountInput from '../components/ui/AmountInput.jsx'
+import { hapticMedium } from '../utils/haptics.js'
 
 /**
- * Investor Dashboard (V10 §13) — Executive read-only panel.
+ * Investor Dashboard (V12 §13) — Executive panel with strategic inputs.
+ * NOT read-only: includes FAB for Add Asset, Add Loan, Inject Capital, Owner Draw.
  *
  * Layout: KPI Pyramid + Income Statement Waterfall + Balance Sheet Cards.
  * Style: Stark White #FFFFFF + Terracotta blocks + Huge Mono numbers.
@@ -23,6 +27,17 @@ export default function InvestorDashboard() {
   const navigate = useNavigate()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
+
+  // V12: Investor action sheets
+  const [actionSheetOpen, setActionSheetOpen] = useState(false)
+  const [assetSheetOpen, setAssetSheetOpen] = useState(false)
+  const [loanSheetOpen, setLoanSheetOpen] = useState(false)
+  const [capitalSheetOpen, setCapitalSheetOpen] = useState(false)
+  const [drawSheetOpen, setDrawSheetOpen] = useState(false)
+  const [newAsset, setNewAsset] = useState({ name: '', value: 0, lifespan_years: 5 })
+  const [newLoan, setNewLoan] = useState({ name: '', amount: 0, type: 'payable' })
+  const [capitalAmount, setCapitalAmount] = useState(0)
+  const [drawAmount, setDrawAmount] = useState(0)
 
   useEffect(() => {
     gatherReportData(db).then(d => {
@@ -324,6 +339,80 @@ export default function InvestorDashboard() {
           </div>
         </section>
       </div>
+
+      {/* V12: Investor FAB — strategic inputs */}
+      <button
+        type="button"
+        onClick={() => { hapticMedium(); setActionSheetOpen(true) }}
+        className="press fixed bottom-6 left-4 w-14 h-14 rounded-12 grid place-items-center z-30 bg-primary shadow-fab"
+        style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+        aria-label="إضافة استراتيجية"
+      >
+        <Icon name="plus" className="w-6 h-6 text-white" strokeWidth={1.5} />
+      </button>
+
+      {/* Action Menu Sheet */}
+      <BottomSheet open={actionSheetOpen} onClose={() => setActionSheetOpen(false)} title="إضافة استراتيجية">
+        <div className="grid grid-cols-2 gap-3 pb-4">
+          <button onClick={() => { setActionSheetOpen(false); setAssetSheetOpen(true) }} className="press flex flex-col items-start gap-3 rounded-card p-4 text-right bg-primary-50">
+            <div className="w-12 h-12 rounded-card bg-primary-100 grid place-items-center"><Icon name="wallet" className="w-6 h-6 text-primary-600" /></div>
+            <div><div className="text-sm font-bold text-ink">إضافة أصل</div><div className="text-caption text-ink-secondary">جهاز، معدات، سيارة</div></div>
+          </button>
+          <button onClick={() => { setActionSheetOpen(false); setLoanSheetOpen(true) }} className="press flex flex-col items-start gap-3 rounded-card p-4 text-right bg-expense-50">
+            <div className="w-12 h-12 rounded-card bg-expense-100 grid place-items-center"><Icon name="bank" className="w-6 h-6 text-expense-600" /></div>
+            <div><div className="text-sm font-bold text-ink">إضافة قرض</div><div className="text-caption text-ink-secondary">قرض بنكي أو دين</div></div>
+          </button>
+          <button onClick={() => { setActionSheetOpen(false); setCapitalSheetOpen(true) }} className="press flex flex-col items-start gap-3 rounded-card p-4 text-right bg-income-50">
+            <div className="w-12 h-12 rounded-card bg-income-100 grid place-items-center"><Icon name="arrowDown" className="w-6 h-6 text-income-600" /></div>
+            <div><div className="text-sm font-bold text-ink">حقن رأس مال</div><div className="text-caption text-ink-secondary">ضخ نقود في المحل</div></div>
+          </button>
+          <button onClick={() => { setActionSheetOpen(false); setDrawSheetOpen(true) }} className="press flex flex-col items-start gap-3 rounded-card p-4 text-right bg-withdrawal-50">
+            <div className="w-12 h-12 rounded-card bg-withdrawal-100 grid place-items-center"><Icon name="userMinus" className="w-6 h-6 text-withdrawal-600" /></div>
+            <div><div className="text-sm font-bold text-ink">سحب للبيت</div><div className="text-caption text-ink-secondary">أخذ راتب</div></div>
+          </button>
+        </div>
+      </BottomSheet>
+
+      {/* Add Asset Sheet */}
+      <BottomSheet open={assetSheetOpen} onClose={() => setAssetSheetOpen(false)} title="إضافة أصل ثابت">
+        <div className="space-y-4 pb-4">
+          <div><label className="block text-sm font-semibold text-ink-secondary mb-2">اسم الأصل</label><input type="text" value={newAsset.name} onChange={(e) => setNewAsset(p => ({ ...p, name: e.target.value }))} placeholder="مثال: آلة قهوة، ثلاجة" className="input-field" dir="rtl" autoFocus /></div>
+          <AmountInput value={newAsset.value} onChange={(v) => setNewAsset(p => ({ ...p, value: v }))} label="القيمة (دينار)" />
+          <div><label className="block text-sm font-semibold text-ink-secondary mb-2">العمر الافتراضي (سنوات)</label><input type="number" value={newAsset.lifespan_years} onChange={(e) => setNewAsset(p => ({ ...p, lifespan_years: Number(e.target.value) || 5 }))} className="input-field num" dir="ltr" /></div>
+          <button type="button" onClick={async () => { hapticSuccess(); await db.addFixedAsset(newAsset); setAssetSheetOpen(false); setNewAsset({ name: '', value: 0, lifespan_years: 5 }); window.location.reload() }} disabled={!newAsset.name || !newAsset.value} className="w-full btn-primary disabled:opacity-50">حفظ الأصل</button>
+        </div>
+      </BottomSheet>
+
+      {/* Add Loan Sheet */}
+      <BottomSheet open={loanSheetOpen} onClose={() => setLoanSheetOpen(false)} title="إضافة قرض">
+        <div className="space-y-4 pb-4">
+          <div><label className="block text-sm font-semibold text-ink-secondary mb-2">الوصف</label><input type="text" value={newLoan.name} onChange={(e) => setNewLoan(p => ({ ...p, name: e.target.value }))} placeholder="مثال: قرض بنك الإسكان" className="input-field" dir="rtl" autoFocus /></div>
+          <AmountInput value={newLoan.amount} onChange={(v) => setNewLoan(p => ({ ...p, amount: v }))} label="المبلغ" />
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={() => setNewLoan(p => ({ ...p, type: 'payable' }))} className={`py-3 rounded-12 text-sm font-semibold ${newLoan.type === 'payable' ? 'bg-expense-500 text-white' : 'bg-background text-ink-secondary border border-divider'}`}>عليّ دين</button>
+            <button onClick={() => setNewLoan(p => ({ ...p, type: 'receivable' }))} className={`py-3 rounded-12 text-sm font-semibold ${newLoan.type === 'receivable' ? 'bg-income-500 text-white' : 'bg-background text-ink-secondary border border-divider'}`}>لي دين</button>
+          </div>
+          <button type="button" onClick={async () => { hapticSuccess(); await db.addLoan(newLoan); setLoanSheetOpen(false); setNewLoan({ name: '', amount: 0, type: 'payable' }); window.location.reload() }} disabled={!newLoan.name || !newLoan.amount} className="w-full btn-primary disabled:opacity-50">حفظ القرض</button>
+        </div>
+      </BottomSheet>
+
+      {/* Inject Capital Sheet */}
+      <BottomSheet open={capitalSheetOpen} onClose={() => setCapitalSheetOpen(false)} title="حقن رأس مال">
+        <div className="space-y-4 pb-4">
+          <p className="text-sm text-ink-secondary">أدخل المبلغ الذي تريد ضخّه في المحل. سيُضاف كدخل يزيد من النقد المتاح.</p>
+          <AmountInput value={capitalAmount} onChange={setCapitalAmount} label="المبلغ" autoFocus />
+          <button type="button" onClick={async () => { hapticSuccess(); await db.injectCapital(capitalAmount); setCapitalSheetOpen(false); setCapitalAmount(0); window.location.reload() }} disabled={!capitalAmount} className="w-full btn-primary disabled:opacity-50">حقن رأس المال</button>
+        </div>
+      </BottomSheet>
+
+      {/* Owner Draw Sheet */}
+      <BottomSheet open={drawSheetOpen} onClose={() => setDrawSheetOpen(false)} title="سحب للبيت">
+        <div className="space-y-4 pb-4">
+          <p className="text-sm text-ink-secondary">أدخل المبلغ الذي تريد سحبه من المحل. سيُسجّل كخصم من الأرباح.</p>
+          <AmountInput value={drawAmount} onChange={setDrawAmount} label="المبلغ" autoFocus />
+          <button type="button" onClick={async () => { hapticSuccess(); await db.ownerDraw(drawAmount); setDrawSheetOpen(false); setDrawAmount(0); window.location.reload() }} disabled={!drawAmount} className="w-full bg-withdrawal-500 text-white font-bold rounded-12 py-4 active:scale-95 transition-transform disabled:opacity-50">سحب المبلغ</button>
+        </div>
+      </BottomSheet>
     </div>
   )
 }
