@@ -216,6 +216,22 @@ export function CloudSyncProvider({ children }) {
     }
   }, [authorized]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Wire debounced sync to Dexie live changes — auto-sync on any DB write
+  useEffect(() => {
+    if (!authorized) return
+    const subscription = db.on('changes', () => {
+      scheduleDebouncedSync()
+    })
+    return () => {
+      // Dexie v4 returns an array of subscription objects; unsubscribe each
+      if (Array.isArray(subscription)) {
+        subscription.forEach(s => s.unsubscribe?.())
+      } else {
+        subscription?.unsubscribe?.()
+      }
+    }
+  }, [authorized, scheduleDebouncedSync])
+
   // Listen for online event → sync
   useEffect(() => {
     const handleOnline = () => {

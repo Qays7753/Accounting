@@ -8,7 +8,6 @@ import { formatArabicDate } from '../utils/date.js'
 import Icon from '../components/ui/Icon.jsx'
 import { hapticLight, hapticSuccess } from '../utils/haptics.js'
 import { useNavigate } from 'react-router-dom'
-import { jsPDF } from 'jspdf'
 import { sendDebtReminder } from '../utils/whatsapp.js'
 
 /**
@@ -66,9 +65,11 @@ export default function InvestorDashboard() {
     return `${kpi.value.toLocaleString('en-US')}${kpi.unit || ''}`
   }
 
-  // PDF Export — generates a professional bank-ready report
-  const handleExportPDF = () => {
+  // PDF Export — generates a professional bank-ready report (lazy loaded)
+  const handleExportPDF = async () => {
     hapticLight()
+    // Dynamic import — only loads jsPDF (770KB) when user actually clicks export
+    const { jsPDF } = await import('jspdf')
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
     const pageWidth = 210
     let y = 20

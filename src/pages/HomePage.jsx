@@ -71,6 +71,19 @@ export default function HomePage() {
   const animatedCapital = useCountUp(jars.capitalJar)
   const animatedProfit = useCountUp(jars.profitJar)
 
+  // Free Cash = profit jar - unsettled payables (debts I owe)
+  const [unsettledPayables, setUnsettledPayables] = useState(0)
+  const animatedFreeCash = useCountUp(Math.max(0, jars.profitJar - unsettledPayables))
+
+  useEffect(() => {
+    db.getPayables().then(payables => {
+      const total = payables
+        .filter(p => (p.amount || 0) - (p.debtAmountPaid || 0) > 0)
+        .reduce((sum, p) => sum + ((p.amount || 0) - (p.debtAmountPaid || 0)), 0)
+      setUnsettledPayables(total)
+    }).catch(() => {})
+  }, [stats.cashBalance])
+
   // Mask helper for hideAmounts security setting
   const maskAmount = (val) => hideAmounts ? '••••' : formatAmount(val)
   const navigate = useNavigate()
@@ -234,7 +247,7 @@ export default function HomePage() {
               <div className="h-8 w-32 bg-white/20 rounded-lg animate-pulse mt-1" />
             ) : (
               <div className="num text-title font-bold mt-1 leading-none text-primary">
-                {maskAmount(Math.max(0, animatedProfit))}
+                {maskAmount(animatedFreeCash)}
               </div>
             )}
             <p className="text-caption text-ink-tertiary mt-1">المبلغ الآمن للسحب بعد خصم رأس المال</p>
