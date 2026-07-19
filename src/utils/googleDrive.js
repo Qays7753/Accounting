@@ -120,8 +120,10 @@ export async function loginWithGoogle() {
         reject(new Error(err?.message || 'فشل تسجيل الدخول عبر Google'))
       },
     })
-    // prompt: 'consent' forces the consent screen on first login
-    tokenClient.requestAccessToken({ prompt: 'consent' })
+    // prompt: '' = silent re-consent (no popup if user already authorized)
+    // Only use 'consent' on first-ever login to force the consent screen
+    const isFirstLogin = !localStorage.getItem(TOKEN_KEY) && !localStorage.getItem(EXPIRY_KEY)
+    tokenClient.requestAccessToken({ prompt: isFirstLogin ? 'consent' : '' })
   })
 }
 
