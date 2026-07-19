@@ -71,6 +71,7 @@ export default function SettingsPage() {
 
   // V8: Business model label
   const [businessModelLabel, setBusinessModelLabel] = useState('منتجات جاهزة')
+  const [businessModelSheetOpen, setBusinessModelSheetOpen] = useState(false)
 
   // Report Mode (uses TermsContext for live switching)
   const [reportMode, setReportModeCtx] = useTermsMode()
@@ -467,7 +468,7 @@ export default function SettingsPage() {
               iconBg="bg-accent-50 text-accent-600"
               label="نوع النشاط"
               description={businessModelLabel}
-              onClick={() => { hapticLight(); alert('لنوع النشاط: ' + businessModelLabel) }}
+              onClick={() => { hapticLight(); setBusinessModelSheetOpen(true) }}
             />
           </div>
         </section>
@@ -1080,7 +1081,54 @@ export default function SettingsPage() {
           )}
         </div>
       </BottomSheet>
-      {/* Emergency Recovery Sheet (Agent 3) */}
+      {/* Business Model Sheet (V11) */}
+      <BottomSheet
+        open={businessModelSheetOpen}
+        onClose={() => setBusinessModelSheetOpen(false)}
+        title="نوع النشاط"
+      >
+        <div className="space-y-3 pb-4">
+          <p className="text-sm text-ink-secondary">اختر نوع نشاطك التجاري:</p>
+          <button
+            type="button"
+            onClick={async () => {
+              hapticLight()
+              await db.setMeta('business_model', 'ready')
+              setBusinessModelLabel('منتجات جاهزة')
+              setBusinessModelSheetOpen(false)
+            }}
+            className={`w-full bg-surface rounded-card p-4 shadow-card active:scale-95 transition-transform text-right flex items-center gap-3 border-2 ${businessModelLabel === 'منتجات جاهزة' ? 'border-primary' : 'border-transparent'}`}
+          >
+            <div className="w-12 h-12 rounded-card bg-primary-50 grid place-items-center flex-shrink-0">
+              <Icon name="tag" className="w-6 h-6 text-primary-600" strokeWidth={1.8} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-ink text-sm">منتجات جاهزة</p>
+              <p className="text-caption text-ink-secondary">علبة تونة، قارورة ماء</p>
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              hapticLight()
+              await db.setMeta('business_model', 'manufactured')
+              setBusinessModelLabel('منتجات أُصنِعَت')
+              setBusinessModelSheetOpen(false)
+            }}
+            className={`w-full bg-surface rounded-card p-4 shadow-card active:scale-95 transition-transform text-right flex items-center gap-3 border-2 ${businessModelLabel === 'منتجات أُصنِعَت' ? 'border-primary' : 'border-transparent'}`}
+          >
+            <div className="w-12 h-12 rounded-card bg-accent-50 grid place-items-center flex-shrink-0">
+              <Icon name="trendingUp" className="w-6 h-6 text-accent-600" strokeWidth={1.8} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-ink text-sm">منتجات أُصنِعَت</p>
+              <p className="text-caption text-ink-secondary">كوب شاي، ساندويش</p>
+            </div>
+          </button>
+        </div>
+      </BottomSheet>
+
+      {/* Emergency Recovery Sheet */}
       <BottomSheet
         open={emergencySheetOpen}
         onClose={() => setEmergencySheetOpen(false)}
