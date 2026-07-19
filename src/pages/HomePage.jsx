@@ -113,11 +113,15 @@ export default function HomePage() {
         // Replace {value} in text with actual metric values
         const processed = results.map(insight => {
           let text = insight.text
-          // Find which metric the rule uses and substitute {value}
+          // Replace {value} in text with actual metric values
           for (const [key, metric] of Object.entries(metrics)) {
             if (text.includes('{value}')) {
               text = text.replace('{value}', String(metric.value))
             }
+          }
+          // Replace {category} with top expense category name
+          if (text.includes('{category}') && metrics.topExpenseRatio?.category) {
+            text = text.replace('{category}', metrics.topExpenseRatio.category)
           }
           return { ...insight, text }
         })
@@ -360,6 +364,7 @@ export default function HomePage() {
                 onAction={(action) => {
                   if (action === 'navigate_orders') navigate('/orders')
                   else if (action === 'navigate_finance') navigate('/finance')
+                  else if (action === 'navigate_inventory') navigate('/inventory')
                   else if (action === 'whatsapp_bulk') navigate('/debts')
                 }}
               />

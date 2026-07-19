@@ -59,5 +59,37 @@
       "simple": "شوف المالية",
       "pro": "تحليل التدفق"
     }
+  },
+  {
+    "id": "threat_high_wastage",
+    "type": "threat",
+    "severity": "red",
+    "requires": ["wastageRatio"],
+    "condition": "wastageRatio.value > 5 && wastageRatio.value < 100",
+    "text": {
+      "simple": "هدر المخزون {value}٪ من مصاريفك — راجع التخزين والصلاحية",
+      "pro": "نسبة الهدر بلغت {value}٪ من المصروفات — راجع سلسلة التوريد والتخزين"
+    },
+    "action": "navigate_inventory",
+    "actionLabel": {
+      "simple": "روح للمخزون",
+      "pro": "تحليل المخزون"
+    }
+  },
+  {
+    "id": "opportunity_high_expense_category",
+    "type": "opportunity",
+    "severity": "teal",
+    "requires": ["topExpenseRatio"],
+    "condition": "topExpenseRatio.value > 30 && topExpenseRatio.value < 100",
+    "text": {
+      "simple": "{category} أكبر مصروف عندك ({value}٪) — حاول تفاوض على السعر",
+      "pro": "أكبر بند مصروف هو {category} بنسبة {value}٪ — راجع عقود التوريد"
+    },
+    "action": "navigate_finance",
+    "actionLabel": {
+      "simple": "شوف التفاصيل",
+      "pro": "تحليل المصروفات"
+    }
   }
 ]

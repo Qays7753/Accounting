@@ -93,6 +93,38 @@ export function computeSnapshot(data) {
     missing: orders.length === 0 ? ['orders'] : [],
   }
 
+  // --- Wastage Ratio (هدر / مصاريف) ---
+  // Wastage = expense transactions with category containing 'هدر' or 'تالف'
+  const monthAgoDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+  const wastageExpenses = transactions
+    .filter(t => t.type === 'expense' && new Date(t.date) >= monthAgoDate &&
+      ((t.category || '').includes('هدر') || (t.category || '').includes('تالف') || (t.description || '').includes('هدر')))
+    .reduce((sum, t) => sum + (t.amount || 0), 0)
+  const totalExpenses = transactions
+    .filter(t => t.type === 'expense' && new Date(t.date) >= monthAgoDate)
+    .reduce((sum, t) => sum + (t.amount || 0), 0)
+  const wastageRatio = {
+    value: totalExpenses > 0 ? Math.round((wastageExpenses / totalExpenses) * 100) : 0,
+    available: totalExpenses > 0 && wastageExpenses > 0,
+    missing: totalExpenses === 0 ? ['expenses'] : [],
+  }
+
+  // --- Top Expense Category + Ratio ---
+  const expensesByCategory = {}
+  for (const t of transactions) {
+    if (t.type === 'expense' && new Date(t.date) >= monthAgoDate) {
+      const cat = t.category || 'غير مصنّف'
+      expensesByCategory[cat] = (expensesByCategory[cat] || 0) + (t.amount || 0)
+    }
+  }
+  const topCategory = Object.entries(expensesByCategory).sort((a, b) => b[1] - a[1])[0]
+  const topExpenseRatio = {
+    value: (topCategory && totalExpenses > 0) ? Math.round((topCategory[1] / totalExpenses) * 100) : 0,
+    available: !!topCategory && totalExpenses > 0,
+    missing: !topCategory ? ['expenses'] : [],
+    category: topCategory ? topCategory[0] : '',
+  }
+
   return {
     dailySales,
     overdueDebt,
@@ -100,6 +132,8 @@ export function computeSnapshot(data) {
     runwayDays,
     salesTrend,
     pendingOrdersCount,
+    wastageRatio,
+    topExpenseRatio,
     currentCash: {
       value: currentCash,
       available: transactions.length > 0,
