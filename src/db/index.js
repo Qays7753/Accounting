@@ -1686,26 +1686,29 @@ class AccountingDatabase extends Dexie {
       return gap > 0 ? sum + gap : sum
     }, 0)
 
-    await this.setMeta('last_inventory_update', Date.now())
-    // Update each item's current_qty to the actual count
-    for (const item of items) {
-      if (item.id) {
-        await this.items.update(item.id, {
-          current_stock: item.actual,
-          last_updated: Date.now(),
+    // Use a Dexie transaction so all writes succeed or fail atomically
+    await this.transaction('rw', this.items, this.meta, this.transactions, async () => {
+      await this.setMeta('last_inventory_update', Date.now())
+      // Update each item's current_qty to the actual count
+      for (const item of items) {
+        if (item.id) {
+          await this.items.update(item.id, {
+            current_stock: item.actual,
+            last_updated: Date.now(),
+          })
+        }
+      }
+      // Log only wastage (missing items) as an expense
+      if (wastageTotal > 0) {
+        await this.addTransaction({
+          type: 'expense',
+          amount: wastageTotal,
+          description: 'هدر/فقدان مخزون (تسوية أسبوعية)',
+          category: 'هدر',
+          date: new Date().toISOString(),
         })
       }
-    }
-    // Log only wastage (missing items) as an expense
-    if (wastageTotal > 0) {
-      await this.addTransaction({
-        type: 'expense',
-        amount: wastageTotal,
-        description: 'هدر/فقدان مخزون (تسوية أسبوعية)',
-        category: 'هدر',
-        date: new Date().toISOString(),
-      })
-    }
+    })
     return { wastageTotal, surplusTotal, itemCount: items.length }
   }
 }
