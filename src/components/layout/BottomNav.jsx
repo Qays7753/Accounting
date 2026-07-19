@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { hapticLight } from '../../utils/haptics.js'
 import { useHelperMode } from '../../context/HelperModeContext.jsx'
 import { useTerms } from '../../context/TermsContext.jsx'
+import { useSettings2 } from '../../context/SettingsContext.jsx'
 import PinEntrySheet from '../sheets/PinEntrySheet.jsx'
 
 // Base tabs: Home, Finance, Orders, Inventory, Settings (5 tabs)
@@ -102,13 +103,14 @@ const helperNavItems = [...baseNavItems.filter(item => item.to === '/orders'), p
 export default function BottomNav({ showQuickPos = true }) {
   const { isHelperMode, verifyPin } = useHelperMode()
   const t = useTerms()
+  const { inventoryEnabled } = useSettings2()
   const [pinSheetOpen, setPinSheetOpen] = useState(false)
 
-  // Build nav items: base (Home/Finance/Orders) + optional POS + Inventory + Settings
+  // Build nav items: base (Home/Finance/Orders) + optional POS + optional Inventory + Settings
   const allItems = [
     ...baseNavItems,
     ...(showQuickPos ? [posNavItem] : []),
-    inventoryNavItem,
+    ...(inventoryEnabled ? [inventoryNavItem] : []),
     settingsNavItem,
   ]
   const items = isHelperMode ? helperNavItems : allItems

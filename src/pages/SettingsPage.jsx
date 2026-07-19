@@ -39,6 +39,7 @@ export default function SettingsPage() {
   // Live UI settings from SettingsContext (propagate to whole app instantly)
   const {
     showQuickPos, setShowQuickPos,
+    inventoryEnabled, setInventoryEnabled,
     logo, setLogo,
     businessName, setBusinessName,
     fontSize, setFontSize,
@@ -710,7 +711,7 @@ export default function SettingsPage() {
         <section>
           <h2 className="text-caption font-bold text-primary mb-2 px-1.5">{t.operations_security}</h2>
           <div className="bg-surface rounded-2xl shadow-card divide-y divide-divider">
-            {/* Quick POS Toggle — now propagates to BottomNav instantly via SettingsContext */}
+            {/* Quick POS Toggle */}
             <SettingsToggle
               icon="tag"
               iconBg="bg-primary-50 text-primary-600"
@@ -718,6 +719,15 @@ export default function SettingsPage() {
               description={t.show_quick_pos_desc}
               checked={showQuickPos}
               onChange={handleQuickPosToggle}
+            />
+            {/* Inventory Tracking Toggle */}
+            <SettingsToggle
+              icon="list"
+              iconBg="bg-accent-50 text-accent-600"
+              label="تفعيل تتبع المخزون"
+              description="تتبّع أسبوعي يدوي للمواد الخام"
+              checked={inventoryEnabled}
+              onChange={async (v) => { hapticLight(); await setInventoryEnabled(v) }}
             />
             {/* Helper Mode — ONE unified row */}
             <SettingsRow

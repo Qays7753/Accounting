@@ -26,6 +26,7 @@ import { db } from '../db'
 
 const SettingsContext = createContext({
   showQuickPos: true,
+  inventoryEnabled: false,
   logo: null,
   businessName: null,
   fontSize: 'normal',
@@ -35,6 +36,7 @@ const SettingsContext = createContext({
   monthlySummary: true,
   notificationsEnabled: false,
   setShowQuickPos: async () => {},
+  setInventoryEnabled: async () => {},
   setLogo: async () => {},
   setBusinessName: async () => {},
   setFontSize: async () => {},
@@ -47,6 +49,7 @@ const SettingsContext = createContext({
 
 export function SettingsProvider({ children }) {
   const [showQuickPos, setShowQuickPosState] = useState(true)
+  const [inventoryEnabled, setInventoryEnabledState] = useState(false)
   const [logo, setLogoState] = useState(null)
   const [businessName, setBusinessNameState] = useState(null)
   const [fontSize, setFontSizeState] = useState('normal')
@@ -62,9 +65,10 @@ export function SettingsProvider({ children }) {
     async function loadAll() {
       try {
         const [
-          pos, logoB64, name, fs, ld, ha, al, ms, ne
+          pos, invEnabled, logoB64, name, fs, ld, ha, al, ms, ne
         ] = await Promise.all([
           db.getShowQuickPos(),
+          db.getSetting('inventory_enabled', false),
           db.getLogo(),
           db.getBusinessName(),
           db.getSetting('font_size', 'normal'),
@@ -76,6 +80,7 @@ export function SettingsProvider({ children }) {
         ])
         if (cancelled) return
         setShowQuickPosState(pos !== false)
+        setInventoryEnabledState(invEnabled === true)
         setLogoState(logoB64)
         setBusinessNameState(name)
         setFontSizeState(fs || 'normal')
@@ -110,6 +115,11 @@ export function SettingsProvider({ children }) {
   const setShowQuickPos = useCallback(async (v) => {
     setShowQuickPosState(v)
     try { await db.setShowQuickPos(v) } catch (e) { console.error(e) }
+  }, [])
+
+  const setInventoryEnabled = useCallback(async (v) => {
+    setInventoryEnabledState(v)
+    try { await db.setSetting('inventory_enabled', v) } catch (e) { console.error(e) }
   }, [])
 
   const setLogo = useCallback(async (base64) => {
@@ -157,10 +167,10 @@ export function SettingsProvider({ children }) {
 
   return (
     <SettingsContext.Provider value={{
-      showQuickPos, logo, businessName,
+      showQuickPos, inventoryEnabled, logo, businessName,
       fontSize, listDensity, hideAmounts, autoLock,
       monthlySummary, notificationsEnabled,
-      setShowQuickPos, setLogo, setBusinessName,
+      setShowQuickPos, setInventoryEnabled, setLogo, setBusinessName,
       setFontSize, setListDensity, setHideAmounts, setAutoLock,
       setMonthlySummary, setNotificationsEnabled,
     }}>

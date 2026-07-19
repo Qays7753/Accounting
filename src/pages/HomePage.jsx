@@ -66,6 +66,13 @@ export default function HomePage() {
   const [openingBalanceSheetOpen, setOpeningBalanceSheetOpen] = useState(false)
   const [openingCash, setOpeningCash] = useState(0)
 
+  // V10.2: Weekly Inventory Reconciliation
+  const { inventoryEnabled } = useSettings2()
+  const [showInventoryReminder, setShowInventoryReminder] = useState(false)
+  const [reconciliationSheetOpen, setReconciliationSheetOpen] = useState(false)
+  const [reconciliationItems, setReconciliationItems] = useState([])
+  const [reconciliationSaving, setReconciliationSaving] = useState(false)
+
   // Animated count-up for financial numbers
   const animatedTotal = useCountUp(jars.totalCash)
   const animatedCapital = useCountUp(jars.capitalJar)
@@ -142,7 +149,61 @@ export default function HomePage() {
         setShowOpeningBalanceCard(true)
       }
     })
-  }, [stats.cashBalance])
+
+    // V10.2: Check if weekly inventory reconciliation is due
+    if (inventoryEnabled) {
+      db.shouldShowInventoryReminder().then(should => {
+        setShowInventoryReminder(should)
+      })
+    }
+  }, [stats.cashBalance, inventoryEnabled])
+
+  // V10.2: Open reconciliation sheet — loads items + theoretical quantities
+  const handleOpenReconciliation = async () => {
+    hapticLight()
+    const items = await db.getItems()
+    const reconItems = items.map(item => ({
+      id: item.id,
+      name: item.name,
+      unit: item.unit || 'piece',
+      theoretical: item.current_stock || 0,
+      actual: item.current_stock || 0, // pre-fill with theoretical, user adjusts
+      gap: 0,
+    }))
+    setReconciliationItems(reconItems)
+    setReconciliationSheetOpen(true)
+  }
+
+  // Update actual count for a specific item
+  const handleReconItemChange = (itemId, actualQty) => {
+    setReconciliationItems(prev => prev.map(item => {
+      if (item.id === itemId) {
+        return { ...item, actual: Number(actualQty) || 0, gap: (Number(actualQty) || 0) - item.theoretical }
+      }
+      return item
+    }))
+  }
+
+  // Save reconciliation — updates items + logs wastage
+  const handleSaveReconciliation = async () => {
+    hapticSuccess()
+    setReconciliationSaving(true)
+    try {
+      const result = await db.saveReconciliation(reconciliationItems)
+      setReconciliationSheetOpen(false)
+      setShowInventoryReminder(false)
+      stats.refresh()
+      if (result.totalGap > 0) {
+        alert(`تم تحديث المخزون. الفرق الإجمالي: ${result.totalGap} دينار (سُجّل كمصروف هدر)`)
+      } else {
+        alert('تم تحديث المخزون. لا يوجد فرق.')
+      }
+    } catch (e) {
+      console.error('Reconciliation failed:', e)
+    } finally {
+      setReconciliationSaving(false)
+    }
+  }
 
   const handleFabAction = (action) => {
     setSheetOpen(action)
@@ -448,6 +509,26 @@ export default function HomePage() {
         </section>
       )}
 
+      {/* V10.2: Weekly Inventory Reconciliation Reminder */}
+      {inventoryEnabled && showInventoryReminder && (
+        <section className="px-4 mb-4">
+          <button
+            type="button"
+            onClick={handleOpenReconciliation}
+            className="w-full bg-accent-50 border border-accent-200 rounded-card p-4 flex items-center gap-3 active:scale-[0.98] transition-transform text-right"
+          >
+            <div className="w-12 h-12 rounded-xl bg-accent-100 flex items-center justify-center flex-shrink-0">
+              <Icon name="list" className="w-6 h-6 text-accent-600" strokeWidth={2} />
+            </div>
+            <div className="flex-1">
+              <p className="font-bold text-accent-700 text-sm">هلأ وقت تحديث المخزون الأسبوعي</p>
+              <p className="text-caption text-accent-600 mt-0.5">يأخذ دقيقة — عدّ المواد وسجّل الفرق</p>
+            </div>
+            <Icon name="chevronLeft" className="w-5 h-5 text-accent-600" />
+          </button>
+        </section>
+      )}
+
       {/* V4 Phase 2: Weekly Backup Prompt */}
       {showBackupPrompt && (
         <section className="px-4 mb-4">
@@ -652,6 +733,64 @@ export default function HomePage() {
           >
             {t.opening_balance_later}
           </button>
+        </div>
+      </BottomSheet>
+
+      {/* V10.2: Weekly Reconciliation Sheet */}
+      <BottomSheet
+        open={reconciliationSheetOpen}
+        onClose={() => setReconciliationSheetOpen(false)}
+        title="تحديث المخزون الأسبوعي"
+      >
+        <div className="space-y-4 pb-4">
+          {reconciliationItems.length === 0 ? (
+            <p className="text-sm text-ink-secondary text-center py-4">
+              لا توجد أصناف في المخزون. أضف أصنافاً من صفحة المخزون أولاً.
+            </p>
+          ) : (
+            <>
+              <p className="text-caption text-ink-secondary leading-relaxed">
+                عدّ كل صنف فعلياً وادخل الرقم. الفرق سيُسجّل تلقائياً كمصروف هدر.
+              </p>
+              {reconciliationItems.map(item => (
+                <div key={item.id} className="bg-background rounded-card p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="font-semibold text-ink text-sm">{item.name}</p>
+                    <span className="text-caption text-ink-tertiary">
+                      نظري: <span className="num font-bold text-ink">{item.theoretical}</span> {item.unit}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <label className="text-caption text-ink-secondary flex-shrink-0">فعلي:</label>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      value={item.actual}
+                      onChange={(e) => handleReconItemChange(item.id, e.target.value)}
+                      className="input-field flex-1 num font-bold"
+                      style={{ minHeight: '40px' }}
+                      dir="ltr"
+                    />
+                    {item.gap !== 0 && (
+                      <span className={`text-caption font-bold flex-shrink-0 ${item.gap < 0 ? 'text-expense-600' : 'text-income-600'}`}>
+                        {item.gap > 0 ? '+' : ''}{item.gap}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={handleSaveReconciliation}
+                disabled={reconciliationSaving}
+                className="w-full btn-primary disabled:opacity-50"
+              >
+                {reconciliationSaving ? (
+                  <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
+                ) : 'حفظ التحديث'}
+              </button>
+            </>
+          )}
         </div>
       </BottomSheet>
 

@@ -1659,6 +1659,45 @@ class AccountingDatabase extends Dexie {
       }
     })
   }
+
+  /**
+   * Check if weekly inventory reconciliation is due (7 days since last update).
+   */
+  async shouldShowInventoryReminder() {
+    const lastUpdate = await this.getMeta('last_inventory_update', null)
+    if (!lastUpdate) return true // Never updated → show
+    const daysSince = (Date.now() - lastUpdate) / (24 * 60 * 60 * 1000)
+    return daysSince >= 7
+  }
+
+  /**
+   * Save weekly reconciliation results.
+   * @param {Array} items — [{ id, name, theoretical, actual, gap }]
+   */
+  async saveReconciliation(items) {
+    const totalGap = items.reduce((sum, i) => sum + Math.abs(i.gap || 0), 0)
+    await this.setMeta('last_inventory_update', Date.now())
+    // Update each item's current_qty to the actual count
+    for (const item of items) {
+      if (item.id) {
+        await this.items.update(item.id, {
+          current_stock: item.actual,
+          last_updated: Date.now(),
+        })
+      }
+    }
+    // If there's a significant gap, log it as a wastage expense
+    if (totalGap > 0) {
+      await this.addTransaction({
+        type: 'expense',
+        amount: totalGap,
+        description: 'هدر/فقدان مخزون (تسوية أسبوعية)',
+        category: 'هدر',
+        date: new Date().toISOString(),
+      })
+    }
+    return { totalGap, itemCount: items.length }
+  }
 }
 
 export const db = new AccountingDatabase()
