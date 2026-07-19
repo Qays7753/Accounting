@@ -7,6 +7,7 @@ import BottomSheet from '../components/ui/BottomSheet.jsx'
 import AmountInput from '../components/ui/AmountInput.jsx'
 import { hapticLight, hapticSuccess, hapticMedium, hapticError } from '../utils/haptics.js'
 import { useTerms } from '../context/TermsContext.jsx'
+import { useIsManagerMode } from '../context/TermsContext.jsx'
 import PageHeader from '../components/layout/PageHeader.jsx'
 import { useLongPress } from '../hooks/useLongPress.js'
 import { useSubmitGuard } from '../hooks/useSubmitGuard.js'
@@ -24,6 +25,7 @@ import { useSubmitGuard } from '../hooks/useSubmitGuard.js'
  */
 export default function QuickPosPage() {
   const t = useTerms()
+  const isManager = useIsManagerMode()
   const [products, setProducts] = useState([])
   const [cart, setCart] = useState([]) // [{ product, qty }]
   const [loading, setLoading] = useState(true)
@@ -97,6 +99,14 @@ export default function QuickPosPage() {
     hapticSuccess()
     try {
       const result = await db.quickSale(cart, paymentType)
+      // V12: Layer 2 — auto-deduct inventory on sale
+      if (isManager) {
+        for (const item of cart) {
+          if (item.product?.id) {
+            await db.deductOnSale(item.product.id, item.qty || 1).catch(() => {})
+          }
+        }
+      }
       setSaleResult(result)
       setPaymentSheetOpen(false)
       setCart([]) // Clear cart after sale
