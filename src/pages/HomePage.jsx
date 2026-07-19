@@ -211,22 +211,34 @@ export default function HomePage() {
     <div className="min-h-screen pb-32">
       <PageHeader variant="home" />
 
-      {/* Two Jars Dashboard */}
+      {/* Honest Drawer — Total Cash + Free Cash */}
       <section className="px-4 mb-3">
-        <div
-          className="rounded-16 p-4 text-ink relative overflow-hidden bg-mute shadow-card"
-        >
+        <div className="rounded-16 p-4 text-ink relative overflow-hidden bg-mute shadow-card">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-ink-secondary">{t.total_cash}</span>
+            <span className="text-sm font-medium text-ink-secondary">بالدرج</span>
             <Icon name="wallet" className="w-5 h-5" strokeWidth={1.5} />
           </div>
           {stats.loading ? (
             <div className="h-8 w-40 bg-white/20 rounded-lg animate-pulse mt-2" />
           ) : (
-            <div className="num text-title font-semibold mt-1 leading-none">
+            <div className="num text-title-sm font-semibold mt-1 leading-none text-ink-secondary">
               {maskAmount(animatedTotal)}
             </div>
           )}
+          {/* Free Cash — what the owner can actually take home */}
+          <div className="mt-3 pt-3 border-t border-divider">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-bold text-primary-700">إلك منها الحرة</span>
+            </div>
+            {stats.loading ? (
+              <div className="h-8 w-32 bg-white/20 rounded-lg animate-pulse mt-1" />
+            ) : (
+              <div className="num text-title font-bold mt-1 leading-none text-primary">
+                {maskAmount(Math.max(0, animatedProfit))}
+              </div>
+            )}
+            <p className="text-caption text-ink-tertiary mt-1">المبلغ الآمن للسحب بعد خصم رأس المال</p>
+          </div>
         </div>
         <div className="grid grid-cols-2 gap-3 mt-3">
           <div className="card">
