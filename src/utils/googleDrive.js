@@ -2,17 +2,18 @@
  * Google Drive Sync — AppData folder integration.
  *
  * Uses Google Identity Services (GIS) Token Client model exclusively.
- * NO deprecated gapi.auth2, NO OOB redirect URIs.
+ * NO deprecated gapi.auth2, NO OOB redirect URIs, NO redirect_uri field.
+ * The GIS Token Client implicitly uses the current page origin.
  *
  * Flow:
- *   1. User clicks "Connect Google"
- *   2. GIS script (loaded in index.html) opens a secure popup
+ *   1. User clicks "Connect Google" → loginWithGoogle() with prompt:'consent'
+ *   2. GIS opens a secure popup at accounts.google.com
  *   3. User logs in + grants drive.appdata scope
  *   4. We receive an Access Token (implicit flow, no refresh token)
  *   5. Token stored in LocalStorage with expiry
- *   6. When token expires, GIS silently re-requests with prompt:'' (no popup)
+ *   6. When token expires, refreshAccessToken() silently re-requests with prompt:''
  *
- * The GIS script is loaded via <script src="accounts.google.com/gsi/client">
+ * The GIS script is loaded via <script src="https://accounts.google.com/gsi/client">
  * in index.html. We wait for it to be ready before initializing.
  */
 
@@ -72,28 +73,26 @@ export function setLastSync(ts = Date.now()) {
 }
 
 export function logout() {
-  // Revoke the token at Google before clearing local storage
   const token = localStorage.getItem(TOKEN_KEY)
   if (token) {
     fetch(`https://oauth2.googleapis.com/revoke?token=${token}`, { method: 'POST' })
-      .catch(() => {}) // best-effort, don't block logout
+      .catch(() => {})
   }
   localStorage.removeItem(TOKEN_KEY)
   localStorage.removeItem(EXPIRY_KEY)
   localStorage.removeItem(LAST_SYNC_KEY)
 }
 
-/**
- * Store the access token from GIS response.
- */
 function storeToken(accessToken, expiresIn) {
   localStorage.setItem(TOKEN_KEY, accessToken)
-  localStorage.setItem(EXPIRY_KEY, String(Date.now() + expiresIn * 1000 - 60000)) // 1min buffer
+  localStorage.setItem(EXPIRY_KEY, String(Date.now() + expiresIn * 1000 - 60000))
 }
 
 /**
  * Login with Google using GIS Token Client.
- * Opens a secure popup for user consent.
+ * Always uses prompt: 'consent' for explicit user-initiated login.
+ * This ensures the consent screen shows and the GIS session is established.
+ *
  * @returns {Promise<string>} access token
  */
 export async function loginWithGoogle() {
@@ -104,33 +103,42 @@ export async function loginWithGoogle() {
   await waitForGIS()
 
   return new Promise((resolve, reject) => {
-    const tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: CLIENT_ID,
-      scope: SCOPE,
-      callback: (response) => {
-        if (response.access_token) {
-          const expiresIn = Number(response.expires_in || 3600)
-          storeToken(response.access_token, expiresIn)
-          resolve(response.access_token)
-        } else {
-          reject(new Error('لم يتم منح الإذن'))
-        }
-      },
-      error_callback: (err) => {
-        reject(new Error(err?.message || 'فشل تسجيل الدخول عبر Google'))
-      },
-    })
-    // prompt: '' = silent re-consent (no popup if user already authorized)
-    // Only use 'consent' on first-ever login to force the consent screen
-    const isFirstLogin = !localStorage.getItem(TOKEN_KEY) && !localStorage.getItem(EXPIRY_KEY)
-    tokenClient.requestAccessToken({ prompt: isFirstLogin ? 'consent' : '' })
+    try {
+      const tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: SCOPE,
+        // Do NOT set redirect_uri — GIS handles the origin implicitly
+        callback: (response) => {
+          if (response.access_token) {
+            const expiresIn = Number(response.expires_in || 3600)
+            storeToken(response.access_token, expiresIn)
+            resolve(response.access_token)
+          } else if (response.error) {
+            reject(new Error(response.error_description || response.error || 'فشل تسجيل الدخول'))
+          } else {
+            reject(new Error('لم يتم منح الإذن'))
+          }
+        },
+        error_callback: (err) => {
+          const msg = err?.message || err?.type || 'فشل تسجيل الدخول عبر Google'
+          reject(new Error(msg))
+        },
+      })
+      // Always use prompt:'consent' for explicit login.
+      // This ensures the popup shows, the user grants permission,
+      // and the GIS session cookie is established for future silent refreshes.
+      tokenClient.requestAccessToken({ prompt: 'consent' })
+    } catch (e) {
+      reject(new Error('فشل تهيئة Google Identity: ' + e.message))
+    }
   })
 }
 
 /**
  * Silently refresh the access token using GIS.
- * GIS Token Client with prompt: '' will return a new token without
- * showing a popup (if the user previously granted consent).
+ * Uses prompt: '' (no popup) — relies on the existing GIS session.
+ * Only works if the user previously logged in via loginWithGoogle().
+ *
  * @returns {Promise<string|null>} new access token or null if failed
  */
 export async function refreshAccessToken() {
@@ -139,7 +147,6 @@ export async function refreshAccessToken() {
   try {
     await waitForGIS(5000)
   } catch {
-    // GIS not available — can't refresh
     return null
   }
 
@@ -148,6 +155,7 @@ export async function refreshAccessToken() {
       const tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
         scope: SCOPE,
+        // Do NOT set redirect_uri — GIS handles the origin implicitly
         callback: (response) => {
           if (response.access_token) {
             const expiresIn = Number(response.expires_in || 3600)
@@ -158,11 +166,10 @@ export async function refreshAccessToken() {
           }
         },
         error_callback: () => {
-          // Silent refresh failed — user needs to re-login manually
           resolve(null)
         },
       })
-      // prompt: '' = no popup, uses existing session/consent
+      // prompt: '' = silent, no popup — uses existing Google session
       tokenClient.requestAccessToken({ prompt: '' })
     } catch {
       resolve(null)
@@ -177,13 +184,11 @@ export async function refreshAccessToken() {
 export async function getValidToken() {
   let token = getAccessToken()
   if (token) return token
-  // Try silent refresh via GIS
   token = await refreshAccessToken()
   return token
 }
 
 // ========== Drive AppData Operations ==========
-// (These remain unchanged — they use fetch + Bearer token)
 
 const DRIVE_API = 'https://www.googleapis.com/drive/v3'
 const UPLOAD_API = 'https://www.googleapis.com/upload/drive/v3'
