@@ -162,6 +162,31 @@ class AccountingDatabase extends Dexie {
       items: '++id, name, tracking_mode, createdAt',
     })
 
+    // V12: Layer 2 (Manager) — BOM, purchase_records, linked products
+    // - quick_products: +linked_item_id (links POS product to inventory item)
+    // - items: +auto_deduct (bool), +item_type ('raw'|'finished')
+    // - bom_components: new table (product_id → material_id, qty per unit)
+    // - purchase_records: new table (replaces purchase_history array)
+    // - fixed_assets: new table (for Layer 3 investor: name, value, lifespan)
+    // - loans: new table (for Layer 3 investor: name, amount, type, interest)
+    this.version(9).stores({
+      transactions: '++id, type, [type+dateTimestamp], dateTimestamp, category, orderId, amount, createdAt, isRecurring, recurringParentId, debtStatus, linkedDebtId, edited, cost_of_goods',
+      orders: '++id, status, [status+scheduledTimestamp], scheduledTimestamp, customerName, customerId, phone, orderType, amount, is_paid, paymentTransactionId, createdAt',
+      customers: '++id, name, phone, archived, createdAt',
+      materials: '++id, name, unit_type, unit_cost, createdAt',
+      quick_products: '++id, name, price, linked_item_id, createdAt',
+      settings: '++id, &key',
+      meta: '++id, &key',
+      notifications: '++id, orderId, scheduledTime, sent, createdAt',
+      settlements: '++id, debtTransactionId, paymentTransactionId, amount, createdAt',
+      daily_closures: '++id, date, timestamp, createdAt',
+      items: '++id, name, tracking_mode, item_type, auto_deduct, createdAt',
+      bom_components: '++id, product_id, material_id',
+      purchase_records: '++id, item_id, date, createdAt',
+      fixed_assets: '++id, name, type, createdAt',
+      loans: '++id, name, type, createdAt',
+    })
+
     this.open()
   }
 
@@ -1624,15 +1649,169 @@ class AccountingDatabase extends Dexie {
   }
 
   /**
-   * Deduct stock on sale (exact items only).
-   * Does NOT deduct for predictive items.
+   * V12: Deduct inventory on sale using BOM.
+   * Reads bom_components for the product, deducts raw materials.
+   * @param {number} productId — quick_products.id
+   * @param {number} qty — units sold
    */
-  async deductOnSale(itemId, qty = 1) {
-    const item = await this.items.get(itemId)
-    if (!item || item.tracking_mode !== 'exact') return
+  async deductOnSale(productId, qty = 1) {
+    const product = await this.quick_products.get(productId)
+    if (!product || !product.linked_item_id) return
 
-    const newStock = Math.max(0, (item.current_stock || 0) - qty)
-    await this.items.update(itemId, { current_stock: newStock })
+    // Check if auto_deduct is enabled for the linked item
+    const linkedItem = await this.items.get(product.linked_item_id)
+    if (!linkedItem || !linkedItem.auto_deduct) return
+
+    // Get BOM components for this product
+    const bom = await this.bom_components
+      .where('product_id')
+      .equals(productId)
+      .toArray()
+
+    if (bom.length === 0) {
+      // No BOM — deduct the linked item directly (finished product)
+      await this.items.update(linkedItem.id, {
+        current_stock: Math.max(0, (linkedItem.current_stock || 0) - qty),
+        last_updated: Date.now(),
+      })
+      return
+    }
+
+    // Deduct each raw material
+    for (const component of bom) {
+      const material = await this.items.get(component.material_id)
+      if (!material) continue
+      const deductQty = component.qty * qty
+      await this.items.update(material.id, {
+        current_stock: Math.max(0, (material.current_stock || 0) - deductQty),
+        last_updated: Date.now(),
+      })
+    }
+  }
+
+  /**
+   * V12: Add a BOM component (recipe ingredient).
+   */
+  async addBomComponent({ product_id, material_id, qty }) {
+    return await this.bom_components.add({
+      product_id,
+      material_id,
+      qty,
+      createdAt: Date.now(),
+    })
+  }
+
+  /**
+   * V12: Get BOM for a product.
+   */
+  async getBom(productId) {
+    return await this.bom_components
+      .where('product_id')
+      .equals(productId)
+      .toArray()
+  }
+
+  /**
+   * V12: Record a purchase in the new purchase_records table.
+   */
+  async addPurchaseRecord({ item_id, qty, unit_cost, date }) {
+    return await this.purchase_records.add({
+      item_id,
+      qty,
+      unit_cost,
+      date: date || new Date().toISOString(),
+      createdAt: Date.now(),
+    })
+  }
+
+  /**
+   * V12: Get purchase records for an item.
+   */
+  async getPurchaseRecords(itemId) {
+    return await this.purchase_records
+      .where('item_id')
+      .equals(itemId)
+      .toArray()
+  }
+
+  /**
+   * V12: Calculate predictive reorder day from purchase_records.
+   */
+  async calculateReorderDay(itemId) {
+    const records = await this.getPurchaseRecords(itemId)
+    if (records.length < 2) return null
+
+    const dates = records.map(r => new Date(r.date).getTime()).sort()
+    const intervals = []
+    for (let i = 1; i < dates.length; i++) {
+      intervals.push((dates[i] - dates[i - 1]) / (24 * 60 * 60 * 1000))
+    }
+    const avgDays = intervals.reduce((a, b) => a + b, 0) / intervals.length
+    return Math.round(avgDays)
+  }
+
+  // ========== V12: LAYER 3 (INVESTOR) — ASSETS & LOANS ==========
+
+  async getFixedAssets() {
+    return await this.fixed_assets.toArray()
+  }
+
+  async addFixedAsset({ name, value, lifespan_years, type = 'equipment' }) {
+    return await this.fixed_assets.add({
+      name,
+      value,
+      lifespan_years,
+      type,
+      createdAt: Date.now(),
+    })
+  }
+
+  async deleteFixedAsset(id) {
+    await this.fixed_assets.delete(id)
+  }
+
+  async getLoans() {
+    return await this.loans.toArray()
+  }
+
+  async addLoan({ name, amount, type = 'payable', interest_rate = 0 }) {
+    return await this.loans.add({
+      name,
+      amount,
+      type, // 'payable' (I owe) or 'receivable' (owed to me)
+      interest_rate,
+      createdAt: Date.now(),
+    })
+  }
+
+  async deleteLoan(id) {
+    await this.loans.delete(id)
+  }
+
+  /**
+   * V12: Inject capital — adds an income transaction + updates Two Jars.
+   */
+  async injectCapital(amount, description = 'حقن رأس مال') {
+    return await this.addTransaction({
+      type: 'income',
+      amount,
+      description,
+      category: 'رأس مال',
+      date: new Date().toISOString(),
+    })
+  }
+
+  /**
+   * V12: Owner draw — personal withdrawal from profit jar.
+   */
+  async ownerDraw(amount, description = 'سحب شخصي') {
+    return await this.addTransaction({
+      type: 'withdrawal',
+      amount,
+      description,
+      category: 'سحب مالك',
+      date: new Date().toISOString(),
+    })
   }
 
   /**
