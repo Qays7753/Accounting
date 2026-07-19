@@ -4,55 +4,109 @@ import { terms_simple } from '../utils/terms_simple.js'
 import { terms_pro } from '../utils/terms_pro.js'
 
 /**
- * Terms Context — Tri-Mode Architecture (V10)
+ * Terms Context — V12 Strict Separation
  *
- * Three modes:
- * - 'simple'   → Daily mode: street language (Jordanian business slang)
- * - 'pro'      → Manager mode: formal accounting terminology
- * - 'investor' → Investor mode: formal terms + executive dashboard layout
- *                (hides BottomNav, FAB, Quick POS; shows InvestorDashboard)
+ * Two ORTHOGONAL settings:
+ * - language_mode ('simple' | 'pro'): Controls TERMINOLOGY ONLY.
+ *   'simple' = street language, 'pro' = formal accounting.
+ *   Does NOT change UI, inputs, or screens.
  *
- * The investor mode uses pro terms (formal accounting) but also triggers
- * a contextual layout shift via the `mode` value that AppLayout reads.
+ * - active_layer (1 | 2 | 3): Controls FEATURES, INPUTS, and SCREENS.
+ *   1 = Daily (basic POS, manual inventory, simple reports)
+ *   2 = Manager (BOM, auto-deduct, predictive restocking, margin radar)
+ *   3 = Investor (executive dashboard, asset/loan inputs, PDF export)
+ *
+ * A Layer 2 user can use Simple language.
+ * A Layer 3 user can use Simple language.
+ * These are completely independent.
+ *
+ * Backward compat: if old 'report_mode' exists in Dexie, migrate it:
+ *   'simple'   → language='simple', layer=1
+ *   'pro'      → language='pro',   layer=1
+ *   'investor' → language='pro',   layer=3
  */
 
-const TermsContext = createContext({ terms: terms_simple, mode: 'simple', setMode: () => {} })
+const TermsContext = createContext({
+  terms: terms_simple,
+  languageMode: 'simple',
+  activeLayer: 1,
+  setLanguageMode: () => {},
+  setActiveLayer: () => {},
+  isInvestorMode: false,
+  isManagerMode: false,
+})
 
 export function TermsProvider({ children }) {
-  const [mode, setModeState] = useState('simple')
+  const [languageMode, setLanguageModeState] = useState('simple')
+  const [activeLayer, setActiveLayerState] = useState(1)
 
   useEffect(() => {
     let cancelled = false
-    async function loadMode() {
+    async function loadSettings() {
       try {
-        const m = await db.getSetting('report_mode', 'simple')
-        if (!cancelled) setModeState(m || 'simple')
+        // Try new keys first
+        const [lang, layer] = await Promise.all([
+          db.getSetting('language_mode', null),
+          db.getSetting('active_layer', null),
+        ])
+
+        if (!cancelled) {
+          if (lang) {
+            setLanguageModeState(lang)
+          } else {
+            // Migrate from old report_mode
+            const oldMode = await db.getSetting('report_mode', 'simple')
+            if (oldMode === 'investor') {
+              setLanguageModeState('pro')
+              setActiveLayerState(3)
+              await db.setSetting('language_mode', 'pro')
+              await db.setSetting('active_layer', 3)
+            } else if (oldMode === 'pro') {
+              setLanguageModeState('pro')
+              setActiveLayerState(1)
+              await db.setSetting('language_mode', 'pro')
+              await db.setSetting('active_layer', 1)
+            } else {
+              setLanguageModeState('simple')
+              setActiveLayerState(1)
+              await db.setSetting('language_mode', 'simple')
+              await db.setSetting('active_layer', 1)
+            }
+          }
+          if (layer) setActiveLayerState(Number(layer))
+        }
       } catch (e) {
-        console.error('Failed to load report mode:', e)
+        console.error('Failed to load settings:', e)
       }
     }
-    loadMode()
+    loadSettings()
     return () => { cancelled = true }
   }, [])
 
-  const setMode = useCallback(async (nextMode) => {
-    const m = nextMode || 'simple'
-    setModeState(m)
-    try {
-      await db.setSetting('report_mode', m)
-    } catch (e) {
-      console.error('Failed to persist report mode:', e)
-    }
+  const setLanguageMode = useCallback(async (mode) => {
+    const m = mode || 'simple'
+    setLanguageModeState(m)
+    try { await db.setSetting('language_mode', m) } catch (e) { console.error(e) }
   }, [])
 
-  // Investor mode uses pro terms (formal accounting language)
-  const terms = (mode === 'pro' || mode === 'investor') ? terms_pro : terms_simple
+  const setActiveLayer = useCallback(async (layer) => {
+    const l = Number(layer) || 1
+    setActiveLayerState(l)
+    try { await db.setSetting('active_layer', l) } catch (e) { console.error(e) }
+  }, [])
 
-  // Helper: is the app in investor layout mode?
-  const isInvestorMode = mode === 'investor'
+  const terms = languageMode === 'pro' ? terms_pro : terms_simple
 
   return (
-    <TermsContext.Provider value={{ terms, mode, setMode, isInvestorMode }}>
+    <TermsContext.Provider value={{
+      terms,
+      languageMode,
+      activeLayer,
+      setLanguageMode,
+      setActiveLayer,
+      isInvestorMode: activeLayer === 3,
+      isManagerMode: activeLayer === 2,
+    }}>
       {children}
     </TermsContext.Provider>
   )
@@ -63,12 +117,31 @@ export function useTerms() {
   return ctx.terms
 }
 
+/** Returns [languageMode, setLanguageMode] — controls terminology only */
+export function useLanguageMode() {
+  const ctx = useContext(TermsContext)
+  return [ctx.languageMode, ctx.setLanguageMode]
+}
+
+/** Returns [activeLayer, setActiveLayer] — controls features/screens */
+export function useActiveLayer() {
+  const ctx = useContext(TermsContext)
+  return [ctx.activeLayer, ctx.setActiveLayer]
+}
+
+/** @deprecated Use useLanguageMode or useActiveLayer instead */
 export function useTermsMode() {
   const ctx = useContext(TermsContext)
-  return [ctx.mode, ctx.setMode]
+  // Backward compat: return [languageMode, setLanguageMode]
+  return [ctx.languageMode, ctx.setLanguageMode]
 }
 
 export function useIsInvestorMode() {
   const ctx = useContext(TermsContext)
   return ctx.isInvestorMode
+}
+
+export function useIsManagerMode() {
+  const ctx = useContext(TermsContext)
+  return ctx.isManagerMode
 }

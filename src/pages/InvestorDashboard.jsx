@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { db } from '../db'
-import { useTerms, useTermsMode } from '../context/TermsContext.jsx'
+import { useTerms, useLanguageMode, useActiveLayer } from '../context/TermsContext.jsx'
 import { useSettings2 } from '../context/SettingsContext.jsx'
 import { gatherReportData, computeIncomeStatement, computeBalanceSheet, computeKPIs } from '../utils/financialReports.js'
 import { formatAmount } from '../utils/format.js'
@@ -18,7 +18,7 @@ import { sendDebtReminder } from '../utils/whatsapp.js'
  */
 export default function InvestorDashboard() {
   const t = useTerms()
-  const [reportMode, setReportMode] = useTermsMode()
+  const [_, setActiveLayer] = useActiveLayer()
   const { businessName } = useSettings2()
   const navigate = useNavigate()
   const [data, setData] = useState(null)
@@ -196,7 +196,7 @@ export default function InvestorDashboard() {
           </button>
           <button
             type="button"
-            onClick={() => { hapticLight(); setReportMode('simple'); navigate('/') }}
+            onClick={() => { hapticLight(); setActiveLayer(1); navigate('/') }}
             className="bg-primary text-white text-caption font-semibold px-4 py-2.5 rounded-12 active:scale-95 transition-transform"
             style={{ minHeight: '40px' }}
           >

@@ -1,4 +1,4 @@
-import { useTerms, useTermsMode } from '../context/TermsContext.jsx'
+import { useTerms, useLanguageMode } from '../context/TermsContext.jsx'
 import { useState, useEffect, useCallback } from 'react'
 import { db } from '../db'
 import { formatAmount } from '../utils/format.js'
@@ -39,7 +39,7 @@ export default function ReportsPage() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
   })
   const t = useTerms()
-  const [reportMode] = useTermsMode()
+  const [languageMode] = useLanguageMode()
   const [report, setReport] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -213,7 +213,7 @@ export default function ReportsPage() {
           title={t.empty_no_data}
           description={t.report_period}
         />
-      ) : reportMode === 'simple' ? (
+      ) : languageMode === 'simple' ? (
         /* ============================================
            SIMPLE MODE — Conversational, hides advanced metrics
            ============================================ */

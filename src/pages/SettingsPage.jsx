@@ -8,7 +8,7 @@ import { getWhatsAppTemplate, setWhatsAppTemplate, WHATSAPP_PLACEHOLDERS } from 
 import { exportBackup, importBackup, checkBackupReminder, markBackupDone } from '../utils/backup.js'
 import { requestNotificationPermission, sendTestNotification, initNotificationService, teardownNotificationService } from '../utils/notifications.js'
 import { useHelperMode } from '../context/HelperModeContext.jsx'
-import { useTerms, useTermsMode } from '../context/TermsContext.jsx'
+import { useTerms, useLanguageMode, useActiveLayer } from '../context/TermsContext.jsx'
 import { useSettings2 } from '../context/SettingsContext.jsx'
 import { triggerInstall, isStandalone, subscribeInstallAvailability } from '../utils/pwaInstall.js'
 import PageHeader from '../components/layout/PageHeader.jsx'
@@ -74,7 +74,8 @@ export default function SettingsPage() {
   const [businessModelSheetOpen, setBusinessModelSheetOpen] = useState(false)
 
   // Report Mode (uses TermsContext for live switching)
-  const [reportMode, setReportModeCtx] = useTermsMode()
+  const [languageMode, setLanguageMode] = useLanguageMode()
+  const [activeLayer, setActiveLayer] = useActiveLayer()
 
   useEffect(() => {
     getWhatsAppTemplate().then(setTemplateText)
@@ -532,51 +533,84 @@ export default function SettingsPage() {
         <section>
           <h2 className="text-caption font-bold text-primary mb-2 px-1.5">وضع التطبيق</h2>
           <div className="bg-surface rounded-card shadow-card divide-y divide-divider">
+            {/* Language Mode — terminology only */}
             <div className="w-full p-4">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-9 h-9 rounded-12 flex items-center justify-center flex-shrink-0 bg-primary-50 text-primary-600">
                   <Icon name="document" className="w-5 h-5" />
                 </div>
                 <div className="flex-1">
-                  <p className="font-semibold text-ink text-sm">اختر وضع التطبيق</p>
-                  <p className="text-caption text-ink-secondary mt-0.5">اليومي / المدير / المستثمر</p>
+                  <p className="font-semibold text-ink text-sm">لغة العرض</p>
+                  <p className="text-caption text-ink-secondary mt-0.5">بسيطة (شارع) أو احترافية (محاسبية)</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={async () => { hapticLight(); await setLanguageMode('simple') }}
+                  className={`py-3 rounded-12 text-sm font-semibold transition-all active:scale-95 ${
+                    languageMode === 'simple' ? 'bg-primary text-white' : 'bg-background text-ink-secondary border border-divider'
+                  }`}
+                >
+                  بسيطة
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => { hapticLight(); await setLanguageMode('pro') }}
+                  className={`py-3 rounded-12 text-sm font-semibold transition-all active:scale-95 ${
+                    languageMode === 'pro' ? 'bg-primary text-white' : 'bg-background text-ink-secondary border border-divider'
+                  }`}
+                >
+                  احترافية
+                </button>
+              </div>
+            </div>
+            {/* Active Layer — features/screens */}
+            <div className="w-full p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-9 h-9 rounded-12 flex items-center justify-center flex-shrink-0 bg-accent-50 text-accent-600">
+                  <Icon name="list" className="w-5 h-5" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-ink text-sm">طبقة التطبيق</p>
+                  <p className="text-caption text-ink-secondary mt-0.5">يومي / مدير / مستثمر</p>
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
-                  onClick={async () => { hapticLight(); await setReportModeCtx('simple') }}
+                  onClick={async () => { hapticLight(); await setActiveLayer(1) }}
                   className={`py-3 rounded-12 text-sm font-semibold transition-all active:scale-95 ${
-                    reportMode === 'simple' ? 'bg-primary text-white' : 'bg-background text-ink-secondary border border-divider'
+                    activeLayer === 1 ? 'bg-primary text-white' : 'bg-background text-ink-secondary border border-divider'
                   }`}
                 >
                   اليومي
                 </button>
                 <button
                   type="button"
-                  onClick={async () => { hapticLight(); await setReportModeCtx('pro') }}
+                  onClick={async () => { hapticLight(); await setActiveLayer(2) }}
                   className={`py-3 rounded-12 text-sm font-semibold transition-all active:scale-95 ${
-                    reportMode === 'pro' ? 'bg-primary text-white' : 'bg-background text-ink-secondary border border-divider'
+                    activeLayer === 2 ? 'bg-primary text-white' : 'bg-background text-ink-secondary border border-divider'
                   }`}
                 >
                   المدير
                 </button>
                 <button
                   type="button"
-                  onClick={async () => { hapticLight(); await setReportModeCtx('investor') }}
+                  onClick={async () => { hapticLight(); await setActiveLayer(3) }}
                   className={`py-3 rounded-12 text-sm font-semibold transition-all active:scale-95 ${
-                    reportMode === 'investor' ? 'bg-primary text-white' : 'bg-background text-ink-secondary border border-divider'
+                    activeLayer === 3 ? 'bg-primary text-white' : 'bg-background text-ink-secondary border border-divider'
                   }`}
                 >
                   المستثمر
                 </button>
               </div>
               <p className="text-caption text-ink-tertiary mt-2 leading-relaxed">
-                {reportMode === 'investor'
-                  ? 'لوحة تنفيذية فاتحة بأرقام ضخمة — للتقارير والعرض على المستثمرين'
-                  : reportMode === 'pro'
-                  ? 'مصطلحات محاسبية رسمية + جداول بيانات كاملة'
-                  : 'لغة بسيطة + بطاقات محادثة — للاستخدام اليومي'}
+                {activeLayer === 3
+                  ? 'لوحة تنفيذية + إدخال أصول/قروض/رأس مال + تصدير PDF'
+                  : activeLayer === 2
+                  ? 'مخزون تنبؤي + خصم تلقائي (BOM) + رادار الهامش'
+                  : 'مبيعات سريعة + مخزون يدوي أسبوعي + تقارير بسيطة'}
               </p>
             </div>
           </div>

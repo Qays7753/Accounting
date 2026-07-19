@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useDashboardStats } from '../hooks/useDatabase.js'
 import { useCountUp } from '../hooks/useCountUp.js'
-import { useTerms, useTermsMode } from '../context/TermsContext.jsx'
+import { useTerms, useLanguageMode } from '../context/TermsContext.jsx'
 import { useSettings2 } from '../context/SettingsContext.jsx'
 import { db } from '../db'
 import { formatAmount, parseNumber, formatLiveInput } from '../utils/format.js'
@@ -27,7 +27,7 @@ import { useNavigate } from 'react-router-dom'
 export default function HomePage() {
   const stats = useDashboardStats()
   const t = useTerms()
-  const [reportMode] = useTermsMode()
+  const [languageMode] = useLanguageMode()
   const { logo, businessName, monthlySummary, hideAmounts } = useSettings2()
   const [sheetOpen, setSheetOpen] = useState(null)
   const [jars, setJars] = useState({ capitalJar: 0, profitJar: 0, totalCash: 0 })
@@ -108,7 +108,7 @@ export default function HomePage() {
         ])
         const data = { transactions, orders, receivables }
         const metrics = computeSnapshot(data)
-        const level = reportMode || 'simple'
+        const level = languageMode || 'simple'
         const results = diagnose(metrics, rulesJson, level)
         // Replace {value} in text with actual metric values
         const processed = results.map(insight => {
@@ -131,7 +131,7 @@ export default function HomePage() {
       }
     }
     computeDiagnostics()
-  }, [stats.cashBalance, reportMode])
+  }, [stats.cashBalance, languageMode])
 
   useEffect(() => {
     db.getTwoJars().then(setJars)
