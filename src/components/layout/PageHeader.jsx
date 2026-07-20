@@ -30,6 +30,17 @@ import BuildStamp from '../common/BuildStamp.jsx' // TEMP dev indicator — remo
  *   search    : { value, onChange, placeholder }  — enables icon-expand search
  *   subheader : ReactNode       — secondary row that scrolls with content
  *                                  (segmented control, net-summary card, etc.)
+ *   homeChip  : ReactNode       — OPTIONAL. Rendered in the home variant's
+ *                                  left-actions area (visual LEFT in RTL —
+ *                                  the row's end side), as a sibling of
+ *                                  <BuildStamp />. Use this slot for the
+ *                                  Overview entry chip (Agent 4). Only
+ *                                  rendered when variant === 'home'.
+ *                                  The node is injected raw (no wrapper),
+ *                                  so the caller controls its own layout,
+ *                                  sizing, and tap target. Recommended to
+ *                                  include `flex-none` on the chip root so
+ *                                  it doesn't shrink inside the flex row.
  */
 export default function PageHeader({
   title,
@@ -37,6 +48,7 @@ export default function PageHeader({
   actions = [],
   search,
   subheader,
+  homeChip,
 }) {
   const t = useTerms()
   const { logo, businessName } = useSettings2()
@@ -159,10 +171,16 @@ export default function PageHeader({
 
           {/* Right: actions (search icon + custom actions).
               In RTL this sits on the visual LEFT — where the dashboard build
-              stamp lives. */}
+              stamp lives.
+
+              `homeChip` (when provided) renders as a sibling of <BuildStamp />
+              in this row — that is the documented left-action slot for the
+              Overview entry chip (see Agent 4). It is injected raw (no
+              wrapper) so the caller controls its own sizing + tap target. */}
           {!searchOpen && (
             <div className="flex items-center gap-2 flex-none">
               {variant === 'home' && <BuildStamp />}
+              {variant === 'home' && homeChip}
               {search && (
                 <button
                   type="button"

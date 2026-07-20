@@ -6,7 +6,7 @@ import OnboardingPage from './pages/OnboardingPage.jsx'
 import BackupReminderBanner from './components/common/BackupReminderBanner.jsx'
 import { checkBackupReminder } from './utils/backup.js'
 import { HelperModeProvider, useHelperMode } from './context/HelperModeContext.jsx'
-import { TermsProvider, useIsInvestorMode } from './context/TermsContext.jsx'
+import { TermsProvider } from './context/TermsContext.jsx'
 import { SettingsProvider } from './context/SettingsContext.jsx'
 import { CloudSyncProvider } from './context/CloudSyncContext.jsx'
 
@@ -53,7 +53,11 @@ const QuickPosPage = lazyWithReload(() => import('./pages/QuickPosPage.jsx'))
 const ReportsPage = lazyWithReload(() => import('./pages/ReportsPage.jsx'))
 const SettingsPage = lazyWithReload(() => import('./pages/SettingsPage.jsx'))
 const InventoryPage = lazyWithReload(() => import('./pages/InventoryPage.jsx'))
-const InvestorDashboard = lazyWithReload(() => import('./pages/InvestorDashboard.jsx'))
+const OverviewPage = lazyWithReload(() => import('./pages/OverviewPage.jsx'))
+// InvestorDashboard.jsx stays in the codebase as the migration source for
+// Agent 5 (its content will be lifted into OverviewPage). It is no longer
+// mounted as a full-app replacement — all layers use the normal router
+// below and can navigate to every operational route plus /overview.
 
 function PageLoader() {
   return (
@@ -79,7 +83,6 @@ function PageLoader() {
 
 function AppRoutes() {
   const { isHelperMode } = useHelperMode()
-  const isInvestor = useIsInvestorMode()
   const navigate = useNavigate()
 
   // Helper Mode restricts navigation
@@ -95,22 +98,16 @@ function AppRoutes() {
     )
   }
 
-  // Investor Mode: read-only executive dashboard (all routes show it)
-  if (isInvestor) {
-    return (
-      <Suspense fallback={<PageLoader />}>
-        <Routes>
-          <Route path="*" element={<InvestorDashboard />} />
-        </Routes>
-      </Suspense>
-    )
-  }
-
-  // Daily / Manager Mode: normal routes
+  // All layers (Daily / Manager / Investor) share the SAME router and have
+  // access to every operational route PLUS /overview. Investor is no longer
+  // an exclusive full-screen swap — it keeps full navigation and operational
+  // input. The §13 executive treatment lives INSIDE /overview (scoped), not
+  // at the layout level.
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/overview" element={<OverviewPage />} />
         <Route path="/finance" element={<FinancePage />} />
         <Route path="/orders" element={<OrdersPage />} />
         <Route path="/debts" element={<DebtsPage />} />
