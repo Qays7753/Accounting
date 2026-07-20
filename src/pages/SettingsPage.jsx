@@ -613,6 +613,11 @@ export default function SettingsPage() {
                   ? 'مخزون تنبؤي + خصم تلقائي (BOM) + رادار الهامش'
                   : 'مبيعات سريعة + مخزون يدوي أسبوعي + تقارير بسيطة'}
               </p>
+              {/* V13: Reassurance — switching layers is a pure settings write; no business data is touched. */}
+              <div className="mt-2 flex items-start gap-1.5 text-caption text-ink-secondary leading-relaxed">
+                <Icon name="info" className="w-4 h-4 text-accent-600 flex-shrink-0 mt-0.5" />
+                <span>{t.layer_switch_safe}</span>
+              </div>
             </div>
           </div>
         </section>

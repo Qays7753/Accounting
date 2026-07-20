@@ -275,6 +275,20 @@ export const terms_pro = {
   onboarding_skip: 'تخطي (استخدام "متجري")',
   onboarding_ready: 'تم الإعداد بنجاح!',
   onboarding_ready_desc: 'يمكنك الآن تسجيل أول عملية...',
+
+  // Onboarding — layer intent (V13)
+  onboarding_layer_title: 'كيف تريد استخدام التطبيق؟',
+  onboarding_layer_subtitle: 'اختر الوضع المناسب. يمكنك تغييره لاحقاً من الإعدادات.',
+  onboarding_layer_daily_title: 'يومي',
+  onboarding_layer_daily_desc: 'مبيعات سريعة + مخزون يدوي + تقارير بسيطة',
+  onboarding_layer_manager_title: 'مدير',
+  onboarding_layer_manager_desc: 'مخزون تنبؤي + خصم تلقائي (BOM) + رادار هامش الربح',
+  onboarding_layer_investor_title: 'مستثمر',
+  onboarding_layer_investor_desc: 'لوحة تنفيذية + أصول/قروض/رأس مال + تصدير PDF',
+  onboarding_layer_skip: 'تخطّي (يومي)',
+
+  // Settings — layer switcher reassurance (V13)
+  layer_switch_safe: 'تبديل الوضع لا يحذف بياناتك',
   opening_balance_title: 'إدخال الرصيد الافتتاحي',
   opening_balance_desc: 'أدخل رصيدك الحالي لبدء الحساب بدقة. يمكنك القيام بذلك لاحقاً.',
   opening_balance_enter: 'إدخال الرصيد',
