@@ -10,16 +10,50 @@ import { TermsProvider, useIsInvestorMode } from './context/TermsContext.jsx'
 import { SettingsProvider } from './context/SettingsContext.jsx'
 import { CloudSyncProvider } from './context/CloudSyncContext.jsx'
 
+/**
+ * Lazy import with stale-chunk recovery.
+ *
+ * After a new version is deployed, a device holding a cached index.html may
+ * try to load a JS chunk whose hashed filename no longer exists. The dynamic
+ * import then rejects and, without handling, crashes the app to the error
+ * boundary ("حدث خطأ غير متوقع"). Here we reload the page ONCE (guarded by a
+ * sessionStorage flag) so the browser fetches the fresh assets. A successful
+ * load clears the flag, so a later deploy can recover the same way.
+ */
+const CHUNK_RELOAD_KEY = 'chunk_reload_attempt'
+
+function lazyWithReload(factory) {
+  return lazy(() =>
+    factory()
+      .then((mod) => {
+        try { sessionStorage.removeItem(CHUNK_RELOAD_KEY) } catch { /* ignore */ }
+        return mod
+      })
+      .catch((err) => {
+        let alreadyTried = false
+        try { alreadyTried = !!sessionStorage.getItem(CHUNK_RELOAD_KEY) } catch { /* ignore */ }
+        if (!alreadyTried) {
+          try { sessionStorage.setItem(CHUNK_RELOAD_KEY, '1') } catch { /* ignore */ }
+          window.location.reload()
+          // Keep the loader on screen while the page reloads.
+          return new Promise(() => {})
+        }
+        // Already reloaded once and it still failed — surface the real error.
+        throw err
+      })
+  )
+}
+
 // Lazy-load route components for faster initial load.
-const HomePage = lazy(() => import('./pages/HomePage.jsx'))
-const FinancePage = lazy(() => import('./pages/FinancePage.jsx'))
-const OrdersPage = lazy(() => import('./pages/OrdersPage.jsx'))
-const DebtsPage = lazy(() => import('./pages/DebtsPage.jsx'))
-const QuickPosPage = lazy(() => import('./pages/QuickPosPage.jsx'))
-const ReportsPage = lazy(() => import('./pages/ReportsPage.jsx'))
-const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'))
-const InventoryPage = lazy(() => import('./pages/InventoryPage.jsx'))
-const InvestorDashboard = lazy(() => import('./pages/InvestorDashboard.jsx'))
+const HomePage = lazyWithReload(() => import('./pages/HomePage.jsx'))
+const FinancePage = lazyWithReload(() => import('./pages/FinancePage.jsx'))
+const OrdersPage = lazyWithReload(() => import('./pages/OrdersPage.jsx'))
+const DebtsPage = lazyWithReload(() => import('./pages/DebtsPage.jsx'))
+const QuickPosPage = lazyWithReload(() => import('./pages/QuickPosPage.jsx'))
+const ReportsPage = lazyWithReload(() => import('./pages/ReportsPage.jsx'))
+const SettingsPage = lazyWithReload(() => import('./pages/SettingsPage.jsx'))
+const InventoryPage = lazyWithReload(() => import('./pages/InventoryPage.jsx'))
+const InvestorDashboard = lazyWithReload(() => import('./pages/InvestorDashboard.jsx'))
 
 function PageLoader() {
   return (

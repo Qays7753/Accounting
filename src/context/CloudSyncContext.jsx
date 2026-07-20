@@ -10,7 +10,6 @@ import {
   deleteFile,
   getLastSync,
   setLastSync as persistLastSync,
-  listFiles,
 } from '../utils/googleDrive.js'
 
 /**
