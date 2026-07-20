@@ -1,12 +1,34 @@
 import React from 'react'
+import { forceRefreshApp } from '../../utils/pwaUpdate.js'
 
 /**
- * Error Boundary - catches unhandled errors and shows friendly message
+ * Error Boundary - catches unhandled render errors and shows a friendly
+ * message. Critically, recovery clears the service-worker + asset caches
+ * (NOT the database) and reloads from the network — so a device stuck on an
+ * old, broken cached build can actually escape it. The previous version just
+ * navigated to '/', which reloaded the very same cached bundle and re-crashed.
  */
+
+// Errors that mean "a code chunk failed to load" — almost always a stale cache
+// after a new deploy. Safe to auto-recover from once.
+function isLoadError(error) {
+  const msg = String(error?.message || error || '')
+  const name = String(error?.name || '')
+  return (
+    name === 'ChunkLoadError' ||
+    /Loading (chunk|CSS chunk)/i.test(msg) ||
+    /dynamically imported module/i.test(msg) ||
+    /Importing a module script failed/i.test(msg) ||
+    /Failed to fetch dynamically/i.test(msg)
+  )
+}
+
+const AUTO_HEAL_KEY = 'eb_auto_heal_attempt'
+
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props)
-    this.state = { hasError: false, error: null }
+    this.state = { hasError: false, error: null, recovering: false }
   }
 
   static getDerivedStateFromError(error) {
@@ -15,15 +37,27 @@ export default class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error('App error:', error, errorInfo)
+
+    // Auto-recover once for stale-chunk crashes: clear caches + reload without
+    // the user having to do anything. Guarded so it can never loop.
+    let alreadyTried = false
+    try { alreadyTried = !!sessionStorage.getItem(AUTO_HEAL_KEY) } catch { /* ignore */ }
+    if (isLoadError(error) && !alreadyTried) {
+      try { sessionStorage.setItem(AUTO_HEAL_KEY, '1') } catch { /* ignore */ }
+      this.setState({ recovering: true })
+      forceRefreshApp(true)
+    }
   }
 
-  handleReset = () => {
-    this.setState({ hasError: false, error: null })
-    window.location.href = '/'
+  handleReset = async () => {
+    this.setState({ recovering: true })
+    // Clear the cached (possibly broken) build, then reload fresh from network.
+    await forceRefreshApp(true)
   }
 
   render() {
     if (this.state.hasError) {
+      const { recovering } = this.state
       return (
         <div className="min-h-screen bg-background flex items-center justify-center p-6">
           <div className="text-center max-w-sm">
@@ -34,10 +68,10 @@ export default class ErrorBoundary extends React.Component {
             </div>
             <h1 className="text-xl font-bold mb-2">حدث خطأ غير متوقع</h1>
             <p className="text-sm text-text-secondary mb-6 leading-relaxed">
-              نعتذر عن هذا الخطأ. بياناتك آمنة. يمكنك إعادة تحميل التطبيق للمتابعة.
+              نعتذر عن هذا الخطأ. بياناتك آمنة ومحفوظة على الجهاز. سنحدّث التطبيق إلى أحدث نسخة للمتابعة.
             </p>
-            <button onClick={this.handleReset} className="btn-primary w-full">
-              إعادة تحميل التطبيق
+            <button onClick={this.handleReset} disabled={recovering} className="btn-primary w-full disabled:opacity-70">
+              {recovering ? 'جارٍ التحديث…' : 'تحديث التطبيق وإعادة التشغيل'}
             </button>
           </div>
         </div>

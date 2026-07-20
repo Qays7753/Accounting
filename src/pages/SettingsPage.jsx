@@ -15,6 +15,7 @@ import PageHeader from '../components/layout/PageHeader.jsx'
 import { useSubmitGuard } from '../hooks/useSubmitGuard.js'
 import { useCloudSync } from '../context/CloudSyncContext.jsx'
 import { loginWithGoogle, logout as gdriveLogout } from '../utils/googleDrive.js'
+import { forceRefreshApp } from '../utils/pwaUpdate.js'
 import { formatArabicDateTime } from '../utils/date.js'
 
 export default function SettingsPage() {
@@ -820,6 +821,18 @@ export default function SettingsPage() {
               label={t.install_instructions}
               description={t.install_desc}
               onClick={() => setInstallOpen(true)}
+            />
+            <SettingsRow
+              icon="download"
+              iconBg="bg-primary-50 text-primary-600"
+              label="التحقق من التحديثات"
+              description="جلب أحدث نسخة من التطبيق"
+              onClick={async () => {
+                hapticMedium()
+                if (confirm('سيتم جلب أحدث نسخة وإعادة تشغيل التطبيق.\nبياناتك آمنة ولن تُحذف.\nمتابعة؟')) {
+                  await forceRefreshApp(true)
+                }
+              }}
             />
             <SettingsRow
               icon="info"
