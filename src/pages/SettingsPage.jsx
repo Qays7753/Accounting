@@ -574,7 +574,7 @@ export default function SettingsPage() {
                 </div>
                 <div className="flex-1">
                   <p className="font-semibold text-ink text-sm">طبقة التطبيق</p>
-                  <p className="text-caption text-ink-secondary mt-0.5">يومي / مدير / مستثمر</p>
+                  <p className="text-caption text-ink-secondary mt-0.5">البسيط / المتوسط / المتقدم</p>
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-2">
@@ -585,7 +585,7 @@ export default function SettingsPage() {
                     activeLayer === 1 ? 'bg-primary text-white' : 'bg-background text-ink-secondary border border-divider'
                   }`}
                 >
-                  اليومي
+                  البسيط
                 </button>
                 <button
                   type="button"
@@ -594,7 +594,7 @@ export default function SettingsPage() {
                     activeLayer === 2 ? 'bg-primary text-white' : 'bg-background text-ink-secondary border border-divider'
                   }`}
                 >
-                  المدير
+                  المتوسط
                 </button>
                 <button
                   type="button"
@@ -603,7 +603,7 @@ export default function SettingsPage() {
                     activeLayer === 3 ? 'bg-primary text-white' : 'bg-background text-ink-secondary border border-divider'
                   }`}
                 >
-                  المستثمر
+                  المتقدم
                 </button>
               </div>
               <p className="text-caption text-ink-tertiary mt-2 leading-relaxed">
