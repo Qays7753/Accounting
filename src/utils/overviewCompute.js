@@ -104,10 +104,11 @@ export function computeRangeSummary(data, range = 'week') {
  * @param {Object} data — gatherReportData output
  * @param {1|2|3} activeLayer
  * @param {'today'|'week'|'month'} range
- * @returns {{ value:number, secondary:string|null, available:boolean }}
+ * @returns {{ value:number, secondary:{key:string,value:number}|null, available:boolean }}
  *   `value` is the primary hero number (already a plain number).
- *   `secondary` is an optional secondary string (e.g. "هامش 23%") — the
- *   caller renders it as a small label below the hero.
+ *   `secondary` is an optional { key, value } pair — the caller localizes it
+ *   via useTerms() (e.g. t[key].replace('{value}', value)) so it respects the
+ *   simple/pro language mode. `null` when there is no secondary line.
  */
 export function computeHeroMetric(data, activeLayer, range) {
   const summary = computeRangeSummary(data, range)
@@ -126,7 +127,8 @@ export function computeHeroMetric(data, activeLayer, range) {
       : 0
     return {
       value: summary.net,
-      secondary: `هامش ${marginPct}%`,
+      // Structured so the render layer localizes via useTerms() (simple/pro).
+      secondary: { key: 'overview_hero_margin', value: marginPct },
       available: summary.available,
     }
   }
@@ -138,7 +140,7 @@ export function computeHeroMetric(data, activeLayer, range) {
     const ratio = Math.round((summary.net / equity) * 100)
     return {
       value: summary.net,
-      secondary: `${ratio}% من حقوق الملكية`,
+      secondary: { key: 'overview_hero_equity_ratio', value: ratio },
       available: summary.available,
     }
   }

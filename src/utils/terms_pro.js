@@ -360,6 +360,8 @@ export const terms_pro = {
   overview_hero_label_layer_1: 'صافي الأسبوع',
   overview_hero_label_layer_2: 'صافي الربح + الهامش',
   overview_hero_label_layer_3: 'صافي الربح / حقوق الملكية',
+  overview_hero_margin: 'هامش {value}%',
+  overview_hero_equity_ratio: '{value}% من حقوق الملكية',
   overview_kpi_revenue: 'الإيرادات',
   overview_kpi_expense: 'المصروفات',
   overview_kpi_profit: 'صافي الربح',

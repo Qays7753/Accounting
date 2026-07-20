@@ -306,7 +306,11 @@ export default function OverviewPage() {
                   : t.overview_hero_label_layer_1
             }
             value={heroMetric.value}
-            secondary={heroMetric.secondary}
+            secondary={
+              heroMetric.secondary
+                ? (t[heroMetric.secondary.key] || '').replace('{value}', String(heroMetric.secondary.value))
+                : null
+            }
             available={heroMetric.available}
           />
         </section>

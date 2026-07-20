@@ -54,10 +54,10 @@ const ReportsPage = lazyWithReload(() => import('./pages/ReportsPage.jsx'))
 const SettingsPage = lazyWithReload(() => import('./pages/SettingsPage.jsx'))
 const InventoryPage = lazyWithReload(() => import('./pages/InventoryPage.jsx'))
 const OverviewPage = lazyWithReload(() => import('./pages/OverviewPage.jsx'))
-// InvestorDashboard.jsx stays in the codebase as the migration source for
-// Agent 5 (its content will be lifted into OverviewPage). It is no longer
-// mounted as a full-app replacement — all layers use the normal router
-// below and can navigate to every operational route plus /overview.
+// The old InvestorDashboard has been fully migrated into OverviewPage +
+// StrategicInputSheets and removed. All layers use the normal router below
+// and can navigate to every operational route plus /overview. Investor is no
+// longer a full-app replacement.
 
 function PageLoader() {
   return (
