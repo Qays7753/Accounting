@@ -4,6 +4,7 @@ import { hapticLight } from '../../utils/haptics.js'
 import { useSettings2 } from '../../context/SettingsContext.jsx'
 import { useTerms } from '../../context/TermsContext.jsx'
 import { getGreeting, formatArabicDate } from '../../utils/date.js'
+import BuildStamp from '../common/BuildStamp.jsx' // TEMP dev indicator — remove after development
 
 /**
  * PageHeader — shared sticky top bar for all 7 screens.
@@ -156,9 +157,12 @@ export default function PageHeader({
             </div>
           )}
 
-          {/* Right: actions (search icon + custom actions) */}
+          {/* Right: actions (search icon + custom actions).
+              In RTL this sits on the visual LEFT — where the dashboard build
+              stamp lives. */}
           {!searchOpen && (
             <div className="flex items-center gap-2 flex-none">
+              {variant === 'home' && <BuildStamp />}
               {search && (
                 <button
                   type="button"

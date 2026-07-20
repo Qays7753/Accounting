@@ -4,6 +4,11 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  // Baked at build time — every deploy stamps a fresh value. Consumed by the
+  // temporary BuildStamp indicator (src/components/common/BuildStamp.jsx).
+  define: {
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+  },
   plugins: [
     react(),
     VitePWA({
