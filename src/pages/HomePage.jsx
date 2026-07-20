@@ -23,6 +23,7 @@ import DiagnosticCard from '../components/ui/DiagnosticCard.jsx'
 import { computeSnapshot, diagnose } from '../utils/diagnostics.js'
 import rulesJson from '../config/diagnostic_rules.json'
 import { useNavigate } from 'react-router-dom'
+import OverviewChip from '../components/overview/OverviewChip.jsx'
 
 export default function HomePage() {
   const stats = useDashboardStats()
@@ -289,7 +290,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen pb-32">
-      <PageHeader variant="home" />
+      <PageHeader variant="home" homeChip={<OverviewChip />} />
 
       {/* Honest Drawer — Total Cash + Free Cash */}
       <section className="px-4 mb-3">

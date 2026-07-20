@@ -219,6 +219,10 @@ export default function Icon({ name, className = 'w-6 h-6', strokeWidth = 1.8, o
     build: (
       <path strokeLinecap="round" strokeLinejoin="round" d="M14.5 6a3.5 3.5 0 00-4.6 4.3l-6 6a1.5 1.5 0 002.1 2.1l6-6A3.5 3.5 0 0018 8.5l-2 2-2.5-.5L13 7.5l1.5-1.5z" />
     ),
+    // Chart bar (analytics / overview entry)
+    chartBar: (
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 20V10m6 10V4m6 16v-7m4 7H4" />
+    ),
   }
 
   return (
