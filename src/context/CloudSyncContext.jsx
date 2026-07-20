@@ -9,7 +9,7 @@ import {
   renameFile,
   deleteFile,
   getLastSync,
-  setLastSync,
+  setLastSync as persistLastSync,
   listFiles,
 } from '../utils/googleDrive.js'
 
@@ -47,10 +47,19 @@ const CloudSyncContext = createContext({
 export function CloudSyncProvider({ children }) {
   const [authorized, setAuthorized] = useState(() => isAuthorized())
   const [syncing, setSyncing] = useState(false)
-  const [lastSync, setLastSync] = useState(() => getLastSync())
+  const [lastSync, setLastSyncState] = useState(() => getLastSync())
   const [emergencyBackupExists, setEmergencyBackupExists] = useState(false)
   const debounceRef = useRef(null)
   const isSyncingRef = useRef(false)
+
+  // Persist the last-sync timestamp to localStorage AND update UI state.
+  // Previously the React state setter shadowed the imported localStorage
+  // writer, so the timestamp was never persisted — every launch then thought
+  // the cloud was newer and re-pulled (and re-prompted for Google auth).
+  const markSynced = useCallback((ts = Date.now()) => {
+    persistLastSync(ts)
+    setLastSyncState(ts)
+  }, [])
 
   // Check authorization on mount + periodically (token may expire)
   // Also attempt silent refresh when token expires
@@ -118,8 +127,7 @@ export function CloudSyncProvider({ children }) {
 
       // Upload new current.json
       await uploadFile(SYNC_FILE, content)
-      setLastSync(Date.now())
-      setLastSync()
+      markSynced()
       console.log('[CloudSync] Upload complete')
       return { blocked: false }
     } catch (e) {
@@ -129,7 +137,7 @@ export function CloudSyncProvider({ children }) {
       isSyncingRef.current = false
       setSyncing(false)
     }
-  }, [])
+  }, [markSynced])
 
   /**
    * Pull current.json from Drive and merge with local DB (LWW).
@@ -167,16 +175,14 @@ export function CloudSyncProvider({ children }) {
           // Local empty, cloud has data → restore from cloud
           console.log('[CloudSync] Local empty, cloud has data → restoring')
           await db.restoreFromBackup(cloudData)
-          setLastSync(cloudTs)
-          setLastSync(cloudTs)
+          markSynced(cloudTs)
         } else if (localTxCount > 0 && cloudTxCount > 0) {
           // Both have data → LWW merge by updated_at on transactions
           // Simple approach: if cloud exportedAt is newer, replace local
           // (More granular merge would compare per-transaction timestamps)
           console.log('[CloudSync] Both have data → LWW: cloud is newer, replacing')
           await db.restoreFromBackup(cloudData)
-          setLastSync(cloudTs)
-          setLastSync(cloudTs)
+          markSynced(cloudTs)
         }
         // If local has data and cloud is empty, do nothing (local wins)
       } else {
@@ -188,7 +194,7 @@ export function CloudSyncProvider({ children }) {
       isSyncingRef.current = false
       setSyncing(false)
     }
-  }, [])
+  }, [markSynced])
 
   /**
    * Full sync: pull then push.
@@ -216,18 +222,44 @@ export function CloudSyncProvider({ children }) {
     }
   }, [authorized]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Wire debounced sync to Dexie live changes — auto-sync on any DB write
+  // Wire debounced sync to Dexie writes — auto-sync on any DB change.
+  //
+  // NOTE: db.on('changes') requires the dexie-observable addon, which is NOT
+  // installed. Calling it throws ("Cannot read properties of undefined
+  // (reading 'subscribe')"), and because this effect only runs once the user
+  // is authorized, it crashed the whole app to the error boundary right after
+  // connecting Google. Instead we use core-Dexie table CRUD hooks, which are
+  // part of Dexie itself. The whole wiring is guarded so a failure here can
+  // never take down the app.
   useEffect(() => {
     if (!authorized) return
-    const subscription = db.on('changes', () => {
-      scheduleDebouncedSync()
-    })
+
+    const trigger = () => scheduleDebouncedSync()
+    const HOOK_EVENTS = ['creating', 'updating', 'deleting']
+    const attached = []
+
+    try {
+      for (const table of db.tables) {
+        for (const evt of HOOK_EVENTS) {
+          try {
+            table.hook(evt, trigger)
+            attached.push([table, evt])
+          } catch {
+            // ignore a single table/event we couldn't hook
+          }
+        }
+      }
+    } catch (e) {
+      console.error('[CloudSync] Failed to wire auto-sync hooks:', e)
+    }
+
     return () => {
-      // Dexie v4 returns an array of subscription objects; unsubscribe each
-      if (Array.isArray(subscription)) {
-        subscription.forEach(s => s.unsubscribe?.())
-      } else {
-        subscription?.unsubscribe?.()
+      for (const [table, evt] of attached) {
+        try {
+          table.hook(evt).unsubscribe(trigger)
+        } catch {
+          // best-effort cleanup
+        }
       }
     }
   }, [authorized, scheduleDebouncedSync])
@@ -273,10 +305,9 @@ export function CloudSyncProvider({ children }) {
     const content = await downloadFile(file.id)
     const data = JSON.parse(content)
     await db.restoreFromBackup(data)
-    setLastSync(Date.now())
-    setLastSync()
+    markSynced()
     return data
-  }, [])
+  }, [markSynced])
 
   /**
    * Agent 3: Create emergency backup before clearing data.
