@@ -51,6 +51,26 @@ export default function OrderDetailSheet({ order, open, onClose, onEdit, onUpdat
     }
   }, [])
 
+  // Complete & Sell handler — submit guard prevents double-complete.
+  // IMPORTANT: this hook MUST run on every render, i.e. BEFORE the early
+  // `if (!order) return null` below. Otherwise the hook count changes when
+  // `order` goes from null → object (opening the sheet), and React throws
+  // "Rendered more hooks than during the previous render" — which crashed the
+  // whole app to the error boundary every time an order was opened.
+  const [completing, guardComplete] = useSubmitGuard()
+  const handleComplete = guardComplete(async (paymentType) => {
+    hapticLight()
+    setCompleteSheetOpen(false)
+    try {
+      await db.completeOrder(order.id, paymentType)
+      hapticSuccess()
+      onUpdated?.()
+      onClose?.()
+    } catch (e) {
+      console.error('Complete order failed:', e)
+    }
+  })
+
   if (!order) return null
 
   const c = STATUS_CONFIG[order.status] || STATUS_CONFIG.in_progress
@@ -82,21 +102,6 @@ export default function OrderDetailSheet({ order, open, onClose, onEdit, onUpdat
     hapticMedium()
     await shareOrderViaWhatsApp(order)
   }
-
-  // Complete & Sell handler — submit guard prevents double-complete
-  const [completing, guardComplete] = useSubmitGuard()
-  const handleComplete = guardComplete(async (paymentType) => {
-    hapticLight()
-    setCompleteSheetOpen(false)
-    try {
-      await db.completeOrder(order.id, paymentType)
-      hapticSuccess()
-      onUpdated?.()
-      onClose?.()
-    } catch (e) {
-      console.error('Complete order failed:', e)
-    }
-  })
 
   return (
     <>

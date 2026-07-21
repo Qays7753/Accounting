@@ -20,10 +20,25 @@ export function formatAmount(value) {
 }
 
 // Parse a formatted string back to number
+/**
+ * Convert Arabic-Indic (٠-٩) and Extended/Persian (۰-۹) digits — plus the
+ * Arabic decimal/thousands separators — to their Western ASCII equivalents.
+ * The app accepts Arabic numerals as input but always stores/computes in
+ * Western digits.
+ */
+export function normalizeDigits(str) {
+  if (str == null) return ''
+  return String(str)
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660)) // ٠-٩
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06F0)) // ۰-۹
+    .replace(/٫/g, '.') // Arabic decimal separator ٫
+    .replace(/٬/g, '')  // Arabic thousands separator ٬
+}
+
 export function parseNumber(str) {
   if (!str) return 0
-  // Remove all non-numeric chars except dot
-  const cleaned = String(str).replace(/[^\d.]/g, '')
+  // Normalize Arabic numerals first, then keep only digits + dot
+  const cleaned = normalizeDigits(str).replace(/[^\d.]/g, '')
   const num = Number(cleaned)
   return isNaN(num) ? 0 : num
 }
@@ -31,8 +46,8 @@ export function parseNumber(str) {
 // Live formatting for inputs: user types 1500 -> shows 1,500
 export function formatLiveInput(value) {
   if (!value) return ''
-  // Remove existing commas
-  const cleaned = String(value).replace(/,/g, '')
+  // Normalize Arabic numerals, then remove existing commas
+  const cleaned = normalizeDigits(value).replace(/,/g, '')
   // Split by decimal
   const parts = cleaned.split('.')
   // Format integer part with commas
