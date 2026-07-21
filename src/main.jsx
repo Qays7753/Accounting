@@ -9,6 +9,7 @@ import { registerSW } from 'virtual:pwa-register'
 import { initNotificationService } from './utils/notifications.js'
 import { setUpdater, notifyNeedRefresh } from './utils/pwaUpdate.js'
 import { initInstallPromptCapture } from './utils/pwaInstall.js'
+import { requestPersistentStorage } from './utils/storage.js'
 
 // ── Service worker / update strategy ───────────────────────────────────────
 // Hybrid update model:
@@ -62,6 +63,10 @@ initNotificationService()
 
 // Capture the PWA beforeinstallprompt event so Settings can trigger it later
 initInstallPromptCapture()
+
+// Ask the browser to keep the local DB persistent (best-effort) — reduces the
+// risk of iOS Safari evicting accounting data after a period of inactivity.
+requestPersistentStorage()
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
