@@ -10,6 +10,7 @@ import { initNotificationService } from './utils/notifications.js'
 import { setUpdater, notifyNeedRefresh } from './utils/pwaUpdate.js'
 import { initInstallPromptCapture } from './utils/pwaInstall.js'
 import { requestPersistentStorage } from './utils/storage.js'
+import { preloadGoogleAuth } from './utils/googleDrive.js'
 
 // ── Service worker / update strategy ───────────────────────────────────────
 // Hybrid update model:
@@ -67,6 +68,10 @@ initInstallPromptCapture()
 // Ask the browser to keep the local DB persistent (best-effort) — reduces the
 // risk of iOS Safari evicting accounting data after a period of inactivity.
 requestPersistentStorage()
+
+// Warm up Google auth so the sign-in popup can open synchronously on click
+// (iOS Safari blocks popups opened after an await).
+preloadGoogleAuth()
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

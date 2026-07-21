@@ -88,10 +88,61 @@ function storeToken(accessToken, expiresIn) {
   localStorage.setItem(EXPIRY_KEY, String(Date.now() + expiresIn * 1000 - 60000))
 }
 
+// ── Login token client (pre-built to preserve the user gesture) ────────────
+// iOS Safari only opens the OAuth popup when requestAccessToken() runs
+// SYNCHRONOUSLY inside the click handler. Any `await` before it — even one
+// that resolves immediately — can drop the user-activation, so the popup is
+// blocked and login "never completes". We therefore build the token client
+// ahead of time (on GIS load, see preloadGoogleAuth) and call
+// requestAccessToken() with NO await on click.
+let loginClient = null
+let pendingResolve = null
+let pendingReject = null
+
+function buildLoginClient() {
+  if (loginClient) return loginClient
+  if (typeof google === 'undefined' || !google.accounts?.oauth2) return null
+  loginClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPE,
+    // Do NOT set redirect_uri — GIS handles the origin implicitly
+    callback: (response) => {
+      const resolve = pendingResolve
+      const reject = pendingReject
+      pendingResolve = pendingReject = null
+      if (response.access_token) {
+        storeToken(response.access_token, Number(response.expires_in || 3600))
+        resolve?.(response.access_token)
+      } else if (response.error) {
+        reject?.(new Error(response.error_description || response.error || 'فشل تسجيل الدخول'))
+      } else {
+        reject?.(new Error('لم يتم منح الإذن'))
+      }
+    },
+    error_callback: (err) => {
+      const reject = pendingReject
+      pendingResolve = pendingReject = null
+      reject?.(new Error(err?.message || err?.type || 'فشل تسجيل الدخول عبر Google'))
+    },
+  })
+  return loginClient
+}
+
 /**
- * Login with Google using GIS Token Client.
- * Always uses prompt: 'consent' for explicit user-initiated login.
- * This ensures the consent screen shows and the GIS session is established.
+ * Warm up Google auth as soon as the GIS script is ready, so the popup can be
+ * opened synchronously on click (critical for iOS Safari). Safe no-op when
+ * there is no client id or GIS never loads. Call once at app boot.
+ */
+export function preloadGoogleAuth() {
+  if (!CLIENT_ID) return
+  if (buildLoginClient()) return
+  waitForGIS(15000).then(() => buildLoginClient()).catch(() => {})
+}
+
+/**
+ * Login with Google using GIS Token Client. Always uses prompt: 'consent' for
+ * explicit user-initiated login. The token client is pre-built so the popup
+ * opens inside the user gesture (iOS Safari requirement).
  *
  * @returns {Promise<string>} access token
  */
@@ -100,36 +151,27 @@ export async function loginWithGoogle() {
     throw new Error('VITE_GOOGLE_CLIENT_ID is not set. Add it to your .env file.')
   }
 
-  await waitForGIS()
+  // Prefer an already-built client so requestAccessToken runs with NO await
+  // (preserves the user gesture on iOS Safari).
+  let client = buildLoginClient()
+  if (!client) {
+    // GIS not loaded yet (user tapped very early). Fall back to awaiting; on
+    // iOS this may need a second tap, but it won't silently fail.
+    await waitForGIS()
+    client = buildLoginClient()
+    if (!client) throw new Error('فشل تهيئة Google Identity')
+  }
 
   return new Promise((resolve, reject) => {
+    // Cancel any still-pending attempt so we never leak a stuck promise.
+    if (pendingReject) pendingReject(new Error('تم بدء محاولة جديدة'))
+    pendingResolve = resolve
+    pendingReject = reject
     try {
-      const tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: CLIENT_ID,
-        scope: SCOPE,
-        // Do NOT set redirect_uri — GIS handles the origin implicitly
-        callback: (response) => {
-          if (response.access_token) {
-            const expiresIn = Number(response.expires_in || 3600)
-            storeToken(response.access_token, expiresIn)
-            resolve(response.access_token)
-          } else if (response.error) {
-            reject(new Error(response.error_description || response.error || 'فشل تسجيل الدخول'))
-          } else {
-            reject(new Error('لم يتم منح الإذن'))
-          }
-        },
-        error_callback: (err) => {
-          const msg = err?.message || err?.type || 'فشل تسجيل الدخول عبر Google'
-          reject(new Error(msg))
-        },
-      })
-      // Always use prompt:'consent' for explicit login.
-      // This ensures the popup shows, the user grants permission,
-      // and the GIS session cookie is established for future silent refreshes.
-      tokenClient.requestAccessToken({ prompt: 'consent' })
+      client.requestAccessToken({ prompt: 'consent' })
     } catch (e) {
-      reject(new Error('فشل تهيئة Google Identity: ' + e.message))
+      pendingResolve = pendingReject = null
+      reject(new Error('فشل فتح نافذة جوجل: ' + e.message))
     }
   })
 }

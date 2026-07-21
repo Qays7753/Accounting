@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import legacy from '@vitejs/plugin-legacy'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -11,6 +12,14 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    // Emit legacy bundles + polyfills so the app runs on older iOS/Android
+    // browsers (nomodule fallback). Modern browsers still get the small ESM
+    // build; only old devices download the legacy chunks.
+    legacy({
+      targets: ['defaults', 'iOS >= 12', 'Android >= 7', 'not IE 11'],
+      polyfills: true,
+      modernPolyfills: true,
+    }),
     VitePWA({
       registerType: 'prompt',
       includeAssets: ['icon.svg', 'icon-192.png', 'icon-512.png'],
