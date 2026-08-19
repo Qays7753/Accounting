@@ -59,8 +59,18 @@ export async function importBackup() {
       try {
         const text = await file.text()
         const data = JSON.parse(text)
-        if (!data.data || !data.data.transactions) {
-          reject(new Error('ملف غير صالح'))
+        if (!data.data || typeof data.data !== 'object' || !Number.isFinite(Number(data.version))) {
+          reject(new Error('ملف غير صالح أو بلا إصدار'))
+          return
+        }
+        const requiredTables = db.tables.map(table => table.name)
+        const missingTables = requiredTables.filter(name => !Array.isArray(data.data[name]))
+        if (missingTables.length > 0) {
+          reject(new Error(`النسخة غير مكتملة. الجداول المفقودة: ${missingTables.join(', ')}`))
+          return
+        }
+        if (Number(data.version) < db.verno) {
+          reject(new Error(`النسخة قديمة. المطلوب إصدار ${db.verno}`))
           return
         }
         // Confirm before overwriting

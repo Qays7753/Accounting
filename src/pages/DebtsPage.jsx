@@ -316,7 +316,12 @@ function DebtCard({ debt, isReceivable, onSettle, onViewDetail, onSendReminder }
       onClick={onViewDetail}
     >
       <div className="flex items-center justify-between mb-2">
-        <p className="font-bold text-txt-primary">{debt.description || t.debts_title}</p>
+        <div className="min-w-0">
+          <p className="font-bold text-txt-primary truncate">{debt.personName || debt.description || t.debts_title}</p>
+          {debt.personName && debt.description && (
+            <p className="text-xs text-txt-secondary mt-0.5 truncate">{debt.description}</p>
+          )}
+        </div>
         <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${statusBadge.class}`}>
           {statusBadge.label}
         </span>
@@ -414,7 +419,8 @@ function DebtFormSheet({ open, type, onClose, onSaved }) {
       await db.addTransaction({
         type, // 'debt_given' or 'debt_taken'
         amount: Number(amount),
-        description: personName.trim() || (type === 'debt_given' ? 'دين مستحق لي' : 'دين مستحق علي'),
+        personName: personName.trim(),
+        description: description.trim() || (type === 'debt_given' ? 'دين مستحق لي' : 'دين مستحق علي'),
         category: type === 'debt_given' ? 'دين مستحقة لي' : 'ديون مستحقة علي',
         date: dateObj.toISOString(),
         debtStatus: 'unpaid',

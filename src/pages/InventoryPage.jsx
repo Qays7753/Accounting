@@ -212,7 +212,7 @@ export default function InventoryPage() {
             label="تكلفة الوحدة"
           />
           <p className="text-caption text-text-tertiary">
-            سيتم تصنيف الصنف تلقائياً: إذا كانت الكمية ≤ ٥ والتكلفة > ١٥ د.أ، سيُتتبَّع بالعدد. وإلا، بالعادة.
+            سيتم تصنيف الصنف تلقائياً: إذا كانت الكمية ≤ ٥ والتكلفة &gt; ١٥ د.أ، سيُتتبَّع بالعدد. وإلا، بالعادة.
           </p>
           <button
             type="button"

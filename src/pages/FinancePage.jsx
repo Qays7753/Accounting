@@ -81,15 +81,8 @@ export default function FinancePage() {
       message: t.snackbar_deleted,
       actionLabel: t.undo,
       onAction: async () => {
-        // Restore
-        await db.addTransaction({
-          type: backup.type,
-          amount: backup.amount,
-          description: backup.description,
-          category: backup.category,
-          date: backup.date,
-          orderId: backup.orderId,
-        })
+        // Restore the exact snapshot, including id and debt/order metadata.
+        await db.restoreTransactionSnapshot(backup)
         refresh()
         hapticSuccess()
       },

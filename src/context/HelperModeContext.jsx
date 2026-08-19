@@ -67,8 +67,7 @@ export function HelperModeProvider({ children }) {
    * @returns {boolean} - true if PIN is correct
    */
   const verifyPin = async (pin) => {
-    const storedPin = await db.getHelperPin()
-    if (storedPin && pin === storedPin) {
+    if (await db.verifyHelperPin(pin)) {
       exitHelperMode()
       return true
     }

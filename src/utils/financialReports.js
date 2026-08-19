@@ -10,6 +10,34 @@
  */
 
 /**
+ * A financial sale is either a cash income not linked to debt collection, or
+ * an explicit credit sale. Tracking-only order completion and debt collection
+ * are not new revenue.
+ */
+export function isRevenueTransaction(transaction) {
+  if (transaction.type === 'income') return !transaction.linkedDebtId
+  if (transaction.type === 'capital_injection') return false
+  if (transaction.type === 'debt_given') {
+    return Boolean(transaction.orderId) || transaction.source === 'sale' || (transaction.category || '').includes('مبيعات')
+  }
+  return false
+}
+
+export function getRevenueAmount(transactions = [], orders = []) {
+  const revenueTransactions = transactions.filter(isRevenueTransaction)
+  const linkedOrderIds = new Set(
+    revenueTransactions.map(t => t.orderId).filter(Boolean)
+  )
+  const transactionRevenue = revenueTransactions.reduce((sum, t) => sum + (t.amount || 0), 0)
+  // Backward compatibility for old paid orders whose transaction link is absent.
+  const legacyOrderRevenue = orders
+    .filter(o => o.status === 'closed' && ['cash', 'credit'].includes(o.paymentType))
+    .filter(o => !linkedOrderIds.has(o.id) && o.paymentTransactionId == null)
+    .reduce((sum, o) => sum + (o.amount || 0), 0)
+  return transactionRevenue + legacyOrderRevenue
+}
+
+/**
  * Compute Income Statement from transaction data.
  * @param {Object} data — { transactions, orders }
  * @returns {Object} income statement
@@ -19,13 +47,12 @@ export function computeIncomeStatement(data) {
   const now = new Date()
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
 
-  // Revenue = completed order amounts (cash + credit sales)
-  const completedOrders = orders.filter(o => o.status === 'closed')
-  const revenue = completedOrders.reduce((sum, o) => sum + (o.amount || 0), 0)
+  // Revenue comes from financial sale events, not status alone.
+  const revenue = getRevenueAmount(transactions, orders)
 
-  // COGS = sum of cost_of_goods from income transactions this month
+  // COGS = sum of cost_of_goods from financial sale events this month
   const cogs = transactions
-    .filter(t => t.type === 'income' && new Date(t.date) >= monthStart)
+    .filter(t => isRevenueTransaction(t) && new Date(t.date) >= monthStart)
     .reduce((sum, t) => sum + (t.cost_of_goods || 0), 0)
 
   const grossProfit = revenue - cogs
@@ -37,14 +64,17 @@ export function computeIncomeStatement(data) {
 
   // Wastage = returns/expense transactions categorized as waste
   const wastage = transactions
-    .filter(t => t.type === 'expense' && new Date(t.date) >= monthStart &&
-      (t.category || '').includes('هدر') || (t.category || '').includes('تالف'))
+    .filter(t =>
+      t.type === 'expense' &&
+      new Date(t.date) >= monthStart &&
+      ((t.category || '').includes('هدر') || (t.category || '').includes('تالف'))
+    )
     .reduce((sum, t) => sum + (t.amount || 0), 0)
 
   const netProfit = grossProfit - opex - wastage
 
   return {
-    revenue: { value: revenue, available: orders.length > 0, missing: orders.length === 0 ? ['orders'] : [] },
+    revenue: { value: revenue, available: transactions.length > 0 || orders.length > 0, missing: revenue === 0 ? ['revenue'] : [] },
     cogs: { value: cogs, available: transactions.length > 0, missing: [] },
     grossProfit: { value: grossProfit, available: true, missing: [] },
     opex: { value: opex, available: transactions.length > 0, missing: [] },
@@ -63,7 +93,7 @@ export function computeBalanceSheet(data) {
 
   // Assets
   const cash = transactions
-    .filter(t => t.type === 'income' || t.type === 'opening_balance')
+    .filter(t => t.type === 'income' || t.type === 'capital_injection' || (t.type === 'opening_balance' && t.category === 'رصيد افتتاحي'))
     .reduce((sum, t) => sum + (t.amount || 0), 0)
     - transactions
     .filter(t => t.type === 'expense' || t.type === 'withdrawal')
@@ -120,7 +150,6 @@ export function computeBalanceSheet(data) {
 export function computeKPIs(data) {
   const { transactions = [], orders = [], receivables = [], payables = [], items = [] } = data
   const now = new Date()
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
   const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
 
   // Income statement components
@@ -146,7 +175,7 @@ export function computeKPIs(data) {
 
   // 3. ROI = Net Profit / (Cash Invested) — simplified
   const totalInvested = transactions
-    .filter(t => t.type === 'opening_balance')
+    .filter(t => t.type === 'opening_balance' && t.category === 'رصيد افتتاحي' || t.type === 'capital_injection')
     .reduce((sum, t) => sum + (t.amount || 0), 0)
   const roi = {
     value: totalInvested > 0 ? Math.round((is.netProfit.value / totalInvested) * 100) : 0,
@@ -189,7 +218,7 @@ export function computeKPIs(data) {
     .reduce((sum, t) => sum + (t.amount || 0), 0)
   const avgDailyExpense = expensesLast30 / 30
   const currentCash = transactions
-    .filter(t => t.type === 'income' || t.type === 'opening_balance')
+    .filter(t => t.type === 'income' || t.type === 'capital_injection' || (t.type === 'opening_balance' && t.category === 'رصيد افتتاحي'))
     .reduce((sum, t) => sum + (t.amount || 0), 0)
     - transactions
     .filter(t => t.type === 'expense' || t.type === 'withdrawal')

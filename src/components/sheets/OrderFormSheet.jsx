@@ -126,6 +126,15 @@ export default function OrderFormSheet({ open, onClose, editData = null, onSaved
     setSaving(true)
     try {
       const dateObj = new Date(`${scheduledDate}T${scheduledTime}`)
+      // Closed orders must be completed through OrderDetailSheet so that
+      // paymentType, paymentTransactionId, and the matching ledger event are
+      // created atomically. Existing closed orders may still be edited, but a
+      // new/active order cannot be saved as closed from this form.
+      if (status === 'closed' && editData?.status !== 'closed') {
+        hapticError()
+        return
+      }
+
       const payload = {
         customerName: customerName.trim(),
         phone: phone.trim(),
@@ -160,11 +169,12 @@ export default function OrderFormSheet({ open, onClose, editData = null, onSaved
     }
   }
 
-  const statusOptions = [
-    { value: 'in_progress', label: 'قيد التنفيذ', color: 'badge-progress' },
-    { value: 'ready', label: 'جاهز', color: 'badge-ready' },
-    { value: 'closed', label: 'مغلق/تم التسليم', color: 'badge-closed' },
-  ]
+  const statusOptions = editData?.status === 'closed'
+    ? [{ value: 'closed', label: 'مغلق (يُدار من الإتمام)', color: 'badge-closed' }]
+    : [
+        { value: 'in_progress', label: 'قيد التنفيذ', color: 'badge-progress' },
+        { value: 'ready', label: 'جاهز', color: 'badge-ready' },
+      ]
 
   const orderTypeSuggestions = ['إصلاح', 'صيانة', 'شراء', 'حجز', 'تركيب', 'خدمة', 'توريد']
 

@@ -25,6 +25,36 @@ import Dexie from 'dexie'
  * - Transactions linked to orders carry orderId; deleting order unlinks but keeps transaction.
  */
 
+const DAY_MS = 24 * 60 * 60 * 1000
+
+function parseDateInput(value) {
+  if (value instanceof Date) return new Date(value)
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-').map(Number)
+    return new Date(year, month - 1, day)
+  }
+  return new Date(value)
+}
+
+function startOfLocalDay(value) {
+  const date = parseDateInput(value)
+  date.setHours(0, 0, 0, 0)
+  return date.getTime()
+}
+
+function endExclusiveLocalDay(value) {
+  return startOfLocalDay(value) + DAY_MS
+}
+
+function normalizeRange(startDate, endDate) {
+  const startTs = startOfLocalDay(startDate)
+  const endExclusiveTs = endExclusiveLocalDay(endDate)
+  if (!Number.isFinite(startTs) || !Number.isFinite(endExclusiveTs) || endExclusiveTs <= startTs) {
+    throw new Error('Invalid date range')
+  }
+  return { startTs, endExclusiveTs }
+}
+
 class AccountingDatabase extends Dexie {
   constructor() {
     super('AccountingAppDB')
@@ -205,6 +235,7 @@ class AccountingDatabase extends Dexie {
       type: data.type, // 'income' | 'expense' | 'withdrawal' | 'opening_balance' | 'debt_given' | 'debt_taken'
       amount: Number(data.amount) || 0,
       description: data.description || '',
+      personName: data.personName || '',
       category: data.category || '',
       date: dateObj.toISOString(),
       dateTimestamp: dateObj.getTime(),
@@ -256,7 +287,55 @@ class AccountingDatabase extends Dexie {
    * Delete a transaction by id
    */
   async deleteTransaction(id) {
-    await this.transactions.delete(id)
+    return await this.transaction('rw', this.transactions, this.settlements, async () => {
+      const transaction = await this.transactions.get(id)
+      if (!transaction) return
+
+      // Never leave settlement rows pointing at a deleted debt.
+      const debtSettlements = await this.settlements
+        .where('debtTransactionId').equals(id)
+        .toArray()
+      if (debtSettlements.length > 0) {
+        throw new Error('Cannot delete a debt with settlement history')
+      }
+
+      // Deleting a settlement payment reverses its amount on the debt.
+      if (transaction.linkedDebtId) {
+        const settlement = await this.settlements
+          .where('paymentTransactionId').equals(id)
+          .first()
+        if (settlement) {
+          const debt = await this.transactions.get(transaction.linkedDebtId)
+          if (debt) {
+            const paid = Math.max(0, (debt.debtAmountPaid || 0) - settlement.amount)
+            await this.transactions.update(debt.id, {
+              debtAmountPaid: paid,
+              debtStatus: paid === 0 ? 'unpaid' : paid >= debt.amount ? 'settled' : 'partial',
+              updatedAt: Date.now(),
+            })
+          }
+          await this.settlements.delete(settlement.id)
+        }
+      }
+
+      await this.transactions.delete(id)
+    })
+  }
+
+  /**
+   * Restore an exact transaction snapshot after an undo action. Preserving the
+   * original id keeps settlement/order links valid; a partial reconstruction
+   * would silently break those relationships.
+   */
+  async restoreTransactionSnapshot(snapshot) {
+    if (!snapshot || snapshot.id == null) throw new Error('Invalid transaction snapshot')
+    return await this.transaction('rw', this.transactions, async () => {
+      if (await this.transactions.get(snapshot.id)) {
+        throw new Error('Transaction already exists')
+      }
+      await this.transactions.add({ ...snapshot })
+      return snapshot
+    })
   }
 
   /**
@@ -286,11 +365,10 @@ class AccountingDatabase extends Dexie {
     // Build base collection using index
     let collection
     if (startDate !== null && endDate !== null) {
-      const startTs = new Date(startDate).getTime()
-      const endTs = new Date(endDate).getTime()
+      const { startTs, endExclusiveTs } = normalizeRange(startDate, endDate)
       collection = this.transactions
         .where('dateTimestamp')
-        .between(startTs, endTs, true, true)
+        .between(startTs, endExclusiveTs, true, false)
     } else if (startDate !== null) {
       const startTs = new Date(startDate).getTime()
       collection = this.transactions.where('dateTimestamp').aboveOrEqual(startTs)
@@ -330,9 +408,8 @@ class AccountingDatabase extends Dexie {
     let pagedCollection = this.transactions.orderBy('dateTimestamp').reverse()
     // Re-apply the same filters on the ordered collection
     if (startDate !== null && endDate !== null) {
-      const startTs = new Date(startDate).getTime()
-      const endTs = new Date(endDate).getTime()
-      pagedCollection = pagedCollection.and((t) => t.dateTimestamp >= startTs && t.dateTimestamp <= endTs)
+      const { startTs, endExclusiveTs } = normalizeRange(startDate, endDate)
+      pagedCollection = pagedCollection.and((t) => t.dateTimestamp >= startTs && t.dateTimestamp < endExclusiveTs)
     } else if (startDate !== null) {
       const startTs = new Date(startDate).getTime()
       pagedCollection = pagedCollection.and((t) => t.dateTimestamp >= startTs)
@@ -348,11 +425,10 @@ class AccountingDatabase extends Dexie {
    * Get all transactions for a date range (no pagination, for stats)
    */
   async getTransactionsByDateRange(startDate, endDate) {
-    const startTs = new Date(startDate).getTime()
-    const endTs = new Date(endDate).getTime()
+    const { startTs, endExclusiveTs } = normalizeRange(startDate, endDate)
     return await this.transactions
       .where('dateTimestamp')
-      .between(startTs, endTs, true, true)
+      .between(startTs, endExclusiveTs, true, false)
       .toArray()
   }
 
@@ -380,7 +456,7 @@ class AccountingDatabase extends Dexie {
   async getCashBalance() {
     let balance = 0
     await this.transactions.each((t) => {
-      if (t.type === 'income') {
+      if (t.type === 'income' || t.type === 'capital_injection') {
         balance += t.amount
       } else if (t.type === 'expense' || t.type === 'withdrawal') {
         balance -= t.amount
@@ -449,6 +525,9 @@ class AccountingDatabase extends Dexie {
         if (t.category === 'رصيد افتتاحي') {
           capitalJar += t.amount
         }
+      } else if (t.type === 'capital_injection') {
+        // Capital funding increases capital, not profit.
+        capitalJar += t.amount
       }
       // debt_given, debt_taken: NOT counted in jars (no cash exchanged yet)
     })
@@ -477,18 +556,21 @@ class AccountingDatabase extends Dexie {
     let income = 0
     let expense = 0
     let withdrawal = 0
+    let capitalInjection = 0
     for (const t of items) {
       if (t.type === 'income') income += t.amount
       else if (t.type === 'expense') expense += t.amount
       else if (t.type === 'withdrawal') withdrawal += t.amount
+      else if (t.type === 'capital_injection') capitalInjection += t.amount
       // opening_balance excluded from period totals
     }
     return {
       income,
       expense,
       withdrawal,
+      capitalInjection,
       netProfit: income - expense,
-      netCash: income - expense - withdrawal,
+      netCash: income + capitalInjection - expense - withdrawal,
     }
   }
 
@@ -527,6 +609,22 @@ class AccountingDatabase extends Dexie {
   }
 
   async updateOrder(id, updates) {
+    const current = await this.orders.get(id)
+    if (!current) throw new Error('Order not found')
+
+    // Financial completion must go through completeOrder(), which creates the
+    // ledger/debt event and links it to the order. Keep a separate explicit
+    // "done" path for tracking-only closure; never let a generic edit silently
+    // create a closed, unpaid order.
+    if (
+      updates.status === 'closed' &&
+      current.status !== 'closed' &&
+      updates.paymentType !== 'done' &&
+      !updates.paymentTransactionId
+    ) {
+      throw new Error('Use completeOrder() to close an order with a payment decision')
+    }
+
     const updateData = { ...updates, updatedAt: Date.now() }
     if (updates.scheduledDate) {
       const dateObj = new Date(updates.scheduledDate)
@@ -611,16 +709,17 @@ class AccountingDatabase extends Dexie {
     if (status && status !== 'all') {
       pagedCollection = pagedCollection.and((o) => o.status === status)
     }
-    // Apply date range if provided
+    // Apply date range if provided using an exclusive next-day boundary.
     if (startDate && endDate) {
-      const startTs = new Date(startDate).getTime()
-      const endTs = new Date(endDate).getTime()
-      pagedCollection = pagedCollection.and((o) => o.scheduledTimestamp >= startTs && o.scheduledTimestamp <= endTs)
+      const { startTs, endExclusiveTs } = normalizeRange(startDate, endDate)
+      pagedCollection = pagedCollection.and((o) => o.scheduledTimestamp >= startTs && o.scheduledTimestamp < endExclusiveTs)
     }
 
     const offset = (page - 1) * pageSize
-    const items = await pagedCollection.offset(offset).limit(pageSize).toArray()
-    return { items, total, hasMore: offset + pageSize < total, page, pageSize }
+    const filteredItems = await pagedCollection.toArray()
+    const rangedTotal = filteredItems.length
+    const items = filteredItems.slice(offset, offset + pageSize)
+    return { items, total: startDate && endDate ? rangedTotal : total, hasMore: offset + pageSize < (startDate && endDate ? rangedTotal : total), page, pageSize }
   }
 
   /**
@@ -748,49 +847,44 @@ class AccountingDatabase extends Dexie {
    * Export all data as a JSON object
    */
   async exportAllData() {
-    const [transactions, orders, customers, settings, meta] = await Promise.all([
-      this.transactions.toArray(),
-      this.orders.toArray(),
-      this.customers.toArray(),
-      this.settings.toArray(),
-      this.meta.toArray(),
-    ])
+    const data = {}
+    for (const table of this.tables) {
+      data[table.name] = await table.toArray()
+    }
     return {
-      version: 3,
+      version: this.verno,
       exportedAt: new Date().toISOString(),
       appVersion: '1.0.0',
-      data: {
-        transactions,
-        orders,
-        customers,
-        settings,
-        meta,
-      },
+      data,
     }
   }
 
   /**
-   * Restore data from a JSON object (clears existing data first)
+   * Restore a complete JSON backup. Partial backups are rejected before any
+   * table is cleared, preventing silent loss of newer features.
    */
   async restoreFromBackup(backup) {
-    if (!backup || !backup.data) throw new Error('ملف النسخة الاحتياطية غير صالح')
-    const { transactions, orders, customers, settings, meta } = backup.data
+    if (!backup || !backup.data || typeof backup.data !== 'object') {
+      throw new Error('ملف النسخة الاحتياطية غير صالح')
+    }
 
-    await this.transaction('rw', this.transactions, this.orders, this.customers, this.settings, this.meta, async () => {
-      // Clear all tables
-      await Promise.all([
-        this.transactions.clear(),
-        this.orders.clear(),
-        this.customers.clear(),
-        this.settings.clear(),
-        this.meta.clear(),
-      ])
-      // Bulk insert
-      if (transactions && transactions.length) await this.transactions.bulkAdd(transactions)
-      if (orders && orders.length) await this.orders.bulkAdd(orders)
-      if (customers && customers.length) await this.customers.bulkAdd(customers)
-      if (settings && settings.length) await this.settings.bulkAdd(settings)
-      if (meta && meta.length) await this.meta.bulkAdd(meta)
+    const tableNames = this.tables.map(table => table.name)
+    const missingTables = tableNames.filter(name => !Array.isArray(backup.data[name]))
+    if (missingTables.length > 0) {
+      throw new Error(`النسخة غير مكتملة. الجداول المفقودة: ${missingTables.join(', ')}`)
+    }
+    if (Number(backup.version || 0) < this.verno) {
+      throw new Error(`نسخة قديمة غير مدعومة. المطلوب الإصدار ${this.verno}`)
+    }
+
+    await this.transaction('rw', this.tables, async () => {
+      for (const table of this.tables) {
+        await table.clear()
+      }
+      for (const table of this.tables) {
+        const rows = backup.data[table.name]
+        if (rows.length) await table.bulkAdd(rows)
+      }
     })
   }
 
@@ -798,14 +892,11 @@ class AccountingDatabase extends Dexie {
    * Clear all data (factory reset)
    */
   async clearAllData() {
-    await Promise.all([
-      this.transactions.clear(),
-      this.orders.clear(),
-      this.customers.clear(),
-      this.settings.clear(),
-      this.meta.clear(),
-      this.notifications.clear(),
-    ])
+    await this.transaction('rw', this.tables, async () => {
+      for (const table of this.tables) {
+        await table.clear()
+      }
+    })
   }
 
   // ========== NOTIFICATIONS ==========
@@ -976,48 +1067,55 @@ class AccountingDatabase extends Dexie {
    * @returns {Object} - { paymentTransaction, updatedDebt, isFullySettled }
    */
   async settleDebt(debtTransactionId, paymentAmount) {
-    const debt = await this.transactions.get(debtTransactionId)
-    if (!debt) throw new Error('Debt transaction not found')
-    if (debt.type !== 'debt_given' && debt.type !== 'debt_taken') {
-      throw new Error('Transaction is not a debt')
-    }
+    return await this.transaction('rw', this.transactions, this.settlements, async () => {
+      const debt = await this.transactions.get(debtTransactionId)
+      if (!debt) throw new Error('Debt transaction not found')
+      if (debt.type !== 'debt_given' && debt.type !== 'debt_taken') {
+        throw new Error('Transaction is not a debt')
+      }
 
-    const newPaidAmount = (debt.debtAmountPaid || 0) + Number(paymentAmount)
-    const isFullySettled = newPaidAmount >= debt.amount
+      const amount = Number(paymentAmount)
+      const outstanding = Number(debt.amount || 0) - Number(debt.debtAmountPaid || 0)
+      if (!Number.isFinite(amount) || amount <= 0) {
+        throw new Error('Payment amount must be greater than zero')
+      }
+      if (amount > outstanding) {
+        throw new Error('Payment amount exceeds the outstanding debt')
+      }
 
-    // Create a balancing transaction:
-    // - If debt_given (receivable): settlement is income (customer pays us)
-    // - If debt_taken (payable): settlement is expense (we pay supplier)
-    const paymentTransaction = await this.addTransaction({
-      type: debt.type === 'debt_given' ? 'income' : 'expense',
-      amount: Number(paymentAmount),
-      description: `تسديد دين: ${debt.description || ''}`,
-      category: 'تسديد دين',
-      date: new Date(),
-      linkedDebtId: debt.id,
+      const newPaidAmount = (debt.debtAmountPaid || 0) + amount
+      const isFullySettled = newPaidAmount === debt.amount
+
+      // Create a balancing transaction and the settlement link atomically.
+      const paymentTransaction = await this.addTransaction({
+        type: debt.type === 'debt_given' ? 'income' : 'expense',
+        amount,
+        description: `تسديد دين: ${debt.description || ''}`,
+        category: 'تسديد دين',
+        date: new Date(),
+        linkedDebtId: debt.id,
+      })
+
+      await this.settlements.add({
+        debtTransactionId: debt.id,
+        paymentTransactionId: paymentTransaction.id,
+        amount,
+        createdAt: Date.now(),
+      })
+
+      const updateData = {
+        debtAmountPaid: newPaidAmount,
+        debtStatus: isFullySettled ? 'settled' : 'partial',
+        updatedAt: Date.now(),
+      }
+      await this.transactions.update(debt.id, updateData)
+
+      return {
+        paymentTransaction,
+        updatedDebt: { ...debt, ...updateData },
+        isFullySettled,
+      }
     })
-
-    // Record the settlement link
-    await this.settlements.add({
-      debtTransactionId: debt.id,
-      paymentTransactionId: paymentTransaction.id,
-      amount: Number(paymentAmount),
-      createdAt: Date.now(),
-    })
-
-    // Update the debt's paid amount and status
-    const updateData = {
-      debtAmountPaid: newPaidAmount,
-      debtStatus: isFullySettled ? 'settled' : 'partial',
-      updatedAt: Date.now(),
-    }
-    await this.transactions.update(debt.id, updateData)
-
-    return {
-      paymentTransaction,
-      updatedDebt: { ...debt, ...updateData },
-      isFullySettled,
-    }
   }
 
   /**
@@ -1207,56 +1305,63 @@ class AccountingDatabase extends Dexie {
    * @returns {Object} - { transaction, updatedOrder }
    */
   async completeOrder(orderId, paymentType) {
-    const order = await this.orders.get(orderId)
-    if (!order) throw new Error('Order not found')
-
-    let transaction = null
-    const updates = {
-      status: 'closed',
-      updatedAt: Date.now(),
+    if (!['cash', 'credit', 'done'].includes(paymentType)) {
+      throw new Error('Invalid payment type')
     }
 
-    if (paymentType === 'cash') {
-      // Create income transaction for the sale amount
-      // V4: Include cost_of_goods (BOM) so the Two Jars split works correctly
-      transaction = await this.addTransaction({
-        type: 'income',
-        amount: order.amount,
-        description: `بيع: ${order.customerName || 'زبون'} - ${order.orderType || 'طلب'}`,
-        category: 'مبيعات',
-        date: new Date(),
-        orderId: order.id,
-        cost_of_goods: order.total_cost || 0, // V4: BOM cost → capital jar
-      })
-      updates.is_paid = true
-      updates.paymentTransactionId = transaction.id
-      updates.paymentType = 'cash'
-    } else if (paymentType === 'credit') {
-      // Create debt_given transaction (customer owes us)
-      transaction = await this.addTransaction({
-        type: 'debt_given',
-        amount: order.amount,
-        description: `بيع بالأجل: ${order.customerName || 'زبون'} - ${order.orderType || 'طلب'}`,
-        category: 'دين مستحقة لي',
-        date: new Date(),
-        orderId: order.id,
-        debtStatus: 'unpaid',
-        debtAmountPaid: 0,
-      })
-      updates.is_paid = false
-      updates.paymentTransactionId = transaction.id
-      updates.paymentType = 'credit'
-    } else if (paymentType === 'done') {
-      // Just mark as done, NO financial impact
-      updates.is_paid = false
-      updates.paymentType = 'done'
-    }
+    return await this.transaction('rw', this.transactions, this.orders, async () => {
+      const order = await this.orders.get(orderId)
+      if (!order) throw new Error('Order not found')
+      if (order.status === 'closed') throw new Error('Order already completed')
 
-    await this.orders.update(order.id, updates)
-    return {
-      transaction,
-      updatedOrder: { ...order, ...updates },
-    }
+      let transaction = null
+      const updates = {
+        status: 'closed',
+        updatedAt: Date.now(),
+      }
+
+      if (paymentType === 'cash') {
+        transaction = await this.addTransaction({
+          type: 'income',
+          amount: order.amount,
+          description: `بيع: ${order.customerName || 'زبون'} - ${order.orderType || 'طلب'}`,
+          category: 'مبيعات',
+          date: new Date(),
+          orderId: order.id,
+          cost_of_goods: order.total_cost || 0,
+        })
+        updates.is_paid = true
+        updates.paymentTransactionId = transaction.id
+        updates.paymentType = 'cash'
+      } else if (paymentType === 'credit') {
+        transaction = await this.addTransaction({
+          type: 'debt_given',
+          amount: order.amount,
+          description: `بيع بالأجل: ${order.customerName || 'زبون'} - ${order.orderType || 'طلب'}`,
+          category: 'دين مستحقة لي',
+          date: new Date(),
+          orderId: order.id,
+          debtStatus: 'unpaid',
+          debtAmountPaid: 0,
+          cost_of_goods: order.total_cost || 0,
+          source: 'sale',
+        })
+        updates.is_paid = false
+        updates.paymentTransactionId = transaction.id
+        updates.paymentType = 'credit'
+      } else {
+        // Explicit tracking-only completion. It is intentionally excluded
+        // from revenue by every report engine.
+        updates.is_paid = false
+        updates.paymentType = 'done'
+      }
+
+      await this.orders.update(order.id, updates)
+      return {
+        transaction,
+        updatedOrder: { ...order, ...updates },
+      }
+    })
   }
 
   // ========== V3: REPORTING & ANALYTICS ==========
@@ -1273,29 +1378,30 @@ class AccountingDatabase extends Dexie {
    * @returns {Object} report data
    */
   async getReport(startDate, endDate) {
-    const startTs = new Date(startDate).getTime()
-    const endTs = new Date(endDate).getTime()
+    const { startTs, endExclusiveTs } = normalizeRange(startDate, endDate)
 
-    // Get all transactions in range
+    // Get all transactions in range, including the complete end date.
     const transactions = await this.transactions
       .where('dateTimestamp')
-      .between(startTs, endTs, true, true)
+      .between(startTs, endExclusiveTs, true, false)
       .toArray()
 
     // Real cash flow (from actual transactions)
-    let cashReceived = 0 // income
+    let cashReceived = 0 // sales and debt collections
     let cashSpent = 0 // expense
     let withdrawal = 0 // personal
+    let capitalInjected = 0
     for (const t of transactions) {
       if (t.type === 'income') cashReceived += t.amount
       else if (t.type === 'expense') cashSpent += t.amount
       else if (t.type === 'withdrawal') withdrawal += t.amount
+      else if (t.type === 'capital_injection') capitalInjected += t.amount
     }
 
     // Get all orders completed in this range
     const orders = await this.orders
       .where('scheduledTimestamp')
-      .between(startTs, endTs, true, true)
+      .between(startTs, endExclusiveTs, true, false)
       .toArray()
 
     // Theoretical profit from BOM (analytical)
@@ -1303,7 +1409,9 @@ class AccountingDatabase extends Dexie {
     let theoreticalCost = 0
     let completedOrders = 0
     for (const o of orders) {
-      if (o.status === 'closed') {
+      // Only financially completed orders are revenue. Tracking-only
+      // completions (`paymentType === 'done'`) are deliberately excluded.
+      if (o.status === 'closed' && ['cash', 'credit'].includes(o.paymentType)) {
         completedOrders++
         theoreticalRevenue += o.amount || 0
         theoreticalCost += o.total_cost || 0
@@ -1314,12 +1422,13 @@ class AccountingDatabase extends Dexie {
     const theoreticalProfit = theoreticalRevenue - theoreticalCost
 
     return {
-      period: { start: new Date(startDate), end: new Date(endDate) },
+      period: { start: new Date(startTs), end: new Date(endExclusiveTs - 1) },
       // Real cash flow
       cashReceived,
       cashSpent,
       withdrawal,
-      netCash: cashReceived - cashSpent - withdrawal,
+      capitalInjected,
+      netCash: cashReceived + capitalInjected - cashSpent - withdrawal,
       realCashProfit,
       // Theoretical (BOM-based)
       theoreticalRevenue,
@@ -1441,6 +1550,8 @@ class AccountingDatabase extends Dexie {
         date: new Date(),
         debtStatus: 'unpaid',
         debtAmountPaid: 0,
+        cost_of_goods: totalCOGS,
+        source: 'sale',
       })
       return { transaction, totalAmount, totalCOGS, paymentType: 'credit' }
     }
@@ -1550,11 +1661,33 @@ class AccountingDatabase extends Dexie {
    * Set the helper mode PIN.
    */
   async setHelperPin(pin) {
-    await this.setSetting('helper_pin', pin)
+    const value = String(pin || '')
+    if (!/^\d{4,8}$/.test(value)) throw new Error('PIN must contain 4 to 8 digits')
+    let stored = value
+    if (globalThis.crypto?.subtle) {
+      const bytes = new TextEncoder().encode(value)
+      const digest = await crypto.subtle.digest('SHA-256', bytes)
+      stored = `sha256:${Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, '0')).join('')}`
+    }
+    await this.setSetting('helper_pin', stored)
+  }
+
+  async verifyHelperPin(pin) {
+    const stored = await this.getHelperPin()
+    if (!stored) return false
+    const value = String(pin || '')
+    if (stored.startsWith('sha256:') && globalThis.crypto?.subtle) {
+      const bytes = new TextEncoder().encode(value)
+      const digest = await crypto.subtle.digest('SHA-256', bytes)
+      const hashed = `sha256:${Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, '0')).join('')}`
+      return hashed === stored
+    }
+    // Backward compatibility for installations created before hashing.
+    return value === stored
   }
 
   /**
-   * Check if helper mode is enabled (PIN is set).
+   * Check if helper mode is enabled (PIN is set). Returns null if not set.
    */
   async isHelperModeEnabled() {
     const pin = await this.getHelperPin()
@@ -1593,58 +1726,70 @@ class AccountingDatabase extends Dexie {
     // Otherwise, track predictively (based on purchase pattern).
     const tracking_mode = (qty <= 5 && unit_cost > 15) ? 'exact' : 'predictive'
 
-    const item = {
-      name,
-      unit,
-      tracking_mode,
-      current_stock: tracking_mode === 'exact' ? qty : null,
-      purchase_history: qty > 0 ? [{ date: new Date().toISOString(), qty, unit_cost }] : [],
-      reorder_day: null, // calculated on first predictive purchase
-      createdAt: Date.now(),
-    }
-    return await this.items.add(item)
+    return await this.transaction('rw', this.items, this.purchase_records, async () => {
+      const now = new Date().toISOString()
+      const item = {
+        name,
+        unit,
+        tracking_mode,
+        current_stock: tracking_mode === 'exact' ? qty : null,
+        purchase_history: qty > 0 ? [{ date: now, qty, unit_cost }] : [],
+        reorder_day: null, // calculated on first predictive purchase
+        createdAt: Date.now(),
+      }
+      const id = await this.items.add(item)
+      if (qty > 0) {
+        await this.purchase_records.add({ item_id: id, qty, unit_cost, date: now, createdAt: Date.now() })
+      }
+      return { ...item, id }
+    })
   }
 
   /**
    * Record a purchase (restock) for an item.
    * Updates purchase_history + recalculates tracking_mode + reorder_day.
    */
-  async recordPurchase(itemId, { qty, unit_cost }) {
-    const item = await this.items.get(itemId)
-    if (!item) throw new Error('Item not found')
-
-    const purchaseEntry = { date: new Date().toISOString(), qty, unit_cost }
-    const purchase_history = [...(item.purchase_history || []), purchaseEntry]
-
-    // Recalculate tracking_mode on every purchase
-    let tracking_mode = item.tracking_mode
-    if (qty <= 5 && unit_cost > 15) {
-      tracking_mode = 'exact'
+  async recordPurchase(itemId, { qty, unit_cost, date }) {
+    const quantity = Number(qty)
+    const unitCost = Number(unit_cost)
+    if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(unitCost) || unitCost < 0) {
+      throw new Error('Invalid purchase quantity or cost')
     }
 
-    // Update current_stock for exact items
-    let current_stock = item.current_stock
-    if (tracking_mode === 'exact') {
-      current_stock = (current_stock || 0) + qty
-    }
+    return await this.transaction('rw', this.items, this.purchase_records, async () => {
+      const item = await this.items.get(itemId)
+      if (!item) throw new Error('Item not found')
 
-    // Calculate reorder_day for predictive items (avg days between purchases)
-    let reorder_day = item.reorder_day
-    if (tracking_mode === 'predictive' && purchase_history.length >= 2) {
-      const dates = purchase_history.map(p => new Date(p.date).getTime()).sort()
-      const intervals = []
-      for (let i = 1; i < dates.length; i++) {
-        intervals.push((dates[i] - dates[i - 1]) / (24 * 60 * 60 * 1000))
+      const purchaseDate = date || new Date().toISOString()
+      const purchaseEntry = { date: purchaseDate, qty: quantity, unit_cost: unitCost }
+      const purchase_history = [...(item.purchase_history || []), purchaseEntry]
+
+      let tracking_mode = item.tracking_mode
+      if (quantity <= 5 && unitCost > 15) tracking_mode = 'exact'
+
+      let current_stock = item.current_stock
+      if (tracking_mode === 'exact') current_stock = (current_stock || 0) + quantity
+
+      let reorder_day = item.reorder_day
+      if (tracking_mode === 'predictive' && purchase_history.length >= 2) {
+        const dates = purchase_history.map(p => new Date(p.date).getTime()).sort()
+        const intervals = []
+        for (let i = 1; i < dates.length; i++) {
+          intervals.push((dates[i] - dates[i - 1]) / DAY_MS)
+        }
+        reorder_day = Math.round(intervals.reduce((a, b) => a + b, 0) / intervals.length)
       }
-      const avgDays = intervals.reduce((a, b) => a + b, 0) / intervals.length
-      reorder_day = Math.round(avgDays)
-    }
 
-    await this.items.update(itemId, {
-      purchase_history,
-      tracking_mode,
-      current_stock,
-      reorder_day,
+      await this.items.update(itemId, { purchase_history, tracking_mode, current_stock, reorder_day })
+      const purchaseRecord = {
+        item_id: itemId,
+        qty: quantity,
+        unit_cost: unitCost,
+        date: purchaseDate,
+        createdAt: Date.now(),
+      }
+      const recordId = await this.purchase_records.add(purchaseRecord)
+      return { item: { ...item, purchase_history, tracking_mode, current_stock, reorder_day }, purchaseRecord: { ...purchaseRecord, id: recordId } }
     })
   }
 
@@ -1715,13 +1860,7 @@ class AccountingDatabase extends Dexie {
    * V12: Record a purchase in the new purchase_records table.
    */
   async addPurchaseRecord({ item_id, qty, unit_cost, date }) {
-    return await this.purchase_records.add({
-      item_id,
-      qty,
-      unit_cost,
-      date: date || new Date().toISOString(),
-      createdAt: Date.now(),
-    })
+    return await this.recordPurchase(item_id, { qty, unit_cost, date })
   }
 
   /**
@@ -1793,7 +1932,7 @@ class AccountingDatabase extends Dexie {
    */
   async injectCapital(amount, description = 'حقن رأس مال') {
     return await this.addTransaction({
-      type: 'income',
+      type: 'capital_injection',
       amount,
       description,
       category: 'رأس مال',
@@ -1805,12 +1944,23 @@ class AccountingDatabase extends Dexie {
    * V12: Owner draw — personal withdrawal from profit jar.
    */
   async ownerDraw(amount, description = 'سحب شخصي') {
-    return await this.addTransaction({
-      type: 'withdrawal',
-      amount,
-      description,
-      category: 'سحب مالك',
-      date: new Date().toISOString(),
+    const drawAmount = Number(amount)
+    if (!Number.isFinite(drawAmount) || drawAmount <= 0) {
+      throw new Error('Withdrawal amount must be greater than zero')
+    }
+
+    return await this.transaction('rw', this.transactions, async () => {
+      const { profitJar } = await this.getTwoJars()
+      if (drawAmount > Math.max(0, profitJar)) {
+        throw new Error('Withdrawal exceeds the available profit')
+      }
+      return await this.addTransaction({
+        type: 'withdrawal',
+        amount: drawAmount,
+        description,
+        category: 'سحب مالك',
+        date: new Date().toISOString(),
+      })
     })
   }
 
@@ -1857,8 +2007,10 @@ class AccountingDatabase extends Dexie {
     // Only negative gaps (missing items) are wastage. Positive gaps (surplus)
     // just adjust the theoretical quantity without logging an expense.
     const wastageTotal = items.reduce((sum, i) => {
-      const gap = i.gap || 0
-      return gap < 0 ? sum + Math.abs(gap) : sum
+      const gap = Number(i.gap) || 0
+      const unitCost = Number(i.unit_cost) || 0
+      // `gap` is a quantity; the ledger requires a monetary amount.
+      return gap < 0 ? sum + (Math.abs(gap) * unitCost) : sum
     }, 0)
     const surplusTotal = items.reduce((sum, i) => {
       const gap = i.gap || 0

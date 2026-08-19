@@ -14,10 +14,9 @@ const STATUS_CONFIG = {
   closed: { label: 'مغلق', badge: 'badge-closed' },
 }
 
-const STATUS_OPTIONS = [
+const ACTIVE_STATUS_OPTIONS = [
   { value: 'in_progress', label: 'قيد التنفيذ' },
   { value: 'ready', label: 'جاهز' },
-  { value: 'closed', label: 'مغلق' },
 ]
 
 // Payment status config
@@ -75,8 +74,17 @@ export default function OrderDetailSheet({ order, open, onClose, onEdit, onUpdat
 
   const c = STATUS_CONFIG[order.status] || STATUS_CONFIG.in_progress
   const payment = PAYMENT_CONFIG[order.paymentType] || PAYMENT_CONFIG.null
+  const statusOptions = order.status === 'closed'
+    ? [{ value: 'closed', label: 'مغلق' }]
+    : ACTIVE_STATUS_OPTIONS
 
   const handleStatusChange = async (newStatus) => {
+    // Closing is a financial decision, not a status-only edit.
+    if (newStatus === 'closed') {
+      hapticLight()
+      setCompleteSheetOpen(true)
+      return
+    }
     hapticSuccess()
     await db.updateOrder(order.id, { status: newStatus })
     onUpdated?.()
@@ -259,7 +267,7 @@ export default function OrderDetailSheet({ order, open, onClose, onEdit, onUpdat
           <div>
             <p className="text-sm font-semibold text-text-secondary mb-2">تغيير الحالة</p>
             <div className="grid grid-cols-3 gap-2">
-              {STATUS_OPTIONS.map((opt) => (
+              {statusOptions.map((opt) => (
                 <button
                   key={opt.value}
                   type="button"

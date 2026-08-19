@@ -9,7 +9,6 @@ import { hapticLight, hapticSuccess, hapticMedium, hapticError } from '../utils/
 import { useTerms } from '../context/TermsContext.jsx'
 import { useIsManagerMode } from '../context/TermsContext.jsx'
 import PageHeader from '../components/layout/PageHeader.jsx'
-import { useLongPress } from '../hooks/useLongPress.js'
 import { useSubmitGuard } from '../hooks/useSubmitGuard.js'
 
 /**
@@ -135,28 +134,8 @@ export default function QuickPosPage() {
     }
   })
 
-  // A3: Long-press to delete (replaces onDoubleClick) — opens confirm sheet
+  // Product deletion is explicit; it must never compete with the sale tap.
   const [deleteConfirmProduct, setDeleteConfirmProduct] = useState(null)
-  const handleLongPressDelete = (product) => {
-    setDeleteConfirmProduct(product)
-  }
-  const longPressProps = useLongPress({
-    onLongPress: () => handleLongPressDelete(deleteConfirmProduct),
-    onShortPress: null, // handled by onClick separately
-    delay: 500,
-  })
-  // Per-product long-press handler (closure capturing the product)
-  const getProductLongPressProps = (product) => ({
-    onPointerDown: (e) => {
-      longPressProps.onPointerDown(e)
-      // Store product for the long-press callback
-      setDeleteConfirmProduct(product)
-    },
-    onPointerMove: longPressProps.onPointerMove,
-    onPointerUp: longPressProps.onPointerUp,
-    onPointerLeave: longPressProps.onPointerLeave,
-    onPointerCancel: longPressProps.onPointerCancel,
-  })
 
   const confirmDeleteProduct = async () => {
     if (!deleteConfirmProduct) return
@@ -195,21 +174,30 @@ export default function QuickPosPage() {
         ) : (
           <div className="grid grid-cols-2 gap-3">
             {products.map(product => (
-              <button
-                key={product.id}
-                type="button"
-                onClick={() => handleAddToCart(product)}
-                {...getProductLongPressProps(product)}
-                className="bg-surface rounded-card p-4 shadow-card active:scale-95 transition-transform text-right"
-              >
-                <div className="w-full h-16 rounded-xl bg-primary-50 flex items-center justify-center mb-2">
-                  <Icon name="tag" className="w-8 h-8 text-primary-600" strokeWidth={1.8} />
-                </div>
-                <p className="font-bold text-text-primary text-sm truncate">{product.name}</p>
-                <p className="text-lg font-bold text-primary-600 tabular-nums mt-1">
-                  {formatAmount(product.price)}
-                </p>
-              </button>
+              <div key={product.id} className="relative bg-surface rounded-card p-2 shadow-card">
+                <button
+                  type="button"
+                  onClick={() => handleAddToCart(product)}
+                  className="w-full p-2 active:scale-95 transition-transform text-right"
+                >
+                  <div className="w-full h-16 rounded-xl bg-primary-50 flex items-center justify-center mb-2">
+                    <Icon name="tag" className="w-8 h-8 text-primary-600" strokeWidth={1.8} />
+                  </div>
+                  <p className="font-bold text-text-primary text-sm truncate">{product.name}</p>
+                  <p className="text-lg font-bold text-primary-600 tabular-nums mt-1">
+                    {formatAmount(product.price)}
+                  </p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirmProduct(product)}
+                  className="absolute top-2 left-2 w-8 h-8 rounded-lg bg-expense-50 text-expense-600 grid place-items-center"
+                  aria-label={`حذف ${product.name}`}
+                  title="حذف المنتج"
+                >
+                  <Icon name="trash" className="w-4 h-4" />
+                </button>
+              </div>
             ))}
           </div>
         )}

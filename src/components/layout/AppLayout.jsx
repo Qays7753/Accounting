@@ -1,5 +1,6 @@
 import BottomNav from './BottomNav.jsx'
 import UpdatePrompt from '../common/UpdatePrompt.jsx'
+import AutoLockOverlay from '../common/AutoLockOverlay.jsx'
 import { useSettings2 } from '../../context/SettingsContext.jsx'
 
 /**
@@ -16,7 +17,7 @@ import { useSettings2 } from '../../context/SettingsContext.jsx'
  * no longer hides navigation or forces `bg-white`.
  */
 export default function AppLayout({ children }) {
-  const { showQuickPos } = useSettings2()
+  const { showQuickPos, autoLock } = useSettings2()
 
   return (
     <div className="min-h-screen bg-background transition-colors duration-400">
@@ -25,6 +26,7 @@ export default function AppLayout({ children }) {
       </main>
       <UpdatePrompt />
       <BottomNav showQuickPos={showQuickPos} />
+      <AutoLockOverlay autoLock={autoLock} />
     </div>
   )
 }

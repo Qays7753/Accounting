@@ -167,14 +167,18 @@ export default function HomePage() {
   const handleOpenReconciliation = async () => {
     hapticLight()
     const items = await db.getItems()
-    const reconItems = items.map(item => ({
-      id: item.id,
-      name: item.name,
-      unit: item.unit || 'piece',
-      theoretical: item.current_stock || 0,
-      actual: item.current_stock || 0, // pre-fill with theoretical, user adjusts
-      gap: 0,
-    }))
+    const reconItems = items.map(item => {
+      const lastPurchase = item.purchase_history?.[item.purchase_history.length - 1]
+      return {
+        id: item.id,
+        name: item.name,
+        unit: item.unit || 'piece',
+        unit_cost: Number(lastPurchase?.unit_cost || 0),
+        theoretical: item.current_stock || 0,
+        actual: item.current_stock || 0, // pre-fill with theoretical
+        gap: 0,
+      }
+    })
     setReconciliationItems(reconItems)
     setReconciliationSheetOpen(true)
   }

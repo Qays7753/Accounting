@@ -16,7 +16,7 @@
  * `formatAmount` at the render layer.
  */
 
-import { computeIncomeStatement, computeBalanceSheet, computeKPIs } from './financialReports.js'
+import { computeBalanceSheet, computeKPIs, getRevenueAmount, isRevenueTransaction } from './financialReports.js'
 
 /** Start of today (00:00 local). */
 function startOfToday(now = new Date()) {
@@ -54,17 +54,14 @@ export function computeRangeSummary(data, range = 'week') {
   else if (range === 'week') cutoff = weekAgo(now)
   else cutoff = startOfMonth(now) // 'month'
 
-  // Revenue from completed orders in range. Orders may use `closedAt` or
-  // `date`/`createdAt`; fall back to whichever exists.
-  const revenue = orders
-    .filter(o => o.status === 'closed')
-    .filter(o => {
-      const ts = new Date(o.closedAt || o.date || o.createdAt || 0).getTime()
-      return ts >= cutoff
-    })
-    .reduce((sum, o) => sum + (o.amount || 0), 0)
+  // Revenue is sourced from financial sale events. Tracking-only closed
+  // orders and debt collections are intentionally excluded.
+  const inRangeOrders = orders.filter(o => {
+    const ts = new Date(o.closedAt || o.date || o.createdAt || 0).getTime()
+    return ts >= cutoff
+  })
 
-  // Expenses + cogs from transactions in range
+  // Expenses + cogs + revenue from transactions in range
   const inRangeTx = transactions.filter(t => {
     const ts = new Date(t.date || t.createdAt || 0).getTime()
     return ts >= cutoff
@@ -75,8 +72,10 @@ export function computeRangeSummary(data, range = 'week') {
     .reduce((sum, t) => sum + (t.amount || 0), 0)
 
   const cogs = inRangeTx
-    .filter(t => t.type === 'income')
+    .filter(t => isRevenueTransaction(t))
     .reduce((sum, t) => sum + (t.cost_of_goods || 0), 0)
+
+  const revenue = getRevenueAmount(inRangeTx, inRangeOrders)
 
   const withdrawal = inRangeTx
     .filter(t => t.type === 'withdrawal')

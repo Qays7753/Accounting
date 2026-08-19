@@ -14,7 +14,7 @@
  * @returns {Object} metrics
  */
 export function computeSnapshot(data) {
-  const { transactions = [], orders = [], receivables = [], settings = {} } = data
+  const { transactions = [], orders = [], receivables = [] } = data
   const now = new Date()
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const weekAgo = new Date(todayStart.getTime() - 7 * 24 * 60 * 60 * 1000)

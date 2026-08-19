@@ -57,6 +57,7 @@ export function CloudSyncProvider({ children }) {
   // the cloud was newer and re-pulled (and re-prompted for Google auth).
   const markSynced = useCallback((ts = Date.now()) => {
     persistLastSync(ts)
+    try { localStorage.removeItem('accounting_local_change_at') } catch { /* storage unavailable */ }
     setLastSyncState(ts)
   }, [])
 
@@ -163,8 +164,15 @@ export function CloudSyncProvider({ children }) {
       // Compare timestamps: use data.exportedAt or data.syncedAt
       const cloudTs = new Date(cloudData.syncedAt || cloudData.exportedAt || 0).getTime()
       const localLastSync = getLastSync() || 0
+      const localLastChange = Number(localStorage.getItem('accounting_local_change_at') || 0)
 
       if (cloudTs > localLastSync) {
+        // Never replace a local database that changed after the last confirmed
+        // sync. LWW by one global timestamp silently loses offline work.
+        if (localLastChange > localLastSync) {
+          console.warn('[CloudSync] Conflict detected: local unsynced changes were not replaced.')
+          return { conflict: true, reason: 'local_unsynced_changes' }
+        }
         // Cloud is newer → merge into local DB
         // Check if local has unsynced changes (local is newer than last sync)
         const localTxCount = await db.transactions.count()
@@ -176,10 +184,10 @@ export function CloudSyncProvider({ children }) {
           await db.restoreFromBackup(cloudData)
           markSynced(cloudTs)
         } else if (localTxCount > 0 && cloudTxCount > 0) {
-          // Both have data → LWW merge by updated_at on transactions
-          // Simple approach: if cloud exportedAt is newer, replace local
-          // (More granular merge would compare per-transaction timestamps)
-          console.log('[CloudSync] Both have data → LWW: cloud is newer, replacing')
+          // Both have data and no local changes were detected. Replacement is
+          // now explicit and safe from the most dangerous offline-write case;
+          // incomplete/old cloud backups are rejected by restoreFromBackup.
+          console.log('[CloudSync] Both have data → cloud is newer, replacing')
           await db.restoreFromBackup(cloudData)
           markSynced(cloudTs)
         }
@@ -199,8 +207,9 @@ export function CloudSyncProvider({ children }) {
    * Full sync: pull then push.
    */
   const syncNow = useCallback(async () => {
-    await pullFromCloud()
-    await uploadToCloud()
+    const pullResult = await pullFromCloud()
+    if (pullResult?.conflict) return pullResult
+    return await uploadToCloud()
   }, [pullFromCloud, uploadToCloud])
 
   /**
@@ -233,7 +242,10 @@ export function CloudSyncProvider({ children }) {
   useEffect(() => {
     if (!authorized) return
 
-    const trigger = () => scheduleDebouncedSync()
+    const trigger = () => {
+      try { localStorage.setItem('accounting_local_change_at', String(Date.now())) } catch { /* storage unavailable */ }
+      scheduleDebouncedSync()
+    }
     const HOOK_EVENTS = ['creating', 'updating', 'deleting']
     const attached = []
 

@@ -49,6 +49,7 @@ export default function ReportsPage() {
 
   // active period preset (drives the sliding segmented control)
   const [activePreset, setActivePreset] = useState('month')
+  const [fiscalYearStart, setFiscalYearStart] = useState(1)
 
   // Count-up animations for the hero numbers (preserved in BOTH modes)
   const animatedProfit = useCountUp(report?.realCashProfit || 0)
@@ -72,17 +73,24 @@ export default function ReportsPage() {
         .slice(0, 3)
       setTopDebtors(debtors)
 
+      const toDateKey = (date) => {
+        const d = new Date(date)
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      }
       const byDay = {}
       for (const tx of transactions) {
         if (tx.type === 'income') {
-          const day = new Date(tx.dateTimestamp).getDate()
-          byDay[day] = (byDay[day] || 0) + tx.amount
+          const key = toDateKey(tx.dateTimestamp)
+          byDay[key] = (byDay[key] || 0) + tx.amount
         }
       }
-      const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
       const breakdown = []
-      for (let d = 1; d <= daysInMonth; d++) {
-        breakdown.push({ day: d, amount: byDay[d] || 0 })
+      const cursor = new Date(`${startDate}T00:00:00`)
+      const end = new Date(`${endDate}T00:00:00`)
+      while (cursor <= end) {
+        const key = toDateKey(cursor)
+        breakdown.push({ date: key, day: cursor.getDate(), amount: byDay[key] || 0 })
+        cursor.setDate(cursor.getDate() + 1)
       }
       setDailyBreakdown(breakdown)
     } catch (e) {
@@ -91,6 +99,10 @@ export default function ReportsPage() {
       setLoading(false)
     }
   }, [startDate, endDate, t.customer_name])
+
+  useEffect(() => {
+    db.getSetting('fiscal_year_start', 1).then(value => setFiscalYearStart(Number(value) || 1))
+  }, [])
 
   useEffect(() => {
     loadReport()
@@ -134,6 +146,12 @@ export default function ReportsPage() {
         start = new Date(today.getFullYear(), 0, 1)
         end = today
         break
+      case 'fiscalYear': {
+        const fiscalYear = today.getMonth() + 1 < fiscalYearStart ? today.getFullYear() - 1 : today.getFullYear()
+        start = new Date(fiscalYear, fiscalYearStart - 1, 1)
+        end = today
+        break
+      }
       default:
         return
     }
@@ -147,6 +165,7 @@ export default function ReportsPage() {
     { id: 'month', label: 'الشهر' },
     { id: 'lastMonth', label: 'الماضي' },
     { id: 'year', label: 'السنة' },
+    { id: 'fiscalYear', label: 'السنة المالية' },
   ]
 
   // activePresetIndex no longer needed — SegmentedControl computes its own thumb position

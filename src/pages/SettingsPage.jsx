@@ -35,6 +35,7 @@ export default function SettingsPage() {
   // Helper Mode PIN entry sheet
   const [helperPinSheetOpen, setHelperPinSheetOpen] = useState(false)
   const [helperPinInput, setHelperPinInput] = useState('')
+  const [pendingAutoLock, setPendingAutoLock] = useState(null)
   const { isHelperMode, enterHelperMode, helperModeEnabled } = useHelperMode()
 
   // Live UI settings from SettingsContext (propagate to whole app instantly)
@@ -206,6 +207,10 @@ export default function SettingsPage() {
     if (helperPinInput.length !== 4) return
     hapticSuccess()
     await db.setHelperPin(helperPinInput)
+    if (pendingAutoLock) {
+      await setAutoLock(pendingAutoLock)
+      setPendingAutoLock(null)
+    }
     setHelperPinSheetOpen(false)
     setHelperPinInput('')
     // Enter helper mode immediately (no more misleading 'restart' alert)
@@ -223,6 +228,11 @@ export default function SettingsPage() {
   // All handlers now delegate to SettingsContext (instant UI propagation)
   const handleAutoLockChange = async (val) => {
     hapticLight()
+    if (val !== 'off' && !helperModeEnabled) {
+      setPendingAutoLock(val)
+      setHelperPinSheetOpen(true)
+      return
+    }
     await setAutoLock(val)
   }
   const handleHideAmountsToggle = async (enabled) => {
