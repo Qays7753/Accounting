@@ -23,6 +23,9 @@ const SCOPE = 'https://www.googleapis.com/auth/drive.appdata'
 const TOKEN_KEY = 'gdrive_access_token'
 const EXPIRY_KEY = 'gdrive_token_expiry'
 const LAST_SYNC_KEY = 'gdrive_last_sync'
+// Separate durable marker: access tokens expire, but the app must not confuse
+// token expiry with a request to make the user log in again on every launch.
+const CONNECTED_KEY = 'gdrive_connected'
 
 // ========== GIS Script Loading ==========
 
@@ -63,6 +66,11 @@ export function isAuthorized() {
   return !!getAccessToken()
 }
 
+export function hasPreviouslyConnected() {
+  // Backward-compatible with builds that stored only the token and expiry.
+  return localStorage.getItem(CONNECTED_KEY) === '1' || Boolean(localStorage.getItem(TOKEN_KEY))
+}
+
 export function getLastSync() {
   const v = localStorage.getItem(LAST_SYNC_KEY)
   return v ? Number(v) : null
@@ -81,11 +89,13 @@ export function logout() {
   localStorage.removeItem(TOKEN_KEY)
   localStorage.removeItem(EXPIRY_KEY)
   localStorage.removeItem(LAST_SYNC_KEY)
+  localStorage.removeItem(CONNECTED_KEY)
 }
 
 function storeToken(accessToken, expiresIn) {
   localStorage.setItem(TOKEN_KEY, accessToken)
   localStorage.setItem(EXPIRY_KEY, String(Date.now() + expiresIn * 1000 - 60000))
+  localStorage.setItem(CONNECTED_KEY, '1')
 }
 
 // ── Login token client (pre-built to preserve the user gesture) ────────────
@@ -184,7 +194,7 @@ export async function loginWithGoogle() {
  * @returns {Promise<string|null>} new access token or null if failed
  */
 export async function refreshAccessToken() {
-  if (!CLIENT_ID) return null
+  if (!CLIENT_ID || !hasPreviouslyConnected()) return null
 
   try {
     await waitForGIS(5000)
@@ -226,6 +236,10 @@ export async function refreshAccessToken() {
 export async function getValidToken() {
   let token = getAccessToken()
   if (token) return token
+  // A cold start may have an expired token. Refresh silently only after the
+  // user has explicitly connected before; never open or trigger a login flow
+  // merely because the app was reopened.
+  if (!hasPreviouslyConnected()) return null
   token = await refreshAccessToken()
   return token
 }

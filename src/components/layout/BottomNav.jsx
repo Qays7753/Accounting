@@ -137,7 +137,7 @@ export default function BottomNav({ showQuickPos = true }) {
             end={item.to === '/'}
             onClick={() => hapticLight()}
             aria-label={item.label}
-            className="flex flex-col items-center gap-1 w-16"
+            className="flex min-h-12 w-16 flex-col items-center justify-center gap-1 rounded-2xl transition-transform active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
           >
             {({ isActive }) => (
               <>
@@ -145,7 +145,7 @@ export default function BottomNav({ showQuickPos = true }) {
                   className={`w-13 h-8 rounded-pill grid place-items-center transition-colors ${isActive ? 'bg-primary-tint' : ''}`}
                 >
                   <span className={isActive ? 'text-primary' : 'text-disabled'}>
-                    {item.icon(isActive)}
+                    {item.icon(false)}
                   </span>
                 </div>
                 <span
@@ -162,7 +162,7 @@ export default function BottomNav({ showQuickPos = true }) {
           <button
             type="button"
             onClick={handleLockClick}
-            className="flex flex-col items-center gap-1 w-16"
+            className="flex min-h-12 w-16 flex-col items-center justify-center gap-1 rounded-2xl transition-transform active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
             aria-label="الخروج من وضع المساعد"
           >
             <div className="w-13 h-8 rounded-pill grid place-items-center">
