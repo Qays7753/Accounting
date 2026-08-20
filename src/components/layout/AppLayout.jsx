@@ -20,12 +20,14 @@ export default function AppLayout({ children }) {
   const { showQuickPos, autoLock } = useSettings2()
 
   return (
-    <div className="min-h-screen bg-background transition-colors duration-400">
-      <main className="pb-28" role="main">
-        {children}
-      </main>
-      <UpdatePrompt />
-      <BottomNav showQuickPos={showQuickPos} />
+    <div className="min-h-screen bg-[#ece9e4] transition-colors duration-400">
+      <div className="mx-auto min-h-screen w-full max-w-[480px] bg-background shadow-[0_0_36px_rgba(33,36,39,0.08)]">
+        <main className="pb-28" role="main">
+          {children}
+        </main>
+        <UpdatePrompt />
+        <BottomNav showQuickPos={showQuickPos} />
+      </div>
       <AutoLockOverlay autoLock={autoLock} />
     </div>
   )

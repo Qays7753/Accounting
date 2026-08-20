@@ -1,7 +1,7 @@
 import { useTerms, useLanguageMode } from '../context/TermsContext.jsx'
 import { useState, useEffect, useCallback } from 'react'
 import { db } from '../db'
-import { formatAmount } from '../utils/format.js'
+import { maskAmount } from '../utils/format.js'
 import { formatArabicDate } from '../utils/date.js'
 import EmptyState from '../components/ui/EmptyState.jsx'
 import Icon from '../components/ui/Icon.jsx'
@@ -11,6 +11,7 @@ import { Link } from 'react-router-dom'
 import { useCountUp } from '../hooks/useCountUp.js'
 import PageHeader from '../components/layout/PageHeader.jsx'
 import SegmentedControl from '../components/ui/SegmentedControl.jsx'
+import { useSettings2 } from '../context/SettingsContext.jsx'
 
 /**
  * Reports Page (V4 Phase 3) - Adaptive Reporting
@@ -39,6 +40,7 @@ export default function ReportsPage() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
   })
   const t = useTerms()
+  const { hideAmounts } = useSettings2()
   const [languageMode] = useLanguageMode()
   const [report, setReport] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -240,7 +242,7 @@ export default function ReportsPage() {
           {/* Hero: Net earned (count-up animated) */}
           <div className="bg-primary text-white rounded-16 p-4">
             <p className="text-sm text-white/80 mb-1">{t.report_earned}</p>
-            <p className="text-3xl font-bold tabular-nums num">{formatAmount(animatedProfit)}</p>
+            <p className="text-3xl font-bold tabular-nums num">{maskAmount(animatedProfit, hideAmounts)}</p>
             <p className="text-xs text-white/80 mt-2">
               {report.realCashProfit >= 0 ? t.report_profit_label : t.report_loss_label}
             </p>
@@ -250,11 +252,11 @@ export default function ReportsPage() {
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-surface rounded-2xl p-4 shadow-card text-center">
               <p className="text-xs text-text-tertiary mb-1">{t.report_received}</p>
-              <p className="text-xl font-bold text-income-600 tabular-nums num">{formatAmount(animatedReceived)}</p>
+              <p className="text-xl font-bold text-income-600 tabular-nums num">{maskAmount(animatedReceived, hideAmounts)}</p>
             </div>
             <div className="bg-surface rounded-2xl p-4 shadow-card text-center">
               <p className="text-xs text-text-tertiary mb-1">{t.report_spent}</p>
-              <p className="text-xl font-bold text-expense-600 tabular-nums num">{formatAmount(animatedSpent)}</p>
+              <p className="text-xl font-bold text-expense-600 tabular-nums num">{maskAmount(animatedSpent, hideAmounts)}</p>
             </div>
           </div>
 
@@ -269,7 +271,7 @@ export default function ReportsPage() {
                   <>
                     {bestDay.amount > 0 && (
                       <p className="text-xs text-text-secondary mb-2">
-                        {t.report_best_day} {bestDay.day}: {formatAmount(bestDay.amount)}
+                        {t.report_best_day} {bestDay.day}: {maskAmount(bestDay.amount, hideAmounts)}
                       </p>
                     )}
                     <div className="flex items-end gap-0.5 h-24 overflow-x-auto hide-scrollbar">
@@ -308,7 +310,7 @@ export default function ReportsPage() {
                   <div key={i} className="flex items-center justify-between bg-background rounded-xl p-3">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-text-primary truncate">{debtor.name}</p>
-                      <p className="text-xs text-text-tertiary">{t.report_owes} {formatAmount(debtor.amount)}</p>
+                      <p className="text-xs text-text-tertiary">{t.report_owes} {maskAmount(debtor.amount, hideAmounts)}</p>
                     </div>
                     <button
                       type="button"
@@ -375,7 +377,7 @@ export default function ReportsPage() {
                   </div>
                 </div>
                 <p className="text-lg font-bold text-income-600 tabular-nums num flex-shrink-0">
-                  {formatAmount(animatedReceived)}
+                  {maskAmount(animatedReceived, hideAmounts)}
                 </p>
               </div>
 
@@ -391,7 +393,7 @@ export default function ReportsPage() {
                   </div>
                 </div>
                 <p className="text-lg font-bold text-expense-600 tabular-nums num flex-shrink-0">
-                  {formatAmount(animatedSpent)}
+                  {maskAmount(animatedSpent, hideAmounts)}
                 </p>
               </div>
 
@@ -407,7 +409,7 @@ export default function ReportsPage() {
                   </div>
                 </div>
                 <p className="text-lg font-bold text-withdrawal-600 tabular-nums num flex-shrink-0">
-                  {formatAmount(report.withdrawal)}
+                  {maskAmount(report.withdrawal, hideAmounts)}
                 </p>
               </div>
 
@@ -420,7 +422,7 @@ export default function ReportsPage() {
                 <p className={`text-2xl font-bold tabular-nums num flex-shrink-0 ${
                   report.realCashProfit >= 0 ? 'text-income-600' : 'text-expense-600'
                 }`}>
-                  {formatAmount(animatedProfit)}
+                  {maskAmount(animatedProfit, hideAmounts)}
                 </p>
               </div>
             </div>
@@ -440,7 +442,7 @@ export default function ReportsPage() {
                   <p className="text-xs text-text-tertiary">{report.completedOrders} {t.report_completed_orders}</p>
                 </div>
                 <p className="text-lg font-bold text-text-primary tabular-nums num flex-shrink-0">
-                  {formatAmount(report.theoreticalRevenue)}
+                  {maskAmount(report.theoreticalRevenue, hideAmounts)}
                 </p>
               </div>
 
@@ -451,7 +453,7 @@ export default function ReportsPage() {
                   <p className="text-xs text-text-tertiary">{t.cost_of_goods}</p>
                 </div>
                 <p className="text-lg font-bold text-expense-600 tabular-nums num flex-shrink-0">
-                  {formatAmount(report.theoreticalCost)}
+                  {maskAmount(report.theoreticalCost, hideAmounts)}
                 </p>
               </div>
 
@@ -464,7 +466,7 @@ export default function ReportsPage() {
                 <p className={`text-2xl font-bold tabular-nums num flex-shrink-0 ${
                   report.theoreticalProfit >= 0 ? 'text-income-600' : 'text-expense-600'
                 }`}>
-                  {formatAmount(report.theoreticalProfit)}
+                  {maskAmount(report.theoreticalProfit, hideAmounts)}
                 </p>
               </div>
             </div>
@@ -477,7 +479,7 @@ export default function ReportsPage() {
               <div className="flex items-center justify-between mb-2 gap-3">
                 <p className="font-semibold text-text-primary text-sm truncate">{t.report_variance}</p>
                 <p className={`text-xl font-bold tabular-nums num flex-shrink-0 ${varianceColor}`}>
-                  {report.variance > 0 ? '+' : ''}{formatAmount(report.variance)}
+                  {report.variance > 0 ? '+' : ''}{maskAmount(Math.abs(report.variance), hideAmounts)}
                 </p>
               </div>
               <p className="text-xs text-text-tertiary">

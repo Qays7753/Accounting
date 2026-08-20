@@ -2,7 +2,7 @@ import { useTerms } from '../context/TermsContext.jsx'
 import { useState, useCallback, useMemo } from 'react'
 import { useTransactions, useDebounce, useInfiniteScroll, useDashboardStats } from '../hooks/useDatabase.js'
 import { db } from '../db'
-import { formatAmount } from '../utils/format.js'
+import { formatAmount, maskAmount } from '../utils/format.js'
 import { getRelativeTime, formatArabicDate, isToday } from '../utils/date.js'
 import EmptyState from '../components/ui/EmptyState.jsx'
 import BottomSheet from '../components/ui/BottomSheet.jsx'
@@ -13,6 +13,7 @@ import { hapticLight, hapticSuccess, hapticMedium } from '../utils/haptics.js'
 import { Link } from 'react-router-dom'
 import PageHeader from '../components/layout/PageHeader.jsx'
 import SegmentedControl from '../components/ui/SegmentedControl.jsx'
+import { useSettings2 } from '../context/SettingsContext.jsx'
 
 // Type segmented control (SOP §7.3 sliding thumb) — filters the ledger by kind
 // Labels resolve via useTerms() at render time (see TYPE_LABEL_KEYS below).
@@ -38,6 +39,7 @@ function getDayInfo(date, todayLabel, yesterdayLabel) {
 
 export default function FinancePage() {
   const t = useTerms()
+  const { hideAmounts } = useSettings2()
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
   const [snackbar, setSnackbar] = useState(null) // { message, actionLabel, onAction }
@@ -152,18 +154,18 @@ export default function FinancePage() {
               <div>
                 <div className="text-caption text-faint font-medium">{t.net_this_month}</div>
                 <div className={`tnum text-title num ${monthNet >= 0 ? 'text-income-600' : 'text-expense-600'}`}>
-                  {monthNet >= 0 ? '+' : '−'}{formatAmount(Math.abs(monthNet))}
+                  {monthNet >= 0 ? '+' : '−'}{maskAmount(Math.abs(monthNet), hideAmounts)}
                 </div>
               </div>
               <div className="flex gap-4 text-center">
                 <div>
                   <div className="text-caption text-faint">{t.total_income}</div>
-                  <div className="tnum text-card-title font-bold text-income-600 num">{formatAmount(stats.monthIncome)}</div>
+                  <div className="tnum text-card-title font-bold text-income-600 num">{maskAmount(stats.monthIncome, hideAmounts)}</div>
                 </div>
                 <div className="w-px bg-divider" />
                 <div>
                   <div className="text-caption text-faint">{t.total_expense}</div>
-                  <div className="tnum text-card-title font-bold text-expense-600 num">{formatAmount(stats.monthExpense)}</div>
+                  <div className="tnum text-card-title font-bold text-expense-600 num">{maskAmount(stats.monthExpense, hideAmounts)}</div>
                 </div>
               </div>
             </div>
@@ -235,7 +237,7 @@ export default function FinancePage() {
               <div className="flex items-center justify-between mt-2 mb-2.5 px-0.5">
                 <span className="text-sm font-bold text-sub">{group.label}</span>
                 <span className="tnum text-caption text-faint">
-                  {t.net_for_day} {group.net >= 0 ? '+' : '−'}{formatAmount(Math.abs(group.net))}
+                  {t.net_for_day} {group.net >= 0 ? '+' : '−'}{maskAmount(Math.abs(group.net), hideAmounts)}
                 </span>
               </div>
               <div className="flex flex-col gap-2.5">
@@ -245,6 +247,7 @@ export default function FinancePage() {
                     transaction={transaction}
                     onDelete={handleDelete}
                     onEdit={handleEdit}
+                    hideAmounts={hideAmounts}
                   />
                 ))}
               </div>
@@ -298,7 +301,7 @@ export default function FinancePage() {
  * V4.1: Transaction Card — tap to open action sheet (replaces swipe gestures).
  * Shows Edit, Delete, and Share buttons in a Bottom Sheet when tapped.
  */
-function TransactionCard({ transaction, onDelete, onEdit }) {
+function TransactionCard({ transaction, onDelete, onEdit, hideAmounts }) {
   const t = useTerms()
   const [actionSheetOpen, setActionSheetOpen] = useState(false)
 
@@ -367,7 +370,7 @@ function TransactionCard({ transaction, onDelete, onEdit }) {
         <div className="text-left flex-shrink-0">
           <p className={`font-bold tabular-nums ${c.text}`}>
             {transaction.type === 'income' || transaction.type === 'opening_balance' ? '+' : '-'}
-            {formatAmount(transaction.amount)}
+            {maskAmount(transaction.amount, hideAmounts)}
           </p>
         </div>
       </div>
@@ -379,7 +382,7 @@ function TransactionCard({ transaction, onDelete, onEdit }) {
             <p className="font-bold text-text-primary">{transaction.description || c.label}</p>
             <p className={`text-2xl font-bold tabular-nums ${c.text} mt-1`}>
               {transaction.type === 'income' || transaction.type === 'opening_balance' ? '+' : '-'}
-              {formatAmount(transaction.amount)}
+              {maskAmount(transaction.amount, hideAmounts)}
             </p>
             {transaction.category && (
               <p className="text-xs text-text-tertiary mt-1">{transaction.category}</p>

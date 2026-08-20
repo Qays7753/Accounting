@@ -2,11 +2,12 @@ import { useState, useEffect, useRef } from 'react'
 import BottomSheet from '../ui/BottomSheet.jsx'
 import Icon from '../ui/Icon.jsx'
 import { db } from '../../db'
-import { formatAmount } from '../../utils/format.js'
+import { maskAmount } from '../../utils/format.js'
 import { formatArabicDateTime } from '../../utils/date.js'
 import { hapticMedium, hapticSuccess, hapticLight } from '../../utils/haptics.js'
 import { shareOrderViaWhatsApp } from '../../utils/whatsapp.js'
 import { useSubmitGuard } from '../../hooks/useSubmitGuard.js'
+import { useSettings2 } from '../../context/SettingsContext.jsx'
 
 const STATUS_CONFIG = {
   in_progress: { label: 'قيد التنفيذ', badge: 'badge-progress' },
@@ -28,6 +29,7 @@ const PAYMENT_CONFIG = {
 }
 
 export default function OrderDetailSheet({ order, open, onClose, onEdit, onUpdated }) {
+  const { hideAmounts } = useSettings2()
   const [linkedTransactions, setLinkedTransactions] = useState([])
   const [confirmDelete, setConfirmDelete] = useState(false)
   const confirmResetTimer = useRef(null)
@@ -165,7 +167,7 @@ export default function OrderDetailSheet({ order, open, onClose, onEdit, onUpdat
                 <div>
                   <p className="text-xs text-text-secondary mb-1">المبلغ</p>
                   <p className="text-2xl font-bold tabular-nums text-text-primary">
-                    {formatAmount(order.amount)}
+                    {maskAmount(order.amount, hideAmounts)}
                   </p>
                 </div>
                 {/* V3: Payment status badge */}
@@ -179,12 +181,12 @@ export default function OrderDetailSheet({ order, open, onClose, onEdit, onUpdat
                 <div className="mt-3 pt-3 border-t border-divider space-y-1">
                   <div className="flex justify-between text-xs">
                     <span className="text-text-tertiary">تكلفة المواد (استشاري):</span>
-                    <span className="font-semibold text-expense-600 tabular-nums">{formatAmount(order.total_cost)}</span>
+                    <span className="font-semibold text-expense-600 tabular-nums">{maskAmount(order.total_cost, hideAmounts)}</span>
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-text-tertiary">الربح المتوقع:</span>
                     <span className="font-semibold text-income-600 tabular-nums">
-                      {formatAmount(order.amount - order.total_cost)}
+                      {maskAmount(order.amount - order.total_cost, hideAmounts)}
                     </span>
                   </div>
                 </div>
@@ -200,10 +202,10 @@ export default function OrderDetailSheet({ order, open, onClose, onEdit, onUpdat
                 {order.components_used.map((comp, i) => (
                   <div key={i} className="flex justify-between text-xs">
                     <span className="text-text-primary">
-                      {comp.name} ({comp.qty} × {formatAmount(comp.unit_cost)})
+                      {comp.name} ({comp.qty} × {maskAmount(comp.unit_cost, hideAmounts)})
                     </span>
                     <span className="font-semibold tabular-nums text-text-secondary">
-                      {formatAmount(comp.qty * comp.unit_cost)}
+                      {maskAmount(comp.qty * comp.unit_cost, hideAmounts)}
                     </span>
                   </div>
                 ))}
@@ -243,7 +245,7 @@ export default function OrderDetailSheet({ order, open, onClose, onEdit, onUpdat
                     <span className={`text-sm font-bold tabular-nums ${
                       t.type === 'income' ? 'text-income-600' : 'text-expense-600'
                     }`}>
-                      {t.type === 'income' ? '+' : '-'}{formatAmount(t.amount)}
+                      {t.type === 'income' ? '+' : '-'}{maskAmount(t.amount, hideAmounts)}
                     </span>
                   </div>
                 ))}
@@ -324,7 +326,7 @@ export default function OrderDetailSheet({ order, open, onClose, onEdit, onUpdat
         <div className="space-y-4 pb-4">
           <div className="bg-background rounded-2xl p-4 text-center">
             <p className="text-sm text-text-secondary mb-1">المبلغ</p>
-            <p className="text-3xl font-bold tabular-nums text-text-primary">{formatAmount(order.amount)}</p>
+            <p className="text-3xl font-bold tabular-nums text-text-primary">{maskAmount(order.amount, hideAmounts)}</p>
           </div>
 
           <div className="bg-primary-50 rounded-xl p-3 flex items-center gap-2">

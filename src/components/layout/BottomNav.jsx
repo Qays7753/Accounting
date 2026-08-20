@@ -128,7 +128,7 @@ export default function BottomNav({ showQuickPos = true }) {
 
   return (
     <>
-      <nav className="fixed bottom-0 inset-x-0 bg-surface px-3 pt-2 pb-4 flex justify-around items-center z-40 safe-area-bottom border-t border-border" style={{ minHeight: '64px' }} aria-label="التنقل الرئيسي">
+      <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-surface px-3 pt-2 pb-4 flex justify-around items-center z-40 safe-area-bottom border-t border-border" style={{ minHeight: '64px' }} aria-label="التنقل الرئيسي">
         {items.map((item) => (
           <NavLink
             key={item.to}

@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useOrders, useDebounce, useInfiniteScroll } from '../hooks/useDatabase.js'
 import { db } from '../db'
-import { formatAmount } from '../utils/format.js'
+import { maskAmount } from '../utils/format.js'
 import { getRelativeTime } from '../utils/date.js'
 import EmptyState from '../components/ui/EmptyState.jsx'
 import Icon from '../components/ui/Icon.jsx'
@@ -12,6 +12,7 @@ import { hapticLight } from '../utils/haptics.js'
 import { useTerms } from '../context/TermsContext.jsx'
 import PageHeader from '../components/layout/PageHeader.jsx'
 import SegmentedControl from '../components/ui/SegmentedControl.jsx'
+import { useSettings2 } from '../context/SettingsContext.jsx'
 
 // Static status config — labels come from terms in render
 const STATUS_CONFIG = {
@@ -30,6 +31,7 @@ const FILTER_TABS = [
 
 export default function OrdersPage() {
   const t = useTerms()
+  const { hideAmounts } = useSettings2()
   const [view, setView] = useState('list') // 'list' | 'calendar'
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -171,6 +173,7 @@ export default function OrdersPage() {
                 key={order.id}
                 order={order}
                 onClick={() => setDetailOrder(order)}
+                hideAmounts={hideAmounts}
               />
             ))
           )}
@@ -230,7 +233,7 @@ function usePaymentBadges() {
   }
 }
 
-function OrderCard({ order, onClick }) {
+function OrderCard({ order, onClick, hideAmounts }) {
   const t = useTerms()
   const PAYMENT_BADGE = usePaymentBadges()
   const c = STATUS_CONFIG[order.status] || STATUS_CONFIG.in_progress
@@ -303,7 +306,7 @@ function OrderCard({ order, onClick }) {
         </div>
         {order.amount > 0 && (
           <p className="font-bold text-text-primary tabular-nums text-sm">
-            {formatAmount(order.amount)}
+            {maskAmount(order.amount, hideAmounts)}
           </p>
         )}
       </div>

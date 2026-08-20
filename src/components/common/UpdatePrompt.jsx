@@ -25,7 +25,7 @@ export default function UpdatePrompt() {
 
   return (
     <div
-      className="fixed inset-x-4 z-40 animate-slide-up"
+      className="fixed left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[448px] z-40 animate-slide-up"
       style={{ bottom: 'calc(env(safe-area-inset-bottom) + 96px)' }}
       role="status"
     >

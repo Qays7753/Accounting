@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { db } from '../../db'
 import { ARABIC_MONTHS, formatTime } from '../../utils/date.js'
+import { maskAmount } from '../../utils/format.js'
+import { useSettings2 } from '../../context/SettingsContext.jsx'
 import { hapticLight } from '../../utils/haptics.js'
 import Icon from './Icon.jsx'
 
@@ -197,6 +199,7 @@ export default function CalendarView({ onOrderClick }) {
 }
 
 function OrderCalendarCard({ order, onClick }) {
+  const { hideAmounts } = useSettings2()
   const c = STATUS_CONFIG[order.status] || STATUS_CONFIG.in_progress
   return (
     <button
@@ -215,7 +218,7 @@ function OrderCalendarCard({ order, onClick }) {
       </div>
       {order.amount > 0 && (
         <p className="font-bold text-text-primary mt-2 tabular-nums text-sm">
-          {order.amount.toLocaleString('en-US')}
+          {maskAmount(order.amount, hideAmounts)}
         </p>
       )}
     </button>

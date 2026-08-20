@@ -19,6 +19,12 @@ export function formatAmount(value) {
   return num.toLocaleString('en-US')
 }
 
+// Consistent privacy mask for all rendered financial amounts.
+// Keep the formatting function pure; callers decide whether the setting is enabled.
+export function maskAmount(value, hidden) {
+  return hidden ? '••••' : formatAmount(value)
+}
+
 // Parse a formatted string back to number
 /**
  * Convert Arabic-Indic (٠-٩) and Extended/Persian (۰-۹) digits — plus the
