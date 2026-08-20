@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { db } from '../db'
-import { formatAmount } from '../utils/format.js'
+import { maskAmount } from '../utils/format.js'
 import { formatArabicDate, getRelativeTime } from '../utils/date.js'
 import EmptyState from '../components/ui/EmptyState.jsx'
 import Icon from '../components/ui/Icon.jsx'
@@ -10,6 +10,7 @@ import { hapticLight, hapticSuccess, hapticMedium, hapticError } from '../utils/
 import { sendDebtReminder } from '../utils/whatsapp.js'
 import { useTerms } from '../context/TermsContext.jsx'
 import PageHeader from '../components/layout/PageHeader.jsx'
+import { useSettings2 } from '../context/SettingsContext.jsx'
 
 /**
  * Debts Page (V4 Phase 1) - Tracks receivables and payables with tabs.
@@ -21,6 +22,7 @@ import PageHeader from '../components/layout/PageHeader.jsx'
  */
 export default function DebtsPage() {
   const t = useTerms()
+  const { hideAmounts } = useSettings2()
   const [receivables, setReceivables] = useState([])
   const [payables, setPayables] = useState([])
   const [loading, setLoading] = useState(true)
@@ -117,7 +119,7 @@ export default function DebtsPage() {
             {loading ? (
               <div className="h-8 w-24 bg-white/20 rounded animate-pulse" />
             ) : (
-              <p className="text-2xl font-bold tabular-nums num">{formatAmount(totalReceivable)}</p>
+              <p className="text-2xl font-bold tabular-nums num">{maskAmount(totalReceivable, hideAmounts)}</p>
             )}
             <p className="text-xs text-income-50 mt-1">{receivables.length} {t.receivables_tab}</p>
           </div>
@@ -126,7 +128,7 @@ export default function DebtsPage() {
             {loading ? (
               <div className="h-8 w-24 bg-white/20 rounded animate-pulse" />
             ) : (
-              <p className="text-2xl font-bold tabular-nums num">{formatAmount(totalPayable)}</p>
+              <p className="text-2xl font-bold tabular-nums num">{maskAmount(totalPayable, hideAmounts)}</p>
             )}
             <p className="text-xs text-expense-50 mt-1">{payables.length} {t.payables_tab}</p>
           </div>
@@ -300,6 +302,7 @@ export default function DebtsPage() {
  */
 function DebtCard({ debt, isReceivable, onSettle, onViewDetail, onSendReminder }) {
   const t = useTerms()
+  const { hideAmounts } = useSettings2()
   const remaining = debt.amount - (debt.debtAmountPaid || 0)
   const paidPercent = debt.amount > 0 ? ((debt.debtAmountPaid || 0) / debt.amount) * 100 : 0
   const isPartial = (debt.debtAmountPaid || 0) > 0 && debt.debtStatus !== 'settled'
@@ -329,11 +332,11 @@ function DebtCard({ debt, isReceivable, onSettle, onViewDetail, onSendReminder }
       <div className="flex items-center justify-between text-sm mb-2">
         <div>
           <p className="text-txt-secondary">
-            {t.debt_total}: <span className="font-bold text-txt-primary tabular-nums">{formatAmount(debt.amount)}</span>
+            {t.debt_total}: <span className="font-bold text-txt-primary tabular-nums">{maskAmount(debt.amount, hideAmounts)}</span>
           </p>
           <p className="text-xs text-txt-tertiary mt-0.5">
             {t.debt_remaining}: <span className={`font-bold tabular-nums ${isReceivable ? 'text-income-600' : 'text-expense-600'}`}>
-              {formatAmount(remaining)}
+              {maskAmount(remaining, hideAmounts)}
             </span>
           </p>
         </div>
@@ -499,6 +502,7 @@ function DebtFormSheet({ open, type, onClose, onSaved }) {
  */
 function SettleDebtSheet({ open, debt, onClose, onSaved }) {
   const t = useTerms()
+  const { hideAmounts } = useSettings2()
   const [paymentAmount, setPaymentAmount] = useState(0)
   const [saving, setSaving] = useState(false)
 
@@ -545,15 +549,15 @@ function SettleDebtSheet({ open, debt, onClose, onSaved }) {
         <div className="bg-background rounded-2xl p-4 space-y-2">
           <div className="flex justify-between items-center">
             <p className="text-sm text-txt-secondary">{t.debt_total}</p>
-            <p className="font-bold tabular-nums text-txt-primary">{formatAmount(debt.amount)}</p>
+            <p className="font-bold tabular-nums text-txt-primary">{maskAmount(debt.amount, hideAmounts)}</p>
           </div>
           <div className="flex justify-between items-center">
             <p className="text-sm text-txt-secondary">{t.debt_paid}</p>
-            <p className="font-bold tabular-nums text-income-600">{formatAmount(debt.debtAmountPaid || 0)}</p>
+            <p className="font-bold tabular-nums text-income-600">{maskAmount(debt.debtAmountPaid || 0, hideAmounts)}</p>
           </div>
           <div className="flex justify-between items-center pt-2 border-t border-divider">
             <p className="text-sm font-semibold text-txt-primary">{t.debt_remaining}</p>
-            <p className="font-bold tabular-nums text-expense-600">{formatAmount(remaining)}</p>
+            <p className="font-bold tabular-nums text-expense-600">{maskAmount(remaining, hideAmounts)}</p>
           </div>
         </div>
 
@@ -562,7 +566,7 @@ function SettleDebtSheet({ open, debt, onClose, onSaved }) {
         {paymentAmount > remaining && (
           <div className="bg-expense-50 rounded-xl p-3 flex items-center gap-2">
             <Icon name="info" className="w-4 h-4 text-expense-600 flex-shrink-0" />
-            <p className="text-xs text-expense-700">{t.debt_remaining}: {formatAmount(remaining)}</p>
+            <p className="text-xs text-expense-700">{t.debt_remaining}: {maskAmount(remaining, hideAmounts)}</p>
           </div>
         )}
 
@@ -586,6 +590,7 @@ function SettleDebtSheet({ open, debt, onClose, onSaved }) {
  */
 function DebtDetailSheet({ open, debt, onClose, onSettle, onUpdated }) {
   const t = useTerms()
+  const { hideAmounts } = useSettings2()
   const [settlements, setSettlements] = useState([])
 
   useEffect(() => {
@@ -617,15 +622,15 @@ function DebtDetailSheet({ open, debt, onClose, onSettle, onUpdated }) {
         <div className="bg-background rounded-2xl p-4 space-y-2">
           <div className="flex justify-between">
             <p className="text-sm text-txt-secondary">{t.debt_total}</p>
-            <p className="font-bold tabular-nums text-txt-primary">{formatAmount(debt.amount)}</p>
+            <p className="font-bold tabular-nums text-txt-primary">{maskAmount(debt.amount, hideAmounts)}</p>
           </div>
           <div className="flex justify-between">
             <p className="text-sm text-txt-secondary">{t.debt_paid}</p>
-            <p className="font-bold tabular-nums text-income-600">{formatAmount(debt.debtAmountPaid || 0)}</p>
+            <p className="font-bold tabular-nums text-income-600">{maskAmount(debt.debtAmountPaid || 0, hideAmounts)}</p>
           </div>
           <div className="flex justify-between pt-2 border-t border-divider">
             <p className="text-sm font-semibold text-txt-primary">{t.debt_remaining}</p>
-            <p className="font-bold tabular-nums text-expense-600">{formatAmount(remaining)}</p>
+            <p className="font-bold tabular-nums text-expense-600">{maskAmount(remaining, hideAmounts)}</p>
           </div>
         </div>
 
@@ -646,7 +651,7 @@ function DebtDetailSheet({ open, debt, onClose, onSettle, onUpdated }) {
                     <p className="text-sm text-txt-primary">{t.payment_amount} {i + 1}</p>
                     <p className="text-xs text-txt-tertiary mt-0.5">{formatArabicDate(s.createdAt)}</p>
                   </div>
-                  <p className="font-bold text-income-600 tabular-nums">{formatAmount(s.amount)}</p>
+                  <p className="font-bold text-income-600 tabular-nums">{maskAmount(s.amount, hideAmounts)}</p>
                 </div>
               ))}
             </div>

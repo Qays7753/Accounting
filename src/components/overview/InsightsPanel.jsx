@@ -2,8 +2,9 @@ import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { db } from '../../db'
 import { useTerms } from '../../context/TermsContext.jsx'
+import { useSettings2 } from '../../context/SettingsContext.jsx'
 import { hapticLight } from '../../utils/haptics.js'
-import { formatAmount } from '../../utils/format.js'
+import { maskAmount } from '../../utils/format.js'
 import Icon from '../ui/Icon.jsx'
 import {
   computeRangeSummary,
@@ -86,6 +87,7 @@ export default function InsightsPanel({
   onSwitchLayer,
 }) {
   const t = useTerms()
+  const { hideAmounts } = useSettings2()
   const navigate = useNavigate()
 
   // ---- One-shot check: does Layer 3 have any strategic data?
@@ -180,7 +182,7 @@ export default function InsightsPanel({
         icon: 'wallet',
         color: 'expense',
         title: t.insight_overdue_debts_title,
-        body: t.insight_overdue_debts_body.replace('{amount}', formatAmount(overdueTotal)),
+        body: t.insight_overdue_debts_body.replace('{amount}', maskAmount(overdueTotal, hideAmounts)),
         actionLabel: t.insight_overdue_debts_action,
         onAction: () => { hapticLight(); navigate('/debts') },
       })
@@ -309,7 +311,7 @@ export default function InsightsPanel({
     void payables
 
     return list
-  }, [reportData, range, activeLayer, cloudConnected, hasStrategicAssets, t, navigate, onSwitchLayer])
+  }, [reportData, range, activeLayer, cloudConnected, hasStrategicAssets, hideAmounts, t, navigate, onSwitchLayer])
 
   // ---- Sort descending by score, take top 3 ----
   const topInsights = useMemo(() => {

@@ -20,7 +20,7 @@ import {
   computeRangeSummary,
   computeRestockPrediction,
 } from '../utils/overviewCompute.js'
-import { formatAmount } from '../utils/format.js'
+import { formatAmount, maskAmount } from '../utils/format.js'
 import { formatArabicDate } from '../utils/date.js'
 import { hapticLight, hapticSuccess } from '../utils/haptics.js'
 import Icon from '../components/ui/Icon.jsx'
@@ -474,7 +474,8 @@ export default function OverviewPage() {
  * important number for the current layer.
  */
 function HeroMetricCard({ label, value, secondary, available }) {
-  const displayValue = available ? formatAmount(Math.abs(value)) : '—'
+  const { hideAmounts } = useSettings2()
+  const displayValue = available ? maskAmount(Math.abs(value), hideAmounts) : '—'
   const sign = available ? (value >= 0 ? '+' : '−') : ''
   return (
     <div className="bg-primary rounded-card p-5 shadow-card">
@@ -508,12 +509,13 @@ const KPI_COLOR_CLASSES = {
 }
 
 function KpiTile({ label, value, sign, color, isPercent }) {
+  const { hideAmounts } = useSettings2()
   const isMissing = value === null || value === undefined
   const displayValue = isMissing
     ? '—'
     : isPercent
       ? `${value}%`
-      : formatAmount(Math.abs(value || 0))
+      : maskAmount(Math.abs(value || 0), hideAmounts)
   const signPrefix = !isMissing && sign ? sign : ''
   const colorClass = KPI_COLOR_CLASSES[color] || 'text-ink'
   return (
@@ -533,6 +535,7 @@ function KpiTile({ label, value, sign, color, isPercent }) {
  * Layer 1 analysis — simple text summary.
  */
 function AnalysisLayer1({ summary, noData, weekSummaryTpl }) {
+  const { hideAmounts } = useSettings2()
   if (!summary.available) {
     return (
       <div className="bg-surface rounded-card p-4 border border-divider">
@@ -541,8 +544,8 @@ function AnalysisLayer1({ summary, noData, weekSummaryTpl }) {
     )
   }
   const text = weekSummaryTpl
-    .replace('{profit}', formatAmount(summary.net))
-    .replace('{expense}', formatAmount(summary.expense + summary.cogs))
+    .replace('{profit}', maskAmount(summary.net, hideAmounts))
+    .replace('{expense}', maskAmount(summary.expense + summary.cogs, hideAmounts))
   return (
     <div className="bg-surface rounded-card p-4 border border-divider">
       <p className="text-sm text-ink leading-relaxed">{text}</p>
@@ -634,13 +637,14 @@ function AnalysisLayer2({ summary, restock, t }) {
 
 /** Small horizontal proportional bar for the Layer 2 cost breakdown. */
 function AnalysisBar({ label, value, max, colorClass, prefix = '' }) {
+  const { hideAmounts } = useSettings2()
   const widthPct = Math.max(0, Math.min(100, (Math.abs(value) / Math.max(1, max)) * 100))
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
         <span className="text-sm text-ink-secondary">{label}</span>
         <span className="num text-sm font-bold text-ink">
-          {prefix}{formatAmount(Math.abs(value))}
+          {prefix}{maskAmount(Math.abs(value), hideAmounts)}
         </span>
       </div>
       <div className="h-2 bg-mute rounded-full overflow-hidden">
@@ -661,6 +665,7 @@ function AnalysisBar({ label, value, max, colorClass, prefix = '' }) {
  * documented bold exception).
  */
 function AnalysisLayer3({ incomeStatement, balanceSheet, t }) {
+  const { hideAmounts } = useSettings2()
   return (
     <div className="space-y-6">
       {/* Income Statement — vertical waterfall */}
@@ -682,7 +687,7 @@ function AnalysisLayer3({ incomeStatement, balanceSheet, t }) {
                 className="num text-title font-bold text-white"
                 style={{ fontVariantNumeric: 'tabular-nums', unicodeBidi: 'isolate' }}
               >
-                {formatAmount(incomeStatement.netProfit.value)}
+                {maskAmount(incomeStatement.netProfit.value, hideAmounts)}
               </p>
             </div>
             <div className="mt-2 h-1.5 bg-white/20 rounded-full overflow-hidden">
@@ -705,7 +710,7 @@ function AnalysisLayer3({ incomeStatement, balanceSheet, t }) {
           <div className="bg-surface rounded-card p-4 border border-divider">
             <div className="flex items-center justify-between mb-3">
               <p className="font-bold text-ink text-sm">{t.overview_assets}</p>
-              <p className="num text-title-sm font-bold text-ink">{formatAmount(balanceSheet.assets.total.value)}</p>
+              <p className="num text-title-sm font-bold text-ink">{maskAmount(balanceSheet.assets.total.value, hideAmounts)}</p>
             </div>
             <div className="space-y-1.5">
               <BalanceRow label={balanceSheet.assets.cash.label} value={balanceSheet.assets.cash.value} total={balanceSheet.assets.total.value} color="bg-primary" />
@@ -718,7 +723,7 @@ function AnalysisLayer3({ incomeStatement, balanceSheet, t }) {
           <div className="bg-surface rounded-card p-4 border border-divider">
             <div className="flex items-center justify-between mb-3">
               <p className="font-bold text-ink text-sm">{t.overview_liabilities}</p>
-              <p className="num text-title-sm font-bold text-expense-600">{formatAmount(balanceSheet.liabilities.total.value)}</p>
+              <p className="num text-title-sm font-bold text-expense-600">{maskAmount(balanceSheet.liabilities.total.value, hideAmounts)}</p>
             </div>
             <div className="space-y-1.5">
               <BalanceRow label={balanceSheet.liabilities.payables.label} value={balanceSheet.liabilities.payables.value} total={Math.max(1, balanceSheet.liabilities.total.value)} color="bg-expense-500" />
@@ -733,7 +738,7 @@ function AnalysisLayer3({ incomeStatement, balanceSheet, t }) {
                 className="num text-title-sm font-bold text-white"
                 style={{ fontVariantNumeric: 'tabular-nums', unicodeBidi: 'isolate' }}
               >
-                {formatAmount(balanceSheet.equity.value)}
+                {maskAmount(balanceSheet.equity.value, hideAmounts)}
               </p>
             </div>
           </div>
@@ -745,13 +750,14 @@ function AnalysisLayer3({ incomeStatement, balanceSheet, t }) {
 
 /** Waterfall row for income statement — migrated from InvestorDashboard. */
 function WaterfallRow({ label, value, max, color, textColor, prefix = '', bold = false }) {
+  const { hideAmounts } = useSettings2()
   const widthPercent = Math.max(0, Math.min(100, (Math.abs(value) / Math.max(1, max)) * 100))
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
         <p className={`text-sm ${bold ? 'font-bold text-ink' : 'text-ink-secondary'}`}>{label}</p>
         <p className={`num text-sm font-bold ${textColor}`} style={{ unicodeBidi: 'isolate' }}>
-          {prefix}{formatAmount(Math.abs(value))}
+          {prefix}{maskAmount(Math.abs(value), hideAmounts)}
         </p>
       </div>
       <div className="h-2 bg-mute rounded-full overflow-hidden">
@@ -763,12 +769,13 @@ function WaterfallRow({ label, value, max, color, textColor, prefix = '', bold =
 
 /** Balance sheet row with proportional bar — migrated from InvestorDashboard. */
 function BalanceRow({ label, value, total, color }) {
+  const { hideAmounts } = useSettings2()
   const widthPercent = Math.max(0, Math.min(100, (value / Math.max(1, total)) * 100))
   return (
     <div className="flex items-center gap-3">
       <span className="text-caption text-ink-secondary flex-1">{label}</span>
       <span className="num text-caption font-bold text-ink w-20 text-left" style={{ unicodeBidi: 'isolate' }}>
-        {formatAmount(value)}
+        {maskAmount(value, hideAmounts)}
       </span>
       <div className="w-16 h-1.5 bg-mute rounded-full overflow-hidden">
         <div className={`h-full ${color} rounded-full`} style={{ width: `${widthPercent}%` }} />

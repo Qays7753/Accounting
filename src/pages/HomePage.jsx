@@ -459,7 +459,7 @@ export default function HomePage() {
                   <div className="text-left">
                     {order.amount > 0 && (
                       <p className="font-bold text-text-primary tabular-nums">
-                        {formatAmount(order.amount)}
+                        {maskAmount(order.amount)}
                       </p>
                     )}
                   </div>
@@ -657,7 +657,7 @@ export default function HomePage() {
               {/* Expected Cash */}
               <div className="bg-background rounded-2xl p-4">
                 <p className="text-xs text-text-secondary mb-1">{t.z_report_expected}</p>
-                <p className="text-3xl font-bold tabular-nums num text-text-primary">{formatAmount(expectedCash)}</p>
+                <p className="text-3xl font-bold tabular-nums num text-text-primary">{maskAmount(expectedCash)}</p>
                 <p className="text-xs text-text-tertiary mt-1">{t.z_report_expected}</p>
               </div>
 
@@ -695,7 +695,7 @@ export default function HomePage() {
                       zVarianceType === 'surplus' ? 'text-income-600' :
                       zVarianceType === 'shortage' ? 'text-expense-600' : 'text-text-primary'
                     }`}>
-                      {zVariance > 0 ? '+' : ''}{formatAmount(zVariance)}
+                      {zVariance > 0 ? '+' : ''}{maskAmount(Math.abs(zVariance))}
                     </p>
                   </div>
                 </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { db } from '../db'
-import { formatAmount } from '../utils/format.js'
+import { maskAmount } from '../utils/format.js'
 import EmptyState from '../components/ui/EmptyState.jsx'
 import Icon from '../components/ui/Icon.jsx'
 import BottomSheet from '../components/ui/BottomSheet.jsx'
@@ -10,6 +10,7 @@ import { useTerms } from '../context/TermsContext.jsx'
 import { useIsManagerMode } from '../context/TermsContext.jsx'
 import PageHeader from '../components/layout/PageHeader.jsx'
 import { useSubmitGuard } from '../hooks/useSubmitGuard.js'
+import { useSettings2 } from '../context/SettingsContext.jsx'
 
 /**
  * Quick POS Page (V4 Phase 2)
@@ -24,6 +25,7 @@ import { useSubmitGuard } from '../hooks/useSubmitGuard.js'
  */
 export default function QuickPosPage() {
   const t = useTerms()
+  const { hideAmounts } = useSettings2()
   const isManager = useIsManagerMode()
   const [products, setProducts] = useState([])
   const [cart, setCart] = useState([]) // [{ product, qty }]
@@ -185,7 +187,7 @@ export default function QuickPosPage() {
                   </div>
                   <p className="font-bold text-text-primary text-sm truncate">{product.name}</p>
                   <p className="text-lg font-bold text-primary-600 tabular-nums mt-1">
-                    {formatAmount(product.price)}
+                    {maskAmount(product.price, hideAmounts)}
                   </p>
                 </button>
                 <button
@@ -205,7 +207,7 @@ export default function QuickPosPage() {
 
       {/* Mini Cart (Fixed at bottom) */}
       {cart.length > 0 && (
-        <div className="fixed bottom-16 inset-x-0 max-w-lg mx-auto px-4 z-30">
+        <div className="fixed bottom-16 left-1/2 -translate-x-1/2 w-full max-w-[480px] px-4 z-30">
           <div className="bg-surface rounded-2xl shadow-xl p-4 animate-slide-up">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
@@ -239,7 +241,7 @@ export default function QuickPosPage() {
                     <span className="text-text-tertiary text-xs">×{item.qty}</span>
                   </div>
                   <span className="font-semibold tabular-nums text-text-primary flex-shrink-0">
-                    {formatAmount(item.product.price * item.qty)}
+                    {maskAmount(item.product.price * item.qty, hideAmounts)}
                   </span>
                 </div>
               ))}
@@ -249,7 +251,7 @@ export default function QuickPosPage() {
             <div className="flex items-center justify-between pt-2 border-t border-divider">
               <div>
                 <p className="text-xs text-text-tertiary">{t.pos_total}</p>
-                <p className="text-xl font-bold text-primary-600 tabular-nums">{formatAmount(cartTotal)}</p>
+                <p className="text-xl font-bold text-primary-600 tabular-nums">{maskAmount(cartTotal, hideAmounts)}</p>
               </div>
               <button
                 type="button"
@@ -269,7 +271,7 @@ export default function QuickPosPage() {
         <div className="space-y-4 pb-4">
           <div className="bg-background rounded-2xl p-4 text-center">
             <p className="text-sm text-text-secondary mb-1">{t.pos_total}</p>
-            <p className="text-3xl font-bold tabular-nums text-text-primary">{formatAmount(cartTotal)}</p>
+            <p className="text-3xl font-bold tabular-nums text-text-primary">{maskAmount(cartTotal, hideAmounts)}</p>
           </div>
           <p className="text-sm text-text-secondary text-center">{t.pos_payment_method}</p>
           <button
@@ -311,7 +313,7 @@ export default function QuickPosPage() {
           </div>
           <div className="text-center space-y-2">
             <p className="text-lg font-bold text-text-primary">{t.pos_sale_recorded}</p>
-            <p className="text-2xl font-bold tabular-nums text-primary-600">{formatAmount(saleResult?.totalAmount || 0)}</p>
+            <p className="text-2xl font-bold tabular-nums text-primary-600">{maskAmount(saleResult?.totalAmount || 0, hideAmounts)}</p>
             <p className="text-sm text-text-secondary">
               {saleResult?.paymentType === 'cash' ? t.pos_cash : t.pos_credit}
             </p>
