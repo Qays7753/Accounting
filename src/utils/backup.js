@@ -50,9 +50,11 @@ export async function importBackup() {
     const input = document.createElement('input')
     input.type = 'file'
     input.accept = 'application/json,.json'
+    const cleanup = () => input.remove()
     input.onchange = async (e) => {
       const file = e.target.files[0]
       if (!file) {
+        cleanup()
         resolve(null)
         return
       }
@@ -60,31 +62,43 @@ export async function importBackup() {
         const text = await file.text()
         const data = JSON.parse(text)
         if (!data.data || typeof data.data !== 'object' || !Number.isFinite(Number(data.version))) {
+          cleanup()
           reject(new Error('ملف غير صالح أو بلا إصدار'))
           return
         }
         const requiredTables = db.tables.map(table => table.name)
         const missingTables = requiredTables.filter(name => !Array.isArray(data.data[name]))
         if (missingTables.length > 0) {
+          cleanup()
           reject(new Error(`النسخة غير مكتملة. الجداول المفقودة: ${missingTables.join(', ')}`))
           return
         }
         if (Number(data.version) < db.verno) {
+          cleanup()
           reject(new Error(`النسخة قديمة. المطلوب إصدار ${db.verno}`))
           return
         }
         // Confirm before overwriting
         const confirmed = confirm('سيتم استبدال جميع بياناتك الحالية بالبيانات من الملف. هل أنت متأكد؟')
         if (!confirmed) {
+          cleanup()
           resolve(null)
           return
         }
         await db.restoreFromBackup(data)
+        cleanup()
         resolve(data)
       } catch (err) {
+        cleanup()
         reject(new Error('فشل قراءة الملف: ' + err.message))
       }
     }
+    input.addEventListener('cancel', () => {
+      cleanup()
+      resolve(null)
+    }, { once: true })
+    input.style.display = 'none'
+    document.body.appendChild(input)
     input.click()
   })
 }
